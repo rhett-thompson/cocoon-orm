@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+
+
+
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.5/styles/hybrid.min.css">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.5/highlight.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+    <script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+    <div class="container">
+
+        <div class="jumbotron">
+            <h1>EspressoDB</h1>
+            <p class="lead">EspressoDB is a simple to use open source alternative to the Entity Framework.  It is an ORM toolset that performs: automapping, auto CRUD (including joins), auto SQL, auto stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that EspressoDB generates is the same SQL you yourself might write had you the time.  </p>
+        </div>
+
+        <h2>Example Models</h2>
+
+        <pre>
+        <code class="cs">
+[Table]
+class Customer
+{
+    [Column, PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate, Identity(1, 1)]
+    public int CustomerID { get; set; }
+    [Column, NotNull]
+    public string LoginEmail { get; set; }
+    [Column, NotNull]
+    public string Password { get; set; }
+    [Column]
+    public string FirstName { get; set; }
+    [Column]
+    public string LastName { get; set; }
+    [Column]
+    public string Address1 { get; set; }
+    [Column]
+    public string Address2 { get; set; }
+    [Column]
+    public string City { get; set; }
+    [Column]
+    public string State { get; set; }
+    [Column]
+    public string PostalCode { get; set; }
+    [Column]
+    public string Country { get; set; }
+    [Column]
+    public string Phone { get; set; }
+    [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
+    public DateTime CreateDate { get; set; }
+    
+    //lazy loading a list
+    public List<order> orders
+    {
+        get
+        {
+            return Program.db.GetList<order>(where: new { CustomerID = CustomerID });
+        }
+        set;
+    }
+}
+
+[Table]
+internal class OrderType
+{
+    [Column("OrderTypeID", "varchar(50)"), PrimaryKey, NotNull]
+    public const string INTERNAL = "internal";
+    [Column("OrderTypeID")]
+    public const string WEBSITE = "website";
+    [Column("OrderTypeID")]
+    public const string PHONE = "phone";
+    [Column("OrderTypeID")]
+    public const string ONSITE = "onsite";     
+}
+
+[Table]
+class Order
+{
+    [Column, PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate, Identity(1, 1)]
+    public int OrderID { get; set; }
+    [Column, ForeignKey(typeof(Customer)), NotNull]
+    public int CustomerID { get; set; }
+    [Column(DataType: "varchar(50)"), ForeignKey(typeof(OrderType)), NotNull]
+    public string OrderTypeID { get; set; }
+    [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
+    public DateTime CreateDate { get; set; }
+    [ForeignColumn(ForeignKey: "CustomerID", ObjectModel:typeof(Customer), OverrideName: "FirstName")]
+    public string CustomerFirstName { get; set; }
+}
+        </code> 
+    </pre>
+
+        <h2>Basic Example</h2>
+        <p>This is a minimal example.</p>
+        <pre>
+        <code class="cs">
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+db.GetList<Order>(where:new { OrderID = 123 });
+        </code> 
+    </pre>
+
+        <h2>CRUD Operations</h2>
+        <p>Basic CRUD operations</p>
+        <pre>
+        <code class="cs">
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+Customer newCustomer = db.Insert<customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
+Customer someCustomer = db.GetSingle<customer>(new { CustomerID = newCustomer.CustomerID });
+someCustomer.LastName = "barker";
+db.Update(someCustomer, where: new { CustomerID = someCustomer.CustomerID });
+db.Delete(typeof(Customer), where:new { CustomerID = someCustomer.CustomerID });
+        </code> 
+    </pre>
+
+        <h2>Stored Procedures</h2>
+
+        <pre>
+        <code class="cs">
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+db.ExecuteSProcSingle<order>("OrderGet", new { OrderID = 5 });
+List<order> listOfOrders = db.ExecuteSProcList<order>("OrderList");
+        </code> 
+    </pre>
+
+        <h2>Parameterized SQL</h2>
+
+        <pre>
+        <code class="cs">
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+db.ExecuteSQLSingle<order>("select * from Orders where OrderID = @OrderID", new { OrderID = 5 });
+List<order> listOfOrders = db.ExecuteSQLList<order>("select * from Orders");
+        </code> 
+    </pre>
+
+        <h2>Transactions</h2>
+
+        <pre>
+        <code class="cs">
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+using (TransactionScope tran = new TransactionScope())
+{
+    db.Update(typeof(EDBOrder), where:new { OrderTypeID = EDBOrderType.ONSITE }, new { OrderID = 2 });
+    tran.Complete();
+}
+        </code> 
+    </pre>
+
+    </div>
+
+</body>
+</html>
