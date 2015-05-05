@@ -32,10 +32,10 @@ namespace Cocoon.Tests
 
             //}
 
-            //SQLServerEcommerceTest regression = new SQLServerEcommerceTest(db);
-            //regression.runTests();
+            SQLServerEcommerceTest regression = new SQLServerEcommerceTest(db);
+            regression.runTests();
             //regression.runBenchmark(100);
-            //regression.checkMethodsTested();
+            regression.checkMethodsTested();
 
             Console.ReadLine();
 

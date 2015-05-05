@@ -6,3 +6,4 @@ C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-orm.pdb
 C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-orm.xml
 C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\obj\Debug\cocoon-tests.exe
 C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\obj\Debug\cocoon-tests.pdb
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\obj\Debug\cocoon-tests.csprojResolveAssemblyReference.cache
