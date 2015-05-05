@@ -1,0 +1,5 @@
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-orm\bin\Debug\cocoon-orm.dll
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-orm\bin\Debug\cocoon-orm.pdb
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-orm\obj\Debug\cocoon-orm.dll
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-orm\obj\Debug\cocoon-orm.pdb
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-orm\bin\Debug\cocoon-orm.XML

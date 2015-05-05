@@ -1,0 +1,8 @@
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-tests.exe.config
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-tests.exe
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-tests.pdb
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-orm.dll
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-orm.pdb
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\bin\Debug\cocoon-orm.xml
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\obj\Debug\cocoon-tests.exe
+C:\Users\Rhett\Documents\GitHub\cocoon-orm\cocoon-tests\obj\Debug\cocoon-tests.pdb

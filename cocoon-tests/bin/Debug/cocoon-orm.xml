@@ -1,0 +1,516 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>cocoon-orm</name>
+    </assembly>
+    <members>
+        <member name="T:Cocoon.Annotations.Column">
+            <summary>
+            This field is a database column.
+            </summary>
+        </member>
+        <member name="M:Cocoon.Annotations.Column.#ctor(System.String,System.String,System.String)">
+            <summary>
+            This field is a database column.
+            </summary>
+            <param name="OverrideName">Overrides the name of this column.</param>
+            <param name="DataType">The SQL datatype of the column.</param>
+            <param name="DefaultValue">The default value of the column.</param>
+        </member>
+        <member name="T:Cocoon.Annotations.Identity">
+            <summary>
+            This field is an identity column
+            </summary>
+        </member>
+        <member name="M:Cocoon.Annotations.Identity.#ctor(System.Int32,System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="Seed">Is the value that is used for the very first row loaded into the table.</param>
+            <param name="Increment">Is the incremental value that is added to the identity value of the previous row that was loaded.</param>
+        </member>
+        <member name="T:Cocoon.Annotations.NotNull">
+            <summary>
+            This field may not be null
+            </summary>
+        </member>
+        <member name="T:Cocoon.Annotations.PrimaryKey">
+            <summary>
+            This field is a primary key in the database
+            </summary>
+        </member>
+        <member name="T:Cocoon.Annotations.ForeignKey">
+            <summary>
+            This field is a foreign key in the database
+            </summary>
+        </member>
+        <member name="M:Cocoon.Annotations.ForeignKey.#ctor(System.Type,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="ReferencesTable"></param>
+            <param name="ReferenceTablePrimaryKeyOverride"></param>
+        </member>
+        <member name="T:Cocoon.Annotations.IgnoreOnInsert">
+            <summary>
+            This field should be ignored on inserts (e.g. it's an identity column, or has a default value)
+            </summary>
+        </member>
+        <member name="T:Cocoon.Annotations.IgnoreOnUpdate">
+            <summary>
+            This field should be ignored on updates (e.g. it's a primary key)
+            </summary>
+        </member>
+        <member name="T:Cocoon.Annotations.IgnoreOnSelect">
+            <summary>
+            This field should be ignored on select (i.e. Get methods etc.)
+            </summary>
+        </member>
+        <member name="T:Cocoon.Annotations.ForeignColumn">
+            <summary>
+            This field exists in another table and should be joined by a foreign key.
+            </summary>
+        </member>
+        <member name="M:Cocoon.Annotations.ForeignColumn.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            A foreign column linked by a foreign key in this class
+            </summary>
+            <param name="ForeignKey">The foreign key in this class to use</param>
+            <param name="TableName">The table to join to.</param>
+            <param name="OverrideName">Overrides the name of this column.</param>
+            <param name="PrimaryKey">The name of the primary key in the primary table. If null, then the primary key is the same as the foreign key.</param>
+        </member>
+        <member name="M:Cocoon.Annotations.ForeignColumn.#ctor(System.String,System.Type,System.String,System.String)">
+            <summary>
+            A foreign column linked by a foreign key in this class
+            </summary>
+            <param name="ForeignKey">The foreign key in this class to use</param>
+            <param name="ObjectModel">The table to join to.</param>
+            <param name="OverrideName">Overrides the name of this column.</param>
+            <param name="PrimaryKey">The name of the primary key in the primary table. If null, then the primary key is the same as the foreign key.</param>
+        </member>
+        <member name="T:Cocoon.Annotations.Table">
+            <summary>
+            Designates this class as existing in the database
+            </summary>
+        </member>
+        <member name="M:Cocoon.Annotations.Table.#ctor(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="TableName">The name of the table in the database.  If null the name of the class is used.</param>
+        </member>
+        <member name="T:Cocoon.DBAdapterTarget">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:Cocoon.DBAdapterTarget.SQLServer">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:Cocoon.DBAdapterTarget.MySQL">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:Cocoon.DBConnection">
+            <summary>
+            The database connection class
+            </summary>
+        </member>
+        <member name="F:Cocoon.DBConnection.ConnectionString">
+            <summary>
+            The connection string EspressoDB is using
+            </summary>
+        </member>
+        <member name="M:Cocoon.DBConnection.#ctor(System.String,System.Action{System.String})">
+            <summary>
+            Creates a new database connection
+            </summary>
+            <param name="ConnectionString">The connection string to use to connect to the database</param>
+            <param name="LogMethod">A method to call for logging purposes</param>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSProcSingle``1(System.String,System.Object)">
+            <summary>
+            Executes a stored procedure that returns a single object of type T
+            </summary>
+            <typeparam name="T">The object model/table to get the item from</typeparam>
+            <param name="procedureName">The name of the stored procedure to call</param>
+            <param name="paramObject">An object containing the parameters to pass to the stored procedure</param>
+            <returns>An object of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSProcList``1(System.String,System.Object,System.String)">
+            <summary>
+            Executes a stored procedure that returns a list of type T
+            </summary>
+            <typeparam name="T">The object model/table to select items from</typeparam>
+            <param name="procedureName">The name of the stored procedure to call</param>
+            <param name="paramObject">An object containing the parameters to pass to the stored procedure</param>
+            <param name="fieldToMap">A field to map to the list, if null the first field is used</param>
+            <returns>A list of items of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSProcDataSet(System.String,System.Object)">
+            <summary>
+            Executes a stored procedure that returns a DataSet
+            </summary>
+            <param name="procedureName">The name of the stored procedure to call</param>
+            <param name="paramObject">An object containing the parameters to pass to the stored procedure</param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSProcVoid(System.String,System.Object)">
+            <summary>
+            Executes a stored procedure that returns nothing.
+            </summary>
+            <param name="procedureName">The name of the stored procedure to call</param>
+            <param name="paramObject">An object containing the parameters to pass to the stored procedure</param>
+            <returns>The number of rows affected if NOCOUNT OFF</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSProcScalar``1(System.String,System.Object)">
+            <summary>
+            Executes a stored procedure that returns one scalar value.
+            </summary>
+            <param name="procedureName">The name of the stored procedure to call</param>
+            <param name="paramObject">An object containing the parameters to pass to the stored procedure</param>
+            <returns>The scalar value of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSQLSingle``1(System.String,System.Object)">
+            <summary>
+            Executes SQL statements and returns a single object of type T. Use @params in your SQL.
+            </summary>
+            <typeparam name="T">The object model/table to map the result to</typeparam>
+            <param name="sql">Your SQL command string</param>
+            <param name="paramObject">The object to map parameters from</param>
+            <returns>An object of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSQLList``1(System.String,System.Object,System.String)">
+            <summary>
+            Executes SQL statements on the database. Use @params in your SQL.
+            </summary>
+            <typeparam name="T">The object model/table to map the result to</typeparam>
+            <param name="sql">Your SQL command string</param>
+            <param name="paramObject">The object to map parameters from</param>
+            <param name="fieldToMap">A field to map to the list, if null the first field is used</param>
+            <returns>A list of items of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSQLDataSet(System.String,System.Object)">
+            <summary>
+            Executes a SQL command string that returns a DataSet. Use @params in your SQL.
+            </summary>
+            <param name="sql">Your SQL command string</param>
+            <param name="paramObject">The object to map parameters from</param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSQLVoid(System.String,System.Object)">
+            <summary>
+            Executes a SQL command string that returns no rows. Use @params in your SQL.
+            </summary>
+            <param name="sql">Your SQL command string</param>
+            <param name="paramObject">The object to map parameters from</param>
+            <returns>The number of rows affected</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.ExecuteSQLScalar``1(System.String,System.Object)">
+            <summary>
+            Executes a SQL command string that returns one scalar value. Use @params in your SQL.
+            </summary>
+            <typeparam name="T">The type of the scalar value</typeparam>
+            <param name="sql">Your SQL command string</param>
+            <param name="paramObject">The object to map parameters from</param>
+            <returns>The scalar value of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetSingle``1(System.Object,System.Boolean)">
+            <summary>
+            Retrieves a single item from the database
+            </summary>
+            <typeparam name="T">The object model/table to get the item from</typeparam>
+            <param name="where">A where clause to add to the select</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <returns>An object of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetList``1(System.Object,System.Boolean,System.Int32)">
+            <summary>
+            Returns a list of T objects
+            </summary>
+            <typeparam name="T">The object model/table to select items from</typeparam>
+            <param name="where">A where clause to add to the select</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <param name="top">If greater than 0, selects the top N items</param>
+            <returns>A list of items of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetScalar``1(System.String,System.String,System.Object,System.Boolean)">
+            <summary>
+            Returns a single scalar value from a table.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="tableName">The name of the table to retrieve the scalar from</param>
+            <param name="scalarField">The name of the column in the table that contains the scalar</param>
+            <param name="where">A where clause to add to the select</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <returns>The scalar value of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetScalar``1(System.Type,System.String,System.Object,System.Boolean)">
+            <summary>
+            Returns a single scalar value from a table.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="objectModel">The table to retrieve the scalar from</param>
+            <param name="scalarField">The name of the column in the table that contains the scalar</param>
+            <param name="where">A where clause to add to the select</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <returns>The scalar value of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetScalarList``1(System.String,System.Object,System.String,System.Boolean,System.Int32)">
+            <summary>
+            Retrieves a list of scalar values from a column of a table
+            </summary>
+            <typeparam name="T">The type of item in the list</typeparam>
+            <param name="tableName">The name of the table in the database</param>
+            <param name="where">A where clause to add to the select</param>
+            <param name="fieldToMap">A field to map to the list, if null the first field is used</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <param name="top">If greater than 0, selects the top N items</param>
+            <returns>A flat list of items of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetScalarList``1(System.Type,System.Object,System.String,System.Boolean,System.Int32)">
+            <summary>
+            Retrieves a list of scalar values from a column of a table
+            </summary>
+            <typeparam name="T">The type of item in the list</typeparam>
+            <param name="objectModel">The table in the database</param>
+            <param name="where">A where clause to add to the select</param>
+            <param name="fieldToMap">A field to map to the list, if null the first field is used</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <param name="top">If greater than 0, selects the top N items</param>
+            <returns>A flat list of items of type T</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.Delete(System.String,System.Object,System.Boolean)">
+            <summary>
+            Deletes an object in the database
+            </summary>
+            <param name="tableName">The name of the table to delete rows from</param>
+            <param name="where">A where clause to add to the delete</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.Delete(System.Type,System.Object,System.Boolean)">
+            <summary>
+            Deletes an object in the database
+            </summary>
+            <param name="objectModel">The object model/table to delete a record from</param>
+            <param name="where">A where clause to add to the delete</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <returns>The number of rows affected by the delete</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.Update(System.Object,System.Object,System.Boolean)">
+            <summary>
+            Updates and existing record in the database
+            </summary>
+            <param name="objectToUpdate">The object to use as values for the update</param>
+            <param name="where">A where clause to add to the update</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <returns>The number of rows affected by the update</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.Update(System.Type,System.Object,System.Object,System.Boolean)">
+            <summary>
+            Updates and existing record in the database
+            </summary>
+            <param name="objectModel">The object model/table to update</param>
+            <param name="fieldsToUpdate">The object to use as values for the update</param>
+            <param name="where">A where clause to add to the update</param>
+            <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
+            <returns>The number of rows affected by the update</returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.Insert``1(System.Object)">
+            <summary>
+            Inserts a new record into the database and returns an output object.
+            </summary>
+            <typeparam name="T">The type of object to return</typeparam>
+            <param name="objectToInsert">The object to use for the insert</param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.TableExists(System.Type)">
+            <summary>
+            
+            </summary>
+            <param name="objectModel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.CreateTable(System.Type)">
+            <summary>
+            Creates a table based on objectModel.  The database is only modified if the table does not already exist.
+            </summary>
+            <param name="objectModel"></param>
+        </member>
+        <member name="M:Cocoon.DBConnection.CreateLookupTable(System.Type)">
+            <summary>
+            Creates a lookup type table based on objectModel.  The database is only modified if the table does not already exist.
+            Only static fields will be used; properties will be ignored.
+            </summary>
+            <param name="objectModel"></param>
+        </member>
+        <member name="M:Cocoon.DBConnection.DropTable(System.Type)">
+            <summary>
+            Drops a table from the database
+            </summary>
+            <param name="objectModel"></param>
+        </member>
+        <member name="M:Cocoon.DBConnection.DropTable(System.String)">
+            <summary>
+            Drops a table from the database
+            </summary>
+            <param name="TableName"></param>
+        </member>
+        <member name="M:Cocoon.DBConnection.VerifyTable(System.Type)">
+            <summary>
+            Verifies an object model matches a table
+            </summary>
+            <param name="objectModel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.VerifyLookupTable(System.Type)">
+            <summary>
+            Verifies the static class values match a look up table
+            </summary>
+            <param name="objectModel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GenerateClassFromTable(System.String)">
+            <summary>
+            Generates a C# class from a database table schema.
+            </summary>
+            <param name="tableName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetCSV(System.Data.DataSet)">
+            <summary>
+            
+            </summary>
+            <param name="dataSet"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetCSV``1(System.Collections.Generic.List{``0})">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="list"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetHTML(System.Data.DataSet)">
+            <summary>
+            
+            </summary>
+            <param name="dataSet"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.DBConnection.GetHTML``1(System.Collections.Generic.List{``0})">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="list"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Cocoon.RegressionTest">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:Cocoon.RegressionTest.db">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Cocoon.RegressionTest.#ctor(Cocoon.DBConnection)">
+            <summary>
+            
+            </summary>
+            <param name="db"></param>
+        </member>
+        <member name="M:Cocoon.RegressionTest.generateData">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Cocoon.RegressionTest.runTests">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Cocoon.RegressionTest.runBenchmark(System.UInt32)">
+            <summary>
+            
+            </summary>
+            <param name="iterations"></param>
+        </member>
+        <member name="M:Cocoon.RegressionTest.testOutput(System.String,System.String,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="method"></param>
+            <param name="tag"></param>
+            <param name="condition"></param>
+        </member>
+        <member name="M:Cocoon.RegressionTest.benchmarkOutput(System.String,System.Double,System.Double)">
+            <summary>
+            
+            </summary>
+            <param name="tag"></param>
+            <param name="totalTime"></param>
+            <param name="averageTime"></param>
+        </member>
+        <member name="M:Cocoon.RegressionTest.checkMethodsTested">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Cocoon.RegressionTest.performBenchmark(System.String,System.UInt32,System.Action)">
+            <summary>
+            
+            </summary>
+            <param name="tag"></param>
+            <param name="benchmarkAction"></param>
+            <param name="itertations"></param>
+        </member>
+        <member name="M:Cocoon.RegressionTest.performTest(System.String,System.String,System.Func{System.Boolean})">
+            <summary>
+            
+            </summary>
+            <param name="method"></param>
+            <param name="tag"></param>
+            <param name="testAction"></param>
+        </member>
+        <member name="T:Cocoon.Utilities">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Cocoon.Utilities.GenerateSequentialGuid">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.GenerateSequentialUID">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.Base36Decode(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.Base36Encode(System.Int64)">
+            <summary>
+            
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
