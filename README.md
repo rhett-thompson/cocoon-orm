@@ -115,11 +115,13 @@ List<order> listOfOrders = db.ExecuteSQLList<order>("select * from Orders");
 ```
 
 ## Transactions
+Cocoon ORM supports ambient transactions.
+You can read more about them here: https://msdn.microsoft.com/en-us/library/System.Transactions(v=vs.110).aspx
 ```cs
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
 using (TransactionScope tran = new TransactionScope())
 {
-  db.Update(typeof(EDBOrder), where:new { OrderTypeID = EDBOrderType.ONSITE }, new { OrderID = 2 });
+  db.Update(typeof(Order), where:new { OrderTypeID = OrderType.ONSITE }, new { OrderID = 2 });
   tran.Complete();
 }
 ```
