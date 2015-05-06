@@ -82,6 +82,22 @@ class Order
 }
 ```
 
+## Annotations
+#### Annotations are used to specify columns in models, and define the properties and relationships of those columns
+| Annotation  | Description |
+| ------------- | ------------- |
+| Column  | Signifies that a property in this class is mirrored as a field in the database   |
+| Table  | Signifies that this class is mirrored in the database as a table  |
+| PrimaryKey  | Signifies that this column/property is a primary key  |
+| ForeignKey  | Signifies that this column/property is a foreign key  |
+| IgnoreOnInsert  | Tells Cocoon to ignore this column when inserting objects/records; usually used for columns with default fields or identity columns that are automatically incremented etc.  |
+| IgnoreOnUpdate  | Tells Cocoon to ignore this column in update.  |
+| IgnoreOnSelect  | Tells Cocoon to ignore this column on data retrieval operations.  |
+| ForeignColumn  | Signifies that this field should be set from a table/object other than this one; based on a foreign key in this class/table.  |
+| NotNull  | Signifies that this property/column should not be null.  |
+| Identity  | Signifies that this column is an identity column and should be incremented on each insert.  |
+
+
 ## Basic Example
 #### This is a minimal example.
 ```cs
