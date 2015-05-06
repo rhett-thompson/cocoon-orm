@@ -86,6 +86,8 @@ class Order
 #### This is a minimal example.
 ```cs
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+
+//Retrieves a single order
 db.GetList<Order>(where:new { OrderID = 123 });
 ```
 
@@ -93,24 +95,40 @@ db.GetList<Order>(where:new { OrderID = 123 });
 #### Basic CRUD operations
 ```cs
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+
+//insert a new customer into the database
 Customer newCustomer = db.Insert<customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
+
+//retrieve a single customer from the database
 Customer someCustomer = db.GetSingle<customer>(new { CustomerID = newCustomer.CustomerID });
+
+//change the customers last name
 someCustomer.LastName = "barker";
 db.Update(someCustomer, where: new { CustomerID = someCustomer.CustomerID });
+
+//delete the customer from the database
 db.Delete(typeof(Customer), where:new { CustomerID = someCustomer.CustomerID });
 ```
 
 ## Stored Procedures
 ```cs
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+
+//retrieve a single order from a stored procedure
 db.ExecuteSProcSingle<order>("OrderGet", new { OrderID = 5 });
+
+//get a list of orders from a stored procedure that returns a list of orders
 List<order> listOfOrders = db.ExecuteSProcList<order>("OrderList");
 ```
 
 ## Parameterized SQL
 ```cs
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+
+//@OrderID is parameterized from the OrderID in the new { OrderID = 5 }
 db.ExecuteSQLSingle<order>("select * from Orders where OrderID = @OrderID", new { OrderID = 5 });
+
+//a basic SQL list
 List<order> listOfOrders = db.ExecuteSQLList<order>("select * from Orders");
 ```
 
