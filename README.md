@@ -159,3 +159,9 @@ using (TransactionScope tran = new TransactionScope())
   tran.Complete();
 }
 ```
+
+## Utility Functions
+| Function  | Description |
+| ------------- | ------------- |
+| GenerateSequentialGuid  | Generates a sequential COMB GUID.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.   |
+| GenerateSequentialUID | Generates a sequential Base36 unique identifier.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.  |
