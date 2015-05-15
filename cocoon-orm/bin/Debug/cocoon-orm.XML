@@ -122,7 +122,7 @@
         </member>
         <member name="F:Cocoon.DBConnection.ConnectionString">
             <summary>
-            The connection string EspressoDB is using
+            The connection string Cocoon is using
             </summary>
         </member>
         <member name="M:Cocoon.DBConnection.#ctor(System.String,System.Action{System.String})">
@@ -510,6 +510,50 @@
             
             </summary>
             <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.Base64Encode(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="plainText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.Base64Decode(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="base64EncodedData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.TripleDESEncrypt(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="key"></param>
+            <param name="plainText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.TripleDESDecrypt(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="key"></param>
+            <param name="encryptedText"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.MD5Hash(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Cocoon.Utilities.SHA256Hash(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="input"></param>
             <returns></returns>
         </member>
     </members>

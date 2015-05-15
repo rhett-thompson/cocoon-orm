@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Cocoon
 {
@@ -15,7 +17,7 @@ namespace Cocoon
         private static DateTime baseDate = new DateTime(1900, 1, 1);
 
         /// <summary>
-        /// 
+        /// Generates a sequential COMB GUID.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.
         /// </summary>
         /// <returns></returns>
         public static Guid GenerateSequentialGuid()
@@ -23,13 +25,10 @@ namespace Cocoon
 
             byte[] guidArray = Guid.NewGuid().ToByteArray();
 
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
 
-            TimeSpan days = new TimeSpan(now.Ticks - baseDate.Ticks);
-            TimeSpan msecs = now.TimeOfDay;
-
-            byte[] daysArray = BitConverter.GetBytes(days.Days);
-            byte[] msecsArray = BitConverter.GetBytes((long)(msecs.TotalMilliseconds / 3.333333));
+            byte[] daysArray = BitConverter.GetBytes(new TimeSpan(now.Ticks - baseDate.Ticks).Days);
+            byte[] msecsArray = BitConverter.GetBytes((long)(now.TimeOfDay.TotalMilliseconds / 3.333333));
 
             Array.Reverse(daysArray);
             Array.Reverse(msecsArray);
@@ -42,13 +41,13 @@ namespace Cocoon
         }
 
         /// <summary>
-        /// 
+        /// Generates a sequential Base36 unique identifier.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.
         /// </summary>
         /// <returns></returns>
         public static string GenerateSequentialUID()
         {
 
-            return Base36Encode(DateTime.Now.Ticks);
+            return Base36Encode(DateTime.UtcNow.Ticks);
 
         }
 
@@ -108,6 +107,114 @@ namespace Cocoon
 
             return negative ? "-" + encoded : encoded;
 
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <returns></returns>
+        public static string Base64Encode(string plainText)
+        {
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="base64EncodedData"></param>
+        /// <returns></returns>
+        public static string Base64Decode(string base64EncodedData)
+        {
+            return Encoding.UTF8.GetString(Convert.FromBase64String(base64EncodedData));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="plainText"></param>
+        /// <returns></returns>
+        public static string TripleDESEncrypt(string key, string plainText)
+        {
+
+            using (TripleDESCryptoServiceProvider tdes = new TripleDESCryptoServiceProvider())
+            {
+
+                tdes.Key = UTF8Encoding.UTF8.GetBytes(key);
+                tdes.Mode = CipherMode.ECB;
+                tdes.Padding = PaddingMode.PKCS7;
+
+                byte[] toEncryptArray = UTF8Encoding.UTF8.GetBytes(plainText);
+                byte[] resultArray = tdes.CreateEncryptor().TransformFinalBlock(toEncryptArray, 0, toEncryptArray.Length);
+
+                return Convert.ToBase64String(resultArray, 0, resultArray.Length);
+
+            }
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="encryptedText"></param>
+        /// <returns></returns>
+        public static string TripleDESDecrypt(string key, string encryptedText)
+        {
+
+            using (TripleDESCryptoServiceProvider tdes = new TripleDESCryptoServiceProvider())
+            {
+
+                tdes.Key = UTF8Encoding.UTF8.GetBytes(key);
+                tdes.Mode = CipherMode.ECB;
+                tdes.Padding = PaddingMode.PKCS7;
+
+                byte[] toEncryptArray = Convert.FromBase64String(encryptedText);
+                byte[] resultArray = tdes.CreateDecryptor().TransformFinalBlock(toEncryptArray, 0, toEncryptArray.Length);
+
+                return UTF8Encoding.UTF8.GetString(resultArray);
+
+            }
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string MD5Hash(string input)
+        {
+
+            MD5 md5 = MD5.Create();
+            byte[] inputBytes = Encoding.ASCII.GetBytes(input);
+            byte[] hash = md5.ComputeHash(inputBytes);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (byte x in hash)
+                sb.Append(x.ToString("X2"));
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string SHA256Hash(string input)
+        {
+
+            byte[] bytes = Encoding.Unicode.GetBytes(input);
+            SHA256Managed hashstring = new SHA256Managed();
+            byte[] hash = hashstring.ComputeHash(bytes);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (byte x in hash)
+                sb.Append(x.ToString("X2"));
+
+            return sb.ToString();
         }
 
     }

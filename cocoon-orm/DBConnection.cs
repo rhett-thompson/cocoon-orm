@@ -19,7 +19,7 @@ namespace Cocoon
     {
 
         /// <summary>
-        /// The connection string EspressoDB is using
+        /// The connection string Cocoon is using
         /// </summary>
         public readonly string ConnectionString;
 
