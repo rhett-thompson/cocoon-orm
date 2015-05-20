@@ -19,7 +19,7 @@ namespace Cocoon
     {
 
         /// <summary>
-        /// The connection string cocoon is using
+        /// The connection string cocoon will use
         /// </summary>
         public readonly string ConnectionString;
 
