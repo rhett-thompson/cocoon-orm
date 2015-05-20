@@ -23,10 +23,9 @@ Webpage: http://guidelinetech.github.io/cocoon-orm/
 - Massivly reduce the amount of your database access code
 - Simple and Elegent
 - Requires no special training; examples are plentiful and directly applicable to your code  
-
 - Directly compare performance between Cocoon dynamic parametrized SQL and that of traditional stored procedure  
 - Basic table generation tools are provided primarily as a time saver; not to remove the need for the developer to understand the underlying database structure
-- The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
+- The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time
 
 ### Example Models
 ```cs
