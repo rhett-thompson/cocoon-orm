@@ -1,23 +1,32 @@
 # Cocoon ORM
-Cocoon ORM is a simple to use .Net open source alternative to the Entity Framework and nHibernate created for SQL Server 2008/2012/20014/+ and SQL Azure (but workable in other T-SQL database environments).  It is an ORM toolset that performs: automapping, auto CRUD (including select joins), auto SQL, auto stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
+Cocoon ORM is a simple to use .Net open source alternative to the Entity Framework and nHibernate.  Cocoon ORM is primarily for use with SQL Server 2008/2012/20014/+ and Azure SQL, but workable in other T-SQL database environments.  It is an ORM toolset that performs: automapping, auto CRUD (including select joins), auto SQL, auto stored procedure parameter mapping, and more. It creates easy to inspect parameterized SQL that is execution plan and cache friendly.   
 
-Cocoon ORM is for developers who are unwilling to trust the Entity Framework or NHibernate to create and manage their database and database code.  Cocoon ORM developers should be comfortable with SQL Server as well.  
+Cocoon ORM is for developers who are unwilling to trust the Entity Framework or NHibernate to create and manage their database and database code.  Cocoon ORM developers should be comfortable with SQL Server and/or Azure SQL as well.  
 
 Webpage: http://guidelinetech.github.io/cocoon-orm/
 
-### The goals of Cocoon ORM 
-- Leverage simplicity and elegance.
-- Save time
-- Reduce bugs
-- Massivly reduce the amount of code required for database access.  
-
 ### Features of Cocoon ORM
-- Requires no special training; examples are plentiful and directly applicable to your code today.  
-- Includes regression and benchmarking tools for the truly performance paranoid.  
-- Directly compare performance between Cocoon dynamic parametrized SQL and that of traditional stored procedure.  
-- Leverages data annotations similar to that of the Entity Framework.  
-- Can be used in a simplified code first or a concise code second environment.
-- Rudementary table generation tools are provided primarily as a time saver; not to remove the need for the developer to understand the underlying database structure.
+- Automapping of database fields to domain object properties
+- AutoCrud with auto Join creation on get (select)
+- Automapping domain object properties to stored procedure parameters
+- Dynamically creates easy to inspect parameterized SQL that is execution plan and cache friendly
+- Uses simple data annotations similar to that of the Entity Framework
+- Regression and benchmarking tools for the truly paranoid (like us)
+- Table generation tools for use in a code first environment
+- Class generation tools for use in code second environment
+- Easily create non-integer sequential unique IDs using the included Comb GUID or Sequential UID generator.  
+- Compatible with SQL Server 2008/2012/20014/+ and Azure SQL (workable with other TSQL databases)
+- Use the Cocoon ORM libraries in your own proprietary code under the weak copyleft LGPL license (changes to Cocoon ORM itself must be shared.  Please let us know so we can brain things together!)
+
+### Advantages of Coccon ORM
+- Light library with no dependencies outside the .Net Framework
+- Massivly reduce the amount of your database access code
+- Simple and Elegent
+- Requires no special training; examples are plentiful and directly applicable to your code  
+
+- Directly compare performance between Cocoon dynamic parametrized SQL and that of traditional stored procedure  
+- Basic table generation tools are provided primarily as a time saver; not to remove the need for the developer to understand the underlying database structure
+- The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
 
 ### Example Models
 ```cs
