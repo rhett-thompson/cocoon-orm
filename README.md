@@ -1,7 +1,9 @@
 # Cocoon ORM
-Cocoon ORM is a simple to use .Net open source alternative to the Entity Framework and nHibernate created for SQL Server 2008/2012/20014/+ and SQL Azure (but workable in other T-SQL database environments).  It is an ORM toolset that performs: automapping, auto CRUD (including select joins), auto SQL, auto stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
+Cocoon ORM is a simple to use .Net open source alternative to the Entity Framework and nHibernate created for SQL Server 2008/2012/20014/+, SQL Azure (but workable in other T-SQL database environments), and MySQL.  It is an ORM toolset that performs: automapping, auto CRUD (including select joins), auto SQL, auto stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
 
-Cocoon ORM is for developers who are unwilling to trust the Entity Framework or NHibernate to create and manage their database and database code.  Cocoon ORM developers should be comfortable with SQL Server as well.  
+Cocoon ORM is for developers who are unwilling to trust the Entity Framework or NHibernate to create and manage their database and database code.  Cocoon ORM developers should be comfortable with SQL Server and MySQL as well.  
+
+NOTE. Some features will be disabled in the MySQL database adapter.
 
 Webpage: http://guidelinetech.github.io/cocoon-orm/
 
@@ -50,6 +52,16 @@ class Customer
     public string Phone { get; set; }
     [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
     public DateTime CreateDate { get; set; }
+    
+    //an example of lazy loading: loads customer orders when accessed.
+    public List<Order> orders
+    {
+        get
+        {
+            return Program.db.GetList<Order>(where: new { CustomerID = CustomerID });
+        }
+        set { }
+    }
     
 }
 
@@ -101,7 +113,10 @@ class Order
 ## Basic Example
 #### This is a minimal example.
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //Retrieves a single order
 db.GetList<Order>(where:new { OrderID = 123 });
@@ -110,7 +125,10 @@ db.GetList<Order>(where:new { OrderID = 123 });
 ## CRUD Operations
 #### Basic CRUD operations
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //insert a new customer into the database
 Customer newCustomer = db.Insert<customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
@@ -128,7 +146,10 @@ db.Delete(typeof(Customer), where:new { CustomerID = someCustomer.CustomerID });
 
 ## Stored Procedures
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //retrieve a single order from a stored procedure
 db.ExecuteSProcSingle<order>("OrderGet", new { OrderID = 5 });
@@ -139,7 +160,10 @@ List<order> listOfOrders = db.ExecuteSProcList<order>("OrderList");
 
 ## Parameterized SQL
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //@OrderID is parameterized from the OrderID in the new { OrderID = 5 }
 db.ExecuteSQLSingle<order>("select * from Orders where OrderID = @OrderID", new { OrderID = 5 });
@@ -152,7 +176,10 @@ List<order> listOfOrders = db.ExecuteSQLList<order>("select * from Orders");
 Cocoon ORM supports ambient transactions.
 You can read more about them here: https://msdn.microsoft.com/en-us/library/System.Transactions(v=vs.110).aspx
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 using (TransactionScope tran = new TransactionScope())
 {
   db.Update(typeof(Order), where:new { OrderTypeID = OrderType.ONSITE }, new { OrderID = 2 });
