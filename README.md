@@ -51,6 +51,16 @@ class Customer
     [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
     public DateTime CreateDate { get; set; }
     
+    //an example of lazy loading: loads customer orders when accessed.
+    public List<Order> orders
+    {
+        get
+        {
+            return Program.db.GetList<Order>(where: new { CustomerID = CustomerID });
+        }
+        set { }
+    }
+    
 }
 
 [Table]
@@ -101,7 +111,10 @@ class Order
 ## Basic Example
 #### This is a minimal example.
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //Retrieves a single order
 db.GetList<Order>(where:new { OrderID = 123 });
@@ -110,7 +123,10 @@ db.GetList<Order>(where:new { OrderID = 123 });
 ## CRUD Operations
 #### Basic CRUD operations
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //insert a new customer into the database
 Customer newCustomer = db.Insert<customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
@@ -128,7 +144,10 @@ db.Delete(typeof(Customer), where:new { CustomerID = someCustomer.CustomerID });
 
 ## Stored Procedures
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //retrieve a single order from a stored procedure
 db.ExecuteSProcSingle<order>("OrderGet", new { OrderID = 5 });
@@ -139,7 +158,10 @@ List<order> listOfOrders = db.ExecuteSProcList<order>("OrderList");
 
 ## Parameterized SQL
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //@OrderID is parameterized from the OrderID in the new { OrderID = 5 }
 db.ExecuteSQLSingle<order>("select * from Orders where OrderID = @OrderID", new { OrderID = 5 });
@@ -152,7 +174,10 @@ List<order> listOfOrders = db.ExecuteSQLList<order>("select * from Orders");
 Cocoon ORM supports ambient transactions.
 You can read more about them here: https://msdn.microsoft.com/en-us/library/System.Transactions(v=vs.110).aspx
 ```cs
-DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+SQLServerAdapter adapter = new SQLServerAdapter();
+//MySQLServerAdapter adapter = new MySQLServerAdapter();
+
+DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 using (TransactionScope tran = new TransactionScope())
 {
   db.Update(typeof(Order), where:new { OrderTypeID = OrderType.ONSITE }, new { OrderID = 2 });
