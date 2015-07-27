@@ -19,7 +19,7 @@ namespace Cocoon
     {
 
         /// <summary>
-        /// The connection string to use to connect to the database
+        /// The connection string cocoon is using
         /// </summary>
         public string ConnectionString;
 
@@ -727,7 +727,7 @@ namespace Cocoon
 
                 if (Utilities.HasAttribute<PrimaryKey>(prop))
                     primaryKeys.Add(getColumnName(prop));
-                
+
                 if (Utilities.HasAttribute<ForeignKey>(prop))
                     foreignKeys.Add(prop);
 
@@ -869,7 +869,7 @@ namespace Cocoon
 
             return true;
 
-        }
+                }
 
         #endregion
 
@@ -1074,7 +1074,7 @@ namespace Cocoon
 
                 return connection.command.ExecuteNonQuery();
 
-            }
+        }
 
         }
 
@@ -1374,12 +1374,12 @@ namespace Cocoon
             else
                 name = member.Name;
 
-            return name;
+                return name;
 
         }
 
         internal string getTableName(Type type)
-       {
+        {
 
             string name;
             if (Utilities.HasAttribute<Table>(type))
@@ -1396,7 +1396,7 @@ namespace Cocoon
             else
                 name = type.Name;
 
-            return name;
+                return name;
 
         }
 
