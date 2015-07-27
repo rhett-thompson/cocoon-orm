@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm", "cocoon-orm.csproj", "{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-tests", "..\cocoon-tests\cocoon-tests.csproj", "{EFF59863-AAB2-413A-861C-07C0683B37C4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7} = {9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

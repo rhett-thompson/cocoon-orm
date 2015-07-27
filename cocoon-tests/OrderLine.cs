@@ -17,13 +17,13 @@ namespace Cocoon.Tests
         [Column, ForeignKey, NotNull]
         public string SKU { get; set; }
 
-        [Column(DataType:"money"), NotNull]
+        [Column(DataType: "decimal(10,2)"), NotNull]
         public decimal UnitPrice { get; set; }
 
         [Column, NotNull]
         public int Quantity { get; set; }
 
-        [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
+        [Column, IgnoreOnUpdate, NotNull]
         public DateTime CreateDate { get; set; }
 
     }

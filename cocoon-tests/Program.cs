@@ -18,10 +18,13 @@ namespace Cocoon.Tests
         static void Main(string[] args)
         {
 
+            Console.WriteLine("SQLServer Regression Test");
+            SQLServerEcommerceTest sqlServerTest = new SQLServerEcommerceTest(new DBConnection("Data Source=72.3.204.234,4120;Initial Catalog=424828_espresso_test;User ID=424828_espresso_test;Password=espressoDB90;Connection Timeout=600", new SQLServerAdapter(), new Action<string>(log)));
+            sqlServerTest.runTests();
+            sqlServerTest.runBenchmark(5);
+            sqlServerTest.checkMethodsTested();
+
             //string connectionString = "Data Source=yawa7e7aq0.database.windows.net,1433;Initial Catalog=edbtest;User ID=edbtest@yawa7e7aq0;Password=EspressoDB123;Connection Timeout=600";
-            string connectionString = "Data Source=72.3.204.234,4120;Initial Catalog=424828_espresso_test;User ID=424828_espresso_test;Password=espressoDB90;Connection Timeout=600";
-            //string connectionString = "Server=174.143.28.19;Database=424828_edb_mysql;Uid=424828_edb_mysql;Pwd=espressoDB90;";
-            db = new DBConnection(connectionString, new Action<string>(log));
 
             //using (TransactionScope tran = new TransactionScope())
             //{
@@ -32,10 +35,11 @@ namespace Cocoon.Tests
 
             //}
 
-            SQLServerEcommerceTest regression = new SQLServerEcommerceTest(db);
-            regression.runTests();
-            //regression.runBenchmark(100);
-            regression.checkMethodsTested();
+            Console.WriteLine("MySQL Regression Test");
+            MySQLEcommerceTest mySqlTest = new MySQLEcommerceTest(new DBConnection("Server=174.143.28.19;Database=424828_edb_mysql;Uid=424828_edb_mysql;Pwd=espressoDB90;", new MySQLServerAdapter(), new Action<string>(log)));
+            mySqlTest.runTests();
+            mySqlTest.runBenchmark(5);
+            mySqlTest.checkMethodsTested();
 
             Console.ReadLine();
 

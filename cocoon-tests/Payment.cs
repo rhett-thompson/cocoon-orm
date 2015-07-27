@@ -15,13 +15,13 @@ namespace Cocoon.Tests
         [Column, PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate, Identity(1, 1)]
         public int PaymentID { get; set; }
 
-        [Column(DataType:"money"), NotNull]
+        [Column(DataType:"decimal(10,2)"), NotNull]
         public decimal PaymentAmount { get; set; }
 
         [Column, ForeignKey(typeof(Order)), NotNull]
         public int OrderID { get; set; }
 
-        [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
+        [Column, IgnoreOnUpdate, NotNull]
         public DateTime CreateDate { get; set; }
 
     }

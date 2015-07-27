@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 
 namespace Cocoon
 {
@@ -107,6 +108,32 @@ namespace Cocoon
             while ((value /= base36Digits.Length) != 0);
 
             return negative ? "-" + encoded : encoded;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        internal static bool HasAttribute<T>(MemberInfo member)
+        {
+
+            return member.GetCustomAttributes(typeof(T), false).Length > 0;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="property"></param>
+        /// <returns></returns>
+        internal static bool HasAttribute<T>(Type property)
+        {
+
+            return property.GetCustomAttributes(typeof(T), false).Length > 0;
 
         }
 

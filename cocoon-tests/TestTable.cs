@@ -1,9 +1,5 @@
 ﻿using Cocoon.Annotations;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Cocoon.Tests
 {
@@ -12,11 +8,11 @@ namespace Cocoon.Tests
     class TestTable
     {
 
-        [Column(DefaultValue:"newid()"), PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate]
+        [Column, PrimaryKey, IgnoreOnUpdate]
         public Guid Prim1 { get; set; }
-        [Column(DataType:"varchar(50)", DefaultValue: "getdate()"), PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate]
+        [Column(DataType:"varchar(50)"), PrimaryKey, IgnoreOnUpdate]
         public string Prim2 { get; set; }
-        [Column, PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate, Identity(1,1)]
+        [Column, PrimaryKey, IgnoreOnUpdate]
         public int Prim3 { get; set; }
         [Column]
         public string Name { get; set; }

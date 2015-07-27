@@ -17,7 +17,7 @@ namespace Cocoon.Tests
         [Column(DataType: "varchar(50)"), ForeignKey(typeof(OrderType)), NotNull]
         public string OrderTypeID { get; set; }
 
-        [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
+        [Column, IgnoreOnUpdate, NotNull]
         public DateTime CreateDate { get; set; }
 
         [ForeignColumn(ForeignKey: "CustomerID", ObjectModel:typeof(Customer), OverrideName: "FirstName")]

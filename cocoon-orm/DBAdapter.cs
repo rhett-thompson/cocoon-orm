@@ -45,7 +45,7 @@ namespace Cocoon
 
                 if (!paramCache.ContainsKey(command.CommandText))
                 {
-
+                    
                     if (command is SqlCommand)
                         SqlCommandBuilder.DeriveParameters((SqlCommand)command);
                     else

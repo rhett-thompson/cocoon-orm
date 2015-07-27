@@ -44,7 +44,7 @@ namespace Cocoon.Tests
         [Column]
         public string Phone { get; set; }
 
-        [Column(DefaultValue: "getutcdate()"), IgnoreOnInsert, IgnoreOnUpdate, NotNull]
+        [Column, IgnoreOnUpdate, NotNull]
         public DateTime CreateDate { get; set; }
 
 

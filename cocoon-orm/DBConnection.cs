@@ -19,27 +19,31 @@ namespace Cocoon
     {
 
         /// <summary>
-        /// The connection string cocoon is using
+        /// The connection string to use to connect to the database
         /// </summary>
-        public readonly string ConnectionString;
+        public string ConnectionString;
 
-        private Dictionary<Type, ObjectDefinition> objectDefinitions = new Dictionary<Type, ObjectDefinition>();
+        internal Dictionary<Type, TableDefinition> tableDefinitions = new Dictionary<Type, TableDefinition>();
         private Action<string> logMethod;
-        private DBAdapterTarget target;
+        internal DBServerAdapter adapter;
 
         #region Public Interface
 
         /// <summary>
         /// Creates a new database connection
         /// </summary>
-        /// <param name="ConnectionString">The connection string to use to connect to the database</param>
-        /// <param name="LogMethod">A method to call for logging purposes</param>
-        public DBConnection(string ConnectionString, Action<string> LogMethod = null)
+        /// <param name="connectionString">The connection string to use to connect to the database</param>
+        /// <param name="dataBaseAdapter">An instance of a database adapter</param>
+        /// <param name="logMethod">A method to call for logging purposes</param>
+        public DBConnection(string connectionString, DBServerAdapter dataBaseAdapter, Action<string> logMethod = null)
         {
 
-            this.ConnectionString = ConnectionString;
-            this.logMethod = LogMethod;
-            this.target = DBAdapterTarget.SQLServer;
+            this.logMethod = logMethod;
+            this.adapter = dataBaseAdapter;
+
+            this.ConnectionString = connectionString;
+
+            dataBaseAdapter.connection = this;
 
         }
 
@@ -85,7 +89,7 @@ namespace Cocoon
             foreach (DataRow row in ds.Tables[0].Rows)
             {
 
-                if (hasAttribute<Table>(type) && fieldToMap == null)
+                if (Utilities.HasAttribute<Table>(type) && fieldToMap == null)
                 {
 
                     T item = (T)Activator.CreateInstance(type);
@@ -136,14 +140,14 @@ namespace Cocoon
         public int ExecuteSProcVoid(string procedureName, object paramObject = null)
         {
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.openSProc(procedureName);
+                adapter.openSProc(connection, procedureName);
 
-                adapter.addSProcParams(paramObject);
+                adapter.addSProcParams(connection, paramObject);
 
-                return adapter.command.ExecuteNonQuery();
+                return connection.command.ExecuteNonQuery();
 
             }
 
@@ -158,14 +162,14 @@ namespace Cocoon
         public T ExecuteSProcScalar<T>(string procedureName, object paramObject = null)
         {
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.openSProc(procedureName);
+                adapter.openSProc(connection, procedureName);
 
-                adapter.addSProcParams(paramObject);
+                adapter.addSProcParams(connection, paramObject);
 
-                return (T)adapter.command.ExecuteScalar();
+                return (T)connection.command.ExecuteScalar();
 
             }
 
@@ -215,7 +219,7 @@ namespace Cocoon
             foreach (DataRow row in ds.Tables[0].Rows)
             {
 
-                if (hasAttribute<Table>(type))
+                if (Utilities.HasAttribute<Table>(type))
                 {
 
                     T item = (T)Activator.CreateInstance(type);
@@ -248,15 +252,15 @@ namespace Cocoon
         public DataSet ExecuteSQLDataSet(string sql, object paramObject = null)
         {
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.openSQL(sql);
+                adapter.openSQL(connection, sql);
 
-                adapter.addParams(paramObject, "");
+                adapter.addParams(connection, paramObject, "");
 
                 DataSet ds;
-                int rowsFilled = adapter.fillDataSet(out ds);
+                int rowsFilled = adapter.fillDataSet(connection, out ds);
 
                 if (rowsFilled == 0)
                     return null;
@@ -276,14 +280,14 @@ namespace Cocoon
         public int ExecuteSQLVoid(string sql, object paramObject = null)
         {
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.openSQL(sql);
+                adapter.openSQL(connection, sql);
 
-                adapter.addParams(paramObject, "");
+                adapter.addParams(connection, paramObject, "");
 
-                return adapter.command.ExecuteNonQuery();
+                return connection.command.ExecuteNonQuery();
 
             }
 
@@ -299,14 +303,14 @@ namespace Cocoon
         public T ExecuteSQLScalar<T>(string sql, object paramObject = null)
         {
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.openSQL(sql);
+                adapter.openSQL(connection, sql);
 
-                adapter.addParams(paramObject, "");
+                adapter.addParams(connection, paramObject, "");
 
-                return (T)adapter.command.ExecuteScalar();
+                return (T)connection.command.ExecuteScalar();
 
             }
 
@@ -404,15 +408,15 @@ namespace Cocoon
 
             log("Generated SQL (GetScalar) " + sql);
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.command.CommandText = sql;
+                connection.command.CommandText = sql;
 
-                adapter.addParams(where, "where_");
+                adapter.addParams(connection, where, "where_");
 
-                adapter.connection.Open();
-                return (T)adapter.command.ExecuteScalar();
+                connection.connection.Open();
+                return (T)connection.command.ExecuteScalar();
             }
 
         }
@@ -429,7 +433,7 @@ namespace Cocoon
         public T GetScalar<T>(Type objectModel, string scalarField, object where, bool useOrLogic = false)
         {
 
-            ObjectDefinition def = getDef(objectModel);
+            TableDefinition def = getDef(objectModel);
 
             return GetScalar<T>(def.TableName, scalarField, where, useOrLogic);
 
@@ -467,16 +471,16 @@ namespace Cocoon
 
             log("Generated SQL (GetScalarList) " + sql);
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.command.CommandText = sql;
+                connection.command.CommandText = sql;
 
-                adapter.addParams(where, "where_");
+                adapter.addParams(connection, where, "where_");
 
                 //fill data set
                 DataSet ds;
-                int rowsFilled = adapter.fillDataSet(out ds);
+                int rowsFilled = adapter.fillDataSet(connection, out ds);
 
                 if (rowsFilled == 0)
                     return new List<T>();
@@ -509,7 +513,7 @@ namespace Cocoon
         /// <returns>A flat list of items of type T</returns>
         public List<T> GetScalarList<T>(Type objectModel, object where = null, string fieldToMap = null, bool useOrLogic = false, int top = 0)
         {
-            ObjectDefinition def = getDef(objectModel);
+            TableDefinition def = getDef(objectModel);
 
             return GetScalarList<T>(def.TableName, where, fieldToMap, useOrLogic, top);
 
@@ -530,23 +534,23 @@ namespace Cocoon
 
             string whereClause = generateWhereClause(tableName, where, useOrLogic, "where_");
 
-            string sql = string.Format("delete from {0} where {1}", tableName, whereClause);
+            string sql = string.Format("delete from {0} where {1}", adapter.getObjectName(tableName), whereClause);
 
             log("Generated SQL (Delete) " + sql);
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
                 //set sql
-                adapter.command.CommandText = sql;
+                connection.command.CommandText = sql;
 
                 //add parameters
-                adapter.addParams(where, "where_");
+                adapter.addParams(connection, where, "where_");
 
                 //execute
-                adapter.connection.Open();
+                connection.connection.Open();
 
-                return adapter.command.ExecuteNonQuery();
+                return connection.command.ExecuteNonQuery();
 
             }
 
@@ -578,7 +582,7 @@ namespace Cocoon
         /// <returns>The number of rows affected by the update</returns>
         public int Update(object objectToUpdate, object where = null, bool useOrLogic = false)
         {
-            ObjectDefinition def = getDef(objectToUpdate.GetType());
+            TableDefinition def = getDef(objectToUpdate.GetType());
 
             return update(
                 def,
@@ -618,63 +622,50 @@ namespace Cocoon
         public T Insert<T>(object objectToInsert)
         {
 
-            ObjectDefinition def = getDef(objectToInsert.GetType());
+            TableDefinition def = getDef(objectToInsert.GetType());
 
             Type returnType = typeof(T);
 
             //get columns and values
             List<string> columns = new List<string>();
             List<string> values = new List<string>();
-            List<string> insertedPrimaryKeys = new List<string>();
-            List<string> primaryKeys = new List<string>();
-            List<string> wherePrimaryKeys = new List<string>();
+            List<PropertyInfo> primaryKeys = new List<PropertyInfo>();
             List<PropertyInfo> parameters = new List<PropertyInfo>();
             foreach (PropertyInfo prop in def.allColumns)
             {
-                if (!hasAttribute<IgnoreOnInsert>(prop))
+                if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
                 {
                     string propName = getColumnName(prop);
-                    columns.Add(string.Format("{0}.{1}", def.TableName, propName));
-                    values.Add(string.Format("@value_{0}", propName));
+                    columns.Add(string.Format("{0}.{1}", adapter.getObjectName(def.TableName), adapter.getObjectName(propName)));
+                    values.Add(adapter.getParamName(string.Format("value_{0}", propName)));
                     parameters.Add(prop);
                 }
 
-                if (hasAttribute<PrimaryKey>(prop))
-                {
-                    string propName = getColumnName(prop);
-                    insertedPrimaryKeys.Add("inserted." + propName);
-                    primaryKeys.Add(string.Format("{0} {1}", propName, TypeMap.sqlMap[prop.PropertyType]));
-                    wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", propName, def.TableName));
-                }
+                if (Utilities.HasAttribute<PrimaryKey>(prop))
+                    primaryKeys.Add(prop);
 
             }
 
             //put together sql
-            string sql = string.Format("declare @ids table({0});insert into {1} ({2}) output {3} into @ids values ({4});select {1}.* from {1} join @ids ids on {5}",
-                string.Join(", ", primaryKeys),
-                def.TableName,
-                string.Join(", ", columns),
-                string.Join(", ", insertedPrimaryKeys),
-                string.Join(", ", values),
-                string.Join(" and ", wherePrimaryKeys));
+            string sql = adapter.insertSQL(def.TableName, columns, values, primaryKeys);
 
             log("Generated SQL (Insert) " + sql);
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
                 //set sql
-                adapter.openSQL(sql);
+                adapter.openSQL(connection, sql);
 
                 //add parameters
-                adapter.addParams(parameters, objectToInsert, "value_");
+                adapter.addParams(connection, parameters, objectToInsert, "value_");
 
                 //get return
-                if (hasAttribute<Table>(returnType))
+                if (Utilities.HasAttribute<Table>(returnType))
                 {
 
                     DataSet ds;
-                    int rowsFilled = adapter.fillDataSet(out ds);
+                    int rowsFilled = adapter.fillDataSet(connection, out ds);
 
                     if (rowsFilled == 0)
                         return default(T);
@@ -688,7 +679,7 @@ namespace Cocoon
                 else
                 {
 
-                    return (T)adapter.command.ExecuteScalar();
+                    return (T)connection.command.ExecuteScalar();
 
                 }
 
@@ -708,13 +699,13 @@ namespace Cocoon
         public bool TableExists(Type objectModel)
         {
 
-            ObjectDefinition def = getDef(objectModel);
+            TableDefinition def = getDef(objectModel);
 
-            string sql = string.Format("if not exists (select name from sysobjects where name = '{0}') select cast(0 as bit) else select cast(1 as bit)", removeNameBrackets(def.TableName));
+            string sql = adapter.tableExistsSQL(def.TableName);
 
             log("Generated SQL (TableExists) " + sql);
 
-            return ExecuteSQLScalar<bool>(sql);
+            return ExecuteSQLScalar<string>(sql).ToLower() == "true";
 
         }
 
@@ -725,26 +716,24 @@ namespace Cocoon
         public void CreateTable(Type objectModel)
         {
 
-            ObjectDefinition def = getDef(objectModel);
+            TableDefinition def = getDef(objectModel);
 
             List<string> columns = new List<string>();
             List<string> primaryKeys = new List<string>();
+            List<MemberInfo> foreignKeys = new List<MemberInfo>();
             foreach (PropertyInfo prop in def.allColumns)
             {
-                columns.Add(getColumnDefinition(prop));
+                columns.Add(adapter.getColumnDefinition(prop));
 
-                if (hasAttribute<PrimaryKey>(prop))
+                if (Utilities.HasAttribute<PrimaryKey>(prop))
                     primaryKeys.Add(getColumnName(prop));
+                
+                if (Utilities.HasAttribute<ForeignKey>(prop))
+                    foreignKeys.Add(prop);
 
             }
 
-            if (primaryKeys.Count > 0)
-                columns.Add(string.Format("primary key ({0})", string.Join(", ", primaryKeys)));
-
-            string sql = string.Format("if not exists (select name from sysobjects where name = '{0}') create table {1} ({2})",
-                removeNameBrackets(def.TableName),
-                def.TableName,
-                string.Join(", ", columns));
+            string sql = adapter.createTableSQL(columns, primaryKeys, foreignKeys, def.TableName);
 
             log("Generated SQL (CreateTable) " + sql);
 
@@ -760,8 +749,6 @@ namespace Cocoon
         public void CreateLookupTable(Type objectModel)
         {
 
-            string tableName = getTableName(objectModel);
-
             FieldInfo[] fields = objectModel.GetFields();
             List<string> columns = new List<string>();
             List<string> columnNames = new List<string>();
@@ -770,7 +757,7 @@ namespace Cocoon
             foreach (FieldInfo field in fields)
             {
 
-                if (!field.IsStatic || !hasAttribute<Column>(field))
+                if (!field.IsStatic || !Utilities.HasAttribute<Column>(field))
                     continue;
 
                 string columnName = getColumnName(field);
@@ -778,12 +765,12 @@ namespace Cocoon
                 if (!columnNames.Contains(columnName))
                 {
                     columnNames.Add(columnName);
-                    columns.Add(getColumnDefinition(field));
+                    columns.Add(adapter.getColumnDefinition(field));
                 }
 
                 values.Add(new KeyValuePair<string, object>(columnName, field.GetValue(null)));
 
-                if (hasAttribute<PrimaryKey>(field))
+                if (Utilities.HasAttribute<PrimaryKey>(field))
                     primaryKeys.Add(columnName);
 
             }
@@ -797,11 +784,7 @@ namespace Cocoon
             if (primaryKeys.Count > 0)
                 columns.Add(string.Format("primary key ({0})", string.Join(", ", primaryKeys)));
 
-            string insert = "";
-            foreach (KeyValuePair<string, object> value in values)
-                insert += string.Format("insert into {0} ({1}) values ('{2}') ", tableName, value.Key, value.Value);
-
-            string sql = string.Format("if not exists (select name from sysobjects where name = '{0}') begin create table {1} ({2}) {3} end", removeNameBrackets(tableName), tableName, string.Join(", ", columns), insert);
+            string sql = adapter.createLookupTableSQL(columns, values, primaryKeys, getTableName(objectModel));
 
             log("Generated SQL (CreateLookupTable) " + sql);
 
@@ -816,25 +799,9 @@ namespace Cocoon
         public void DropTable(Type objectModel)
         {
 
-            ObjectDefinition def = getDef(objectModel);
+            TableDefinition def = getDef(objectModel);
 
-            DropTable(def.TableName);
-
-        }
-
-        /// <summary>
-        /// Drops a table from the database
-        /// </summary>
-        /// <param name="TableName"></param>
-        public void DropTable(string TableName)
-        {
-
-            string sql;
-
-            if(target == DBAdapterTarget.MySQL)
-                sql = string.Format("drop table if exists `{0}`", TableName);
-            else
-                sql = string.Format("if exists (select name from sysobjects where name = '{0}') drop table {1}", removeNameBrackets(TableName), TableName);
+            string sql = adapter.dropTableSQL(def.TableName);
 
             log("Generated SQL (DropTable) " + sql);
 
@@ -850,9 +817,9 @@ namespace Cocoon
         public bool VerifyTable(Type objectModel)
         {
 
-            ObjectDefinition def = getDef(objectModel);
+            TableDefinition def = getDef(objectModel);
 
-            DataSet ds = ExecuteSQLDataSet(string.Format("select COLUMN_NAME from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME='{0}'", removeNameBrackets(def.TableName)));
+            DataSet ds = ExecuteSQLDataSet(adapter.verifyTableSQL(def.TableName));
 
             if (ds == null || ds.Tables.Count != 1 || def.allColumns.Count != ds.Tables[0].Rows.Count)
                 return false;
@@ -873,7 +840,7 @@ namespace Cocoon
         public bool VerifyLookupTable(Type objectModel)
         {
 
-            DataSet ds = ExecuteSQLDataSet(string.Format("select * from {0}", getTableName(objectModel)));
+            DataSet ds = ExecuteSQLDataSet(adapter.verifyLookupTableSQL(getTableName(objectModel)));
 
             if (ds == null || ds.Tables.Count != 1 || ds.Tables[0].Rows.Count == 0 || ds.Tables[0].Columns.Count == 0)
                 return false;
@@ -901,80 +868,6 @@ namespace Cocoon
                     return false;
 
             return true;
-
-        }
-
-        /// <summary>
-        /// Generates a C# class from a database table schema.
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public string GenerateClassFromTable(string tableName)
-        {
-
-            string sql = @"
-                select 
-	                columnTable.COLUMN_NAME, 
-	                columnTable.COLUMN_DEFAULT, 
-	                columnTable.IS_NULLABLE, 
-	                columnTable.DATA_TYPE, 
-	                columnTable.CHARACTER_MAXIMUM_LENGTH,
-	                contraintTable.CONSTRAINT_TYPE
-                from INFORMATION_SCHEMA.COLUMNS as columnTable
-                left join INFORMATION_SCHEMA.KEY_COLUMN_USAGE as keyTable on keyTable.COLUMN_NAME = columnTable.COLUMN_NAME and keyTable.TABLE_NAME = columnTable.TABLE_NAME
-                left join INFORMATION_SCHEMA.TABLE_CONSTRAINTS as contraintTable on contraintTable.CONSTRAINT_NAME = keyTable.CONSTRAINT_NAME and contraintTable.TABLE_NAME = columnTable.TABLE_NAME
-                where columnTable.TABLE_NAME='{0}'";
-
-            DataSet ds = ExecuteSQLDataSet(string.Format(sql, removeNameBrackets(tableName)));
-
-            if (ds == null || ds.Tables.Count != 1 || ds.Tables[0].Rows.Count == 0)
-                throw new Exception(string.Format("No Columns in table {0}.", tableName));
-
-            List<string> members = new List<string>();
-            foreach (DataRow row in ds.Tables[0].Rows)
-            {
-
-                string columnName = (string)row["COLUMN_NAME"];
-                string columnDefault = row["COLUMN_DEFAULT"] != DBNull.Value ? (string)row["COLUMN_DEFAULT"] : null;
-                bool columnIsNullable = (string)row["IS_NULLABLE"] == "NO" ? false : true;
-                string columnDataType = (string)row["DATA_TYPE"];
-                string columnKeyType = row["CONSTRAINT_TYPE"] != DBNull.Value ? (string)row["CONSTRAINT_TYPE"] : null;
-
-                List<string> annotations = new List<string>();
-
-                if (!string.IsNullOrEmpty(columnDefault))
-                    annotations.Add(string.Format("Column(DefaultValue:\"{0}\")", columnDefault));
-                else
-                    annotations.Add(string.Format("Column"));
-
-                if (columnKeyType == "PRIMARY KEY")
-                    annotations.Add("PrimaryKey");
-                else if (columnKeyType == "FOREIGN KEY")
-                    annotations.Add("ForeignKey");
-
-                if (!columnIsNullable)
-                    annotations.Add("NotNull");
-
-                string dataType = "string";
-                Type type = typeof(string);
-                if (TypeMap.csMap.ContainsKey(columnDataType))
-                {
-                    type = TypeMap.csMap[columnDataType];
-                    if (TypeMap.csAlias.ContainsKey(type))
-                        dataType = TypeMap.csAlias[type];
-                    else
-                        dataType = type.Name;
-
-                }
-
-                if (columnIsNullable && type.IsValueType)
-                    dataType += "?";
-
-                members.Add(string.Format("\t[{0}]\r\n\tpublic {1} {2} {{get; set;}}", string.Join(", ", annotations), dataType, row["COLUMN_NAME"]));
-
-            }
-
-            return string.Format("[Table]\r\nclass {0}\r\n{{\r\n\r\n{1}\r\n\r\n}}", tableName, string.Join("\r\n\r\n", members));
 
         }
 
@@ -1139,7 +1032,7 @@ namespace Cocoon
 
         #region Private Implementation Methods
 
-        private int update(ObjectDefinition def, List<PropertyInfo> fieldsToUpdate, object values, object where = null, bool useOrLogic = false)
+        private int update(TableDefinition def, List<PropertyInfo> fieldsToUpdate, object values, object where = null, bool useOrLogic = false)
         {
 
             //generate where clause
@@ -1157,38 +1050,31 @@ namespace Cocoon
             List<string> columnsToUpdate = new List<string>();
             List<PropertyInfo> columnsToUpdateParams = new List<PropertyInfo>();
             foreach (PropertyInfo field in fieldsToUpdate)
-                if (!hasAttribute<IgnoreOnUpdate>(field))
+                if (!Utilities.HasAttribute<IgnoreOnUpdate>(field))
                 {
                     columnsToUpdate.Add(generateAssignmentClause(def.TableName, field, values, "update_", false));
                     columnsToUpdateParams.Add(field);
                 }
 
-            string sql = string.Format("update {0} set {1} {2}", def.TableName, string.Join(", ", columnsToUpdate), whereClause);
+            string sql = string.Format("update {0} set {1} {2}", adapter.getObjectName(def.TableName), string.Join(", ", columnsToUpdate), whereClause);
 
             log("Generated SQL (Update) " + sql);
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.openSQL(sql);
+                adapter.openSQL(connection, sql);
 
                 if (usePrimaryKeysInWhereClause)
-                    adapter.addParams(def.primaryKeys, values, "where_");
+                    adapter.addParams(connection, def.primaryKeys, values, "where_");
                 else
-                    adapter.addParams(where, "where_");
+                    adapter.addParams(connection, where, "where_");
 
-                adapter.addParams(columnsToUpdateParams, values, "update_");
+                adapter.addParams(connection, columnsToUpdateParams, values, "update_");
 
-                return adapter.command.ExecuteNonQuery();
+                return connection.command.ExecuteNonQuery();
 
             }
-
-        }
-
-        private string removeNameBrackets(string name)
-        {
-
-            return name.Replace("[", "").Replace("]", "");
 
         }
 
@@ -1206,75 +1092,18 @@ namespace Cocoon
 
         }
 
-        private string getColumnDefinition(MemberInfo member)
-        {
-
-            Column columnAnnotation = member.GetCustomAttribute<Column>(false);
-            string columnName = getColumnName(member);
-
-            //data type
-            string dataType = "";
-            if (!string.IsNullOrEmpty(columnAnnotation.dataType))
-                dataType = columnAnnotation.dataType;
-            else if (member.MemberType == MemberTypes.Field && TypeMap.sqlMap.ContainsKey(((FieldInfo)member).FieldType))
-                dataType = TypeMap.sqlMap[((FieldInfo)member).FieldType];
-            else if (member.MemberType == MemberTypes.Property && TypeMap.sqlMap.ContainsKey(((PropertyInfo)member).PropertyType))
-                dataType = TypeMap.sqlMap[((PropertyInfo)member).PropertyType];
-            else
-                throw new Exception(string.Format("Could not determine data type for column {0} for table {1}.", member.Name, member.ReflectedType.Name));
-
-            //not null
-            string notNull = "";
-            if (hasAttribute<NotNull>(member))
-                notNull = "not null";
-
-            //default value
-            string defaultValue = "";
-            if (hasAttribute<Identity>(member))
-            {
-                Identity identityAnnotation = member.GetCustomAttribute<Identity>(false);
-                defaultValue = string.Format("identity({0}, {1})", identityAnnotation.seed, identityAnnotation.increment);
-            }
-            else if (!string.IsNullOrEmpty(columnAnnotation.defaultValue))
-                defaultValue = string.Format("default {0}", columnAnnotation.defaultValue);
-
-            //foreign key
-            string foreignKey = "";
-            if (hasAttribute<ForeignKey>(member))
-            {
-
-                ForeignKey foreignKeyAnnotation = member.GetCustomAttribute<ForeignKey>(false);
-
-                if (foreignKeyAnnotation.referencesTable != null)
-                {
-
-                    string primaryKeyColumn = columnName;
-                    if (!string.IsNullOrEmpty(foreignKeyAnnotation.referenceTablePrimaryKeyOverride))
-                        primaryKeyColumn = foreignKeyAnnotation.referenceTablePrimaryKeyOverride;
-
-                    foreignKey = string.Format("foreign key references {0}({1})", getTableName(foreignKeyAnnotation.referencesTable), primaryKeyColumn);
-                }
-
-            }
-
-            //generate column
-            string column = string.Format("{0} {1} {2} {3} {4}", columnName, dataType, notNull, defaultValue, foreignKey);
-            return Regex.Replace(column, @"\s+", " ");
-
-        }
-
         private DataSet executeProcForDataSet(string procedureName, object paramObject, out int rowsFilled)
         {
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
-                adapter.openSProc(procedureName);
+                adapter.openSProc(connection, procedureName);
 
-                adapter.addSProcParams(paramObject);
+                adapter.addSProcParams(connection, paramObject);
 
                 DataSet ds;
-                rowsFilled = adapter.fillDataSet(out ds);
+                rowsFilled = adapter.fillDataSet(connection, out ds);
 
                 return ds;
 
@@ -1293,22 +1122,18 @@ namespace Cocoon
         private void select(Type type, int top, object where, bool useOrLogic, out DataSet ds, out int rowsFilled)
         {
 
-            ObjectDefinition def = getDef(type);
+            TableDefinition def = getDef(type);
 
             //generate columns
             List<string> columnsToSelect = new List<string>();
             foreach (PropertyInfo prop in def.allColumns)
-                if (!hasAttribute<IgnoreOnSelect>(prop))
-                    columnsToSelect.Add(string.Format("{0}.{1}", def.TableName, getColumnName(prop)));
+                if (!Utilities.HasAttribute<IgnoreOnSelect>(prop))
+                    columnsToSelect.Add(string.Format("{0}.{1}", adapter.getObjectName(def.TableName), adapter.getObjectName(getColumnName(prop))));
 
             //generate where clause
             string whereClause = "";
             if (where != null)
                 whereClause = "where " + generateWhereClause(def.TableName, where, useOrLogic, "where_");
-
-            string topClause = "";
-            if (top > 0)
-                topClause = string.Format("top {0}", top);
 
             //generate join
             string joinClause = "";
@@ -1322,8 +1147,18 @@ namespace Cocoon
 
                     ForeignColumn annotation = linkedField.GetCustomAttribute<ForeignColumn>(false);
 
-                    joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ", annotation.tableName, annotation.primaryKey, def.TableName, annotation.foreignKey));
-                    columnsToSelect.Add(string.Format("{0}.{1}", annotation.tableName, getColumnName(linkedField)));
+                    if (annotation.objectModel != null)
+                        annotation.tableName = getTableName(annotation.objectModel);
+
+                    joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ", 
+                        adapter.getObjectName(annotation.tableName), 
+                        adapter.getObjectName(annotation.primaryKey), 
+                        adapter.getObjectName(def.TableName), 
+                        adapter.getObjectName(annotation.foreignKey)));
+
+                    columnsToSelect.Add(string.Format("{0}.{1}", 
+                        adapter.getObjectName(annotation.tableName), 
+                        adapter.getObjectName(getColumnName(linkedField))));
 
                 }
 
@@ -1332,26 +1167,21 @@ namespace Cocoon
             }
 
             //generate select statement
-            string sql = string.Format("select {0} {1} from {2} {3} {4}",
-                topClause,
-                string.Join(", ", columnsToSelect),
-                def.TableName,
-                joinClause,
-                whereClause);
+            string sql = adapter.selectSQL(def.TableName, columnsToSelect, joinClause, whereClause, top);
 
             log("Generated SQL (select) " + sql);
 
-            using (var adapter = new DBAdapter(target, ConnectionString))
+            using (var connection = adapter.getConnection(ConnectionString))
             {
 
                 //set sql
-                adapter.command.CommandText = sql;
+                connection.command.CommandText = sql;
 
                 //add parameters
-                adapter.addParams(where, "where_");
+                adapter.addParams(connection, where, "where_");
 
                 //fill data set
-                rowsFilled = adapter.fillDataSet(out ds);
+                rowsFilled = adapter.fillDataSet(connection, out ds);
 
             }
 
@@ -1400,7 +1230,7 @@ namespace Cocoon
         {
 
             if (whereClause is string)
-                return ((string)whereClause).Replace("@", "@" + paramPrefix);
+                return adapter.parseWhereString((string)whereClause, paramPrefix);
 
             List<PropertyInfo> props = new List<PropertyInfo>(whereClause.GetType().GetProperties());
             return generateWhereClause(tableName, props, whereClause, orLogic, paramPrefix);
@@ -1421,23 +1251,31 @@ namespace Cocoon
         private string generateAssignmentClause(string tableName, PropertyInfo property, object valueObject, string paramPrefix, bool isCondition)
         {
             object value = property.GetValue(valueObject);
+            string columnName = getColumnName(property);
+            string param = adapter.getParamName(paramPrefix + columnName);
             if (isCondition)
-                return string.Format(value == null ? "{0}.{1} is null" : "{0}.{1} = @{2}{1}", tableName, getColumnName(property), paramPrefix);
+                return string.Format(value == null ? "{0}.{1} is null" : "{0}.{1} = {2}", 
+                    adapter.getObjectName(tableName),
+                    adapter.getObjectName(columnName),
+                    param);
             else
-                return string.Format("{0}.{1} = @{2}{1}", tableName, getColumnName(property), paramPrefix);
+                return string.Format("{0}.{1} = {2}", 
+                    adapter.getObjectName(tableName), 
+                    adapter.getObjectName(getColumnName(property)),
+                    param);
         }
 
-        private ObjectDefinition getDef(Type type)
+        private TableDefinition getDef(Type type)
         {
 
-            if (!hasAttribute<Table>(type))
+            if (!Utilities.HasAttribute<Table>(type))
                 throw new Exception(string.Format("Cannot define object {0}.  Did you forget your Table annotation?", type.Name));
 
-            if (!objectDefinitions.ContainsKey(type))
+            if (!tableDefinitions.ContainsKey(type))
             {
 
                 //create new definition
-                ObjectDefinition def = new ObjectDefinition();
+                TableDefinition def = new TableDefinition(this);
 
                 //get object properties
                 PropertyInfo[] properties = type.GetProperties();
@@ -1446,7 +1284,7 @@ namespace Cocoon
                 {
 
                     //add links to foreign keys
-                    if (hasAttribute<ForeignColumn>(property))
+                    if (Utilities.HasAttribute<ForeignColumn>(property))
                     {
 
                         def.linkedColumns.Add(property);
@@ -1455,15 +1293,15 @@ namespace Cocoon
                     }
 
                     //ignore column
-                    if (!hasAttribute<Column>(property))
+                    if (!Utilities.HasAttribute<Column>(property))
                         continue;
 
                     //add primary key
-                    if (hasAttribute<PrimaryKey>(property))
+                    if (Utilities.HasAttribute<PrimaryKey>(property))
                         def.primaryKeys.Add(property);
 
                     //add foreign key
-                    if (hasAttribute<ForeignKey>(property))
+                    if (Utilities.HasAttribute<ForeignKey>(property))
                         def.foreignKeys.Add(property);
 
                     //add too all fields
@@ -1491,7 +1329,7 @@ namespace Cocoon
                 {
 
                     //ignore column
-                    if (!hasAttribute<Column>(field) || !field.IsStatic)
+                    if (!Utilities.HasAttribute<Column>(field) || !field.IsStatic)
                         continue;
 
                     def.fields.Add(field);
@@ -1499,37 +1337,23 @@ namespace Cocoon
                 }
 
 
-                objectDefinitions[type] = def;
+                tableDefinitions[type] = def;
 
                 log(string.Format("Defined object: {0} - {1}", def.TableName, string.Join(", ", def.allColumns)));
 
             }
 
-            return objectDefinitions[type];
+            return tableDefinitions[type];
 
         }
 
-        internal static bool hasAttribute<T>(MemberInfo member)
-        {
-
-            return member.GetCustomAttributes(typeof(T), false).Length > 0;
-
-        }
-
-        internal static bool hasAttribute<T>(Type property)
-        {
-
-            return property.GetCustomAttributes(typeof(T), false).Length > 0;
-
-        }
-
-        internal static string getColumnName(MemberInfo member)
+        internal string getColumnName(MemberInfo member)
         {
 
             string name = null;
             string overrideName = null;
 
-            if (hasAttribute<ForeignColumn>(member))
+            if (Utilities.HasAttribute<ForeignColumn>(member))
             {
 
                 ForeignColumn annotation = member.GetCustomAttribute<ForeignColumn>(false);
@@ -1550,18 +1374,15 @@ namespace Cocoon
             else
                 name = member.Name;
 
-            if (ReservedWords.words.Contains(name.ToUpper()) || name.Contains(" "))
-                return "[" + name + "]";
-            else
-                return name;
+            return name;
 
         }
 
-        internal static string getTableName(Type type)
-        {
+        internal string getTableName(Type type)
+       {
 
             string name;
-            if (hasAttribute<Table>(type))
+            if (Utilities.HasAttribute<Table>(type))
             {
 
                 Table annotation = type.GetCustomAttribute<Table>(false);
@@ -1575,10 +1396,7 @@ namespace Cocoon
             else
                 name = type.Name;
 
-            if (ReservedWords.words.Contains(name.ToUpper()) || name.Contains(" "))
-                return "[" + name + "]";
-            else
-                return name;
+            return name;
 
         }
 

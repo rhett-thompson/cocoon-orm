@@ -3,8 +3,10 @@ using System.Reflection;
 
 namespace Cocoon
 {
-    internal class ObjectDefinition
+    internal class TableDefinition
     {
+
+        public DBConnection connection;
 
         public string TableName;
 
@@ -14,11 +16,18 @@ namespace Cocoon
         public List<PropertyInfo> linkedColumns = new List<PropertyInfo>();
         public List<FieldInfo> fields = new List<FieldInfo>();
 
+        public TableDefinition(DBConnection connection)
+        {
+
+            this.connection = connection;
+
+        }
+
         public PropertyInfo getForeginKey(string fieldName)
        {
 
             foreach (PropertyInfo prop in foreignKeys)
-                if (DBConnection.getColumnName(prop) == fieldName)
+                if (connection.getColumnName(prop) == fieldName)
                     return prop;
 
             return null;
@@ -29,7 +38,7 @@ namespace Cocoon
         {
 
             foreach (PropertyInfo prop in allColumns)
-                if (DBConnection.getColumnName(prop) == columnName)
+                if (connection.getColumnName(prop) == columnName)
                     return true;
 
             return false;

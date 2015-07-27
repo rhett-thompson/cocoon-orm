@@ -1,14 +1,15 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Cocoon.Tests
 {
-
-    public class SQLServerEcommerceTest : RegressionTest
+    public class MySQLEcommerceTest : RegressionTest
     {
 
         private const int dataCount = 5;
@@ -16,11 +17,11 @@ namespace Cocoon.Tests
         private uint passed = 0;
         private uint failed = 0;
 
-        public SQLServerEcommerceTest(DBConnection db) : base(db) { }
+        public MySQLEcommerceTest(DBConnection db) : base(db) { }
 
         public override void generateData()
         {
-
+       
             Console.WriteLine("*** Generating Test Data ***");
 
             DateTime startTime = DateTime.Now;
@@ -37,30 +38,8 @@ namespace Cocoon.Tests
             db.CreateTable(typeof(OrderLine));
             db.CreateTable(typeof(Payment));
 
-            db.ExecuteSQLVoid(@"if exists (select name from sysobjects where name = 'OrderGet') drop procedure OrderGet;");
-            db.ExecuteSQLVoid(@"
-                create procedure OrderGet 
-                    @OrderID as int
-                as
-                begin
-
-	                set nocount on;
-	                select * from [Order] where OrderID = @OrderID
-
-                end
-            ");
-
-            db.ExecuteSQLVoid(@"if exists (select name from sysobjects where name = 'OrderList') drop procedure OrderList;");
-            db.ExecuteSQLVoid(@"
-                create procedure OrderList
-                as
-                begin
-
-	                set nocount on;
-	                select * from [Order]
-
-                end
-            ");
+            //db.ExecuteSQLVoid(@"drop procedure if exists `OrderGet`; create procedure `OrderGet` (`OrderID` int) select * from `Order` where `Order`.OrderID = OrderID");
+            //db.ExecuteSQLVoid(@"drop procedure if exists `OrderList`; create procedure `OrderList` () select * from `Order`");
 
             Random rng = new Random();
 
@@ -71,58 +50,55 @@ namespace Cocoon.Tests
                 Order newOrder = null;
                 OrderLine newOrderLine = null;
                 Payment newPayment = null;
- 
-                try
+
+                //try
+                //{
+
+                //customer
+                newCustomer = db.Insert<Customer>(new Customer()
                 {
+                    Address1 = "address 1",
+                    Address2 = "address 2",
+                    City = "city",
+                    Country = "country",
+                    FirstName = "first name",
+                    LastName = "last name",
+                    LoginEmail = "email@email.com",
+                    Password = string.Format("({0}{0}{0}) {0}{0}{0}-{0}{0}{0}{0}", rng.Next(10)),
+                    Phone = "phone",
+                    PostalCode = "postal code",
+                    State = "state",
+                    CreateDate = DateTime.UtcNow
+                });
 
-                    //customer
-                    newCustomer = db.Insert<Customer>(new Customer()
-                    {
-                        Address1 = "address 1",
-                        Address2 = "address 2",
-                        City = "city",
-                        Country = "country",
-                        FirstName = "first name",
-                        LastName = "last name",
-                        LoginEmail = "email@email.com",
-                        Password = string.Format("({0}{0}{0}) {0}{0}{0}-{0}{0}{0}{0}", rng.Next(10)),
-                        Phone = "phone",
-                        PostalCode = "postal code",
-                        State = "state",
-                        CreateDate = DateTime.UtcNow
-                    });
+                //order
+                newOrder = db.Insert<Order>(new Order()
+                {
+                    CustomerID = newCustomer.CustomerID,
+                    OrderTypeID = OrderType.WEBSITE,
+                    CreateDate = DateTime.UtcNow
+                });
 
-                    //order
-                    newOrder = db.Insert<Order>(new Order()
-                    {
-                        CustomerID = newCustomer.CustomerID,
-                        OrderTypeID = OrderType.WEBSITE,
-                        CreateDate = DateTime.UtcNow
+                //orderline
+                newOrderLine = db.Insert<OrderLine>(new OrderLine()
+                {
+                    OrderID = newOrder.OrderID,
+                    SKU = "SKU_" + rng.Next(1000),
+                    UnitPrice = (decimal)(rng.NextDouble() * 1000),
+                    Quantity = rng.Next(10),
+                    CreateDate = DateTime.UtcNow
+                });
 
-                    });
+                //payment
+                newPayment = db.Insert<Payment>(new Payment()
+                {
+                    OrderID = newOrder.OrderID,
+                    PaymentAmount = newOrderLine.UnitPrice * newOrderLine.Quantity,
+                    CreateDate = DateTime.UtcNow
+                });
 
-                    //orderline
-                    newOrderLine = db.Insert<OrderLine>(new OrderLine()
-                    {
-                        OrderID = newOrder.OrderID,
-                        SKU = "SKU_" + rng.Next(1000),
-                        UnitPrice = (decimal)(rng.NextDouble() * 1000),
-                        Quantity = rng.Next(10),
-                        CreateDate = DateTime.UtcNow
-
-                    });
-
-                    //payment
-                    newPayment = db.Insert<Payment>(new Payment()
-                    {
-                        OrderID = newOrder.OrderID,
-                        PaymentAmount = newOrderLine.UnitPrice * newOrderLine.Quantity,
-                        CreateDate = DateTime.UtcNow
-
-                    });
-
-                }
-                catch { }
+                //}
+                //catch { }
 
             }
 
@@ -132,7 +108,6 @@ namespace Cocoon.Tests
 
         public override void testOutput(string method, string tag, bool condition)
         {
-
             if (!testedMethods.Contains(method))
                 testedMethods.Add(method);
 
@@ -142,7 +117,6 @@ namespace Cocoon.Tests
                 passed++;
             else
                 failed++;
-
         }
 
         public override void benchmarkOutput(string tag, double totalTime, double averageTime)
@@ -175,12 +149,13 @@ namespace Cocoon.Tests
             performTest("GetSingle", "", () => { return db.GetSingle<Order>(new { OrderID = 1 }).OrderID == 1; });
 
             //Update
-            performTest("Update", "", () => {
+            performTest("Update", "", () =>
+            {
                 Order order = db.GetSingle<Order>(new { OrderID = 1 });
                 order.OrderTypeID = OrderType.PHONE;
                 db.Update(order);
                 order = db.GetSingle<Order>(new { OrderID = 1 });
-                return order.OrderTypeID == OrderType.PHONE; 
+                return order.OrderTypeID == OrderType.PHONE;
             });
 
             //GetList
@@ -193,19 +168,19 @@ namespace Cocoon.Tests
             performTest("GetScalar", "", () => { return db.GetScalar<string>(typeof(Customer), "LastName", new { CustomerID = 1 }) == "last name"; });
 
             //ExecuteSQLSingle
-            performTest("ExecuteSQLSingle", "", () => { return db.ExecuteSQLSingle<Order>("select * from [Order] where OrderID = @OrderID", new { OrderID = 1 }).OrderID == 1; });
+            performTest("ExecuteSQLSingle", "", () => { return db.ExecuteSQLSingle<Order>("select * from `Order` where `OrderID` = @OrderID", new { OrderID = 1 }).OrderID == 1; });
 
             //ExecuteSQLList
-            performTest("ExecuteSQLList", "", () => { return db.ExecuteSQLList<Order>("select * from [Order]").Count == dataCount; });
+            performTest("ExecuteSQLList", "", () => { return db.ExecuteSQLList<Order>("select * from `Order`").Count == dataCount; });
 
             //ExecuteSQLDataSet
-            performTest("ExecuteSQLDataSet", "", () => { return db.ExecuteSQLDataSet("select * from [Order]").Tables[0].Rows.Count == dataCount; });
+            performTest("ExecuteSQLDataSet", "", () => { return db.ExecuteSQLDataSet("select * from `Order`").Tables[0].Rows.Count == dataCount; });
 
             //ExecuteSQLScalar
-            performTest("ExecuteSQLScalar", "", () => { return db.ExecuteSQLScalar<string>("select LastName from Customer where CustomerID = @CustomerID", new { CustomerID = 1 }) == "last name"; });
+            performTest("ExecuteSQLScalar", "", () => { return db.ExecuteSQLScalar<string>("select `LastName` from `Customer` where `CustomerID` = @CustomerID", new { CustomerID = 1 }) == "last name"; });
 
             //ExecuteSQLVoid
-            performTest("ExecuteSQLVoid", "", () => { db.ExecuteSQLVoid("select * from [Order]"); return true; });
+            performTest("ExecuteSQLVoid", "", () => { db.ExecuteSQLVoid("select * from `Order`"); return true; });
 
             //ExecuteSProcSingle
             performTest("ExecuteSProcSingle", "", () => { return db.ExecuteSProcSingle<Order>("OrderGet", new { OrderID = 1 }).OrderID == 1; });
@@ -232,16 +207,19 @@ namespace Cocoon.Tests
             });
 
             //DropTable
-            performTest("DropTable", "", () => { 
+            performTest("DropTable", "", () =>
+            {
                 db.DropTable(typeof(TestTable));
-                db.DropTable(typeof(TestLookupTable)); 
-                return true; 
+                db.DropTable(typeof(TestLookupTable));
+                return true;
             });
 
             //CreateTable
-            performTest("CreateTable", "", () => {
+            performTest("CreateTable", "", () =>
+            {
                 db.CreateTable(typeof(TestTable));
-                return true; });
+                return true;
+            });
 
             //CreateLookupTable
             performTest("CreateLookupTable", "", () =>
@@ -254,8 +232,9 @@ namespace Cocoon.Tests
             performTest("Insert", "", () => { return db.Insert<TestTable>(new TestTable() { Prim1 = Guid.NewGuid(), Prim2 = "Prim2", Prim3 = 123, Name = "asd" }).Prim2 != null; });
 
             //TableExists
-            performTest("TableExists", "", () => {
-                return db.TableExists(typeof(TestTable)) && db.TableExists(typeof(TestLookupTable)); 
+            performTest("TableExists", "", () =>
+            {
+                return db.TableExists(typeof(TestTable)) && db.TableExists(typeof(TestLookupTable));
             });
 
             //GetCSV
@@ -275,7 +254,6 @@ namespace Cocoon.Tests
             });
 
             Console.WriteLine(string.Format("Tests completed in {0}ms. {1} methods passed. {2} methods failed.\r\n\r\n", DateTime.Now.Subtract(startTime).TotalMilliseconds, passed, failed));
-
 
 
         }
@@ -301,13 +279,13 @@ namespace Cocoon.Tests
             performBenchmark("Classic SQL Select Single", iterations, () =>
             {
 
-                using (var connection = new SqlConnection(db.ConnectionString))
+                using (var connection = new MySqlConnection(db.ConnectionString))
                 using (var cmd = connection.CreateCommand())
-                using (var da = new SqlDataAdapter(cmd))
+                using (var da = new MySqlDataAdapter(cmd))
                 {
 
                     //set sql
-                    cmd.CommandText = string.Format("select * from [Order] where [Order].OrderID = {0}", 2);
+                    cmd.CommandText = string.Format("select * from `Order` where `Order`.OrderID = {0}", 2);
 
                     //fill data set
                     DataSet ds = new DataSet();
@@ -320,9 +298,9 @@ namespace Cocoon.Tests
             //Classic Stored Proc Single
             performBenchmark("Classic Stored Proc Single", iterations, () =>
             {
-                using (var connection = new SqlConnection(db.ConnectionString))
+                using (var connection = new MySqlConnection(db.ConnectionString))
                 using (var cmd = connection.CreateCommand())
-                using (var da = new SqlDataAdapter(cmd))
+                using (var da = new MySqlDataAdapter(cmd))
                 {
 
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -349,13 +327,13 @@ namespace Cocoon.Tests
             performBenchmark("Classic SQL Select List", iterations, () =>
             {
 
-                using (var connection = new SqlConnection(db.ConnectionString))
+                using (var connection = new MySqlConnection(db.ConnectionString))
                 using (var cmd = connection.CreateCommand())
-                using (var da = new SqlDataAdapter(cmd))
+                using (var da = new MySqlDataAdapter(cmd))
                 {
 
                     //set sql
-                    cmd.CommandText = "select * from [Order]";
+                    cmd.CommandText = "select * from `Order`";
 
                     //fill data set
                     DataSet ds = new DataSet();
@@ -364,13 +342,13 @@ namespace Cocoon.Tests
                 }
 
             });
-
+            
             //Classic Stored Proc Single
             performBenchmark("Classic Stored Proc List", iterations, () =>
             {
-                using (var connection = new SqlConnection(db.ConnectionString))
+                using (var connection = new MySqlConnection(db.ConnectionString))
                 using (var cmd = connection.CreateCommand())
-                using (var da = new SqlDataAdapter(cmd))
+                using (var da = new MySqlDataAdapter(cmd))
                 {
 
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -389,7 +367,6 @@ namespace Cocoon.Tests
 
         public override void checkMethodsTested()
         {
-
             MethodInfo[] methods = db.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance);
 
             foreach (MethodInfo m in methods)
@@ -399,7 +376,6 @@ namespace Cocoon.Tests
                     Console.WriteLine("Didn't test method: " + m.Name);
 
             }
-
         }
 
     }

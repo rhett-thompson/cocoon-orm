@@ -135,7 +135,8 @@ namespace Cocoon.Annotations
         internal string tableName;
         internal string overrideName;
         internal string primaryKey;
-
+        internal Type objectModel;
+ 
         /// <summary>
         /// A foreign column linked by a foreign key in this class
         /// </summary>
@@ -146,27 +147,6 @@ namespace Cocoon.Annotations
         public ForeignColumn(string ForeignKey, string TableName, string OverrideName = null, string PrimaryKey = null)
         {
 
-            init(ForeignKey, TableName, OverrideName, PrimaryKey);
-
-        }
-
-        /// <summary>
-        /// A foreign column linked by a foreign key in this class
-        /// </summary>
-        /// <param name="ForeignKey">The foreign key in this class to use</param>
-        /// <param name="ObjectModel">The table to join to.</param>
-        /// <param name="OverrideName">Overrides the name of this column.</param>
-        /// <param name="PrimaryKey">The name of the primary key in the primary table. If null, then the primary key is the same as the foreign key.</param>
-        public ForeignColumn(string ForeignKey, Type ObjectModel, string OverrideName = null, string PrimaryKey = null)
-        {
-            
-            init(ForeignKey, DBConnection.getTableName(ObjectModel), OverrideName, PrimaryKey);
-
-        }
-
-        private void init(string ForeignKey, string TableName, string OverrideName, string PrimaryKey)
-        {
-
             if (string.IsNullOrEmpty(ForeignKey))
                 throw new Exception("No foreign key provided.");
 
@@ -175,6 +155,26 @@ namespace Cocoon.Annotations
 
             this.foreignKey = ForeignKey;
             this.tableName = TableName;
+            this.overrideName = OverrideName;
+            this.primaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ForeignKey"></param>
+        /// <param name="ObjectModel"></param>
+        /// <param name="OverrideName"></param>
+        /// <param name="PrimaryKey"></param>
+        public ForeignColumn(string ForeignKey, Type ObjectModel, string OverrideName = null, string PrimaryKey = null)
+        {
+
+            if (string.IsNullOrEmpty(ForeignKey))
+                throw new Exception("No foreign key provided.");
+
+            this.foreignKey = ForeignKey;
+            this.objectModel = ObjectModel;
             this.overrideName = OverrideName;
             this.primaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
 
