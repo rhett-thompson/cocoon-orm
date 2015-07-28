@@ -435,6 +435,8 @@ namespace Cocoon
 
             TableDefinition def = getDef(objectModel);
 
+            checkWhereForMultiTenantID(def, where);
+
             return GetScalar<T>(def.TableName, scalarField, where, useOrLogic);
 
         }
@@ -515,6 +517,8 @@ namespace Cocoon
         {
             TableDefinition def = getDef(objectModel);
 
+            checkWhereForMultiTenantID(def, where);
+
             return GetScalarList<T>(def.TableName, where, fieldToMap, useOrLogic, top);
 
         }
@@ -569,7 +573,11 @@ namespace Cocoon
             if (where == null)
                 throw new Exception("Where clause must be supplied.");
 
-            return Delete(getDef(objectModel).TableName, where, useOrLogic);
+            TableDefinition def = getDef(objectModel);
+
+            checkWhereForMultiTenantID(def, where);
+
+            return Delete(def.TableName, where, useOrLogic);
 
         }
 
@@ -869,7 +877,7 @@ namespace Cocoon
 
             return true;
 
-                }
+        }
 
         #endregion
 
@@ -1003,7 +1011,6 @@ namespace Cocoon
 
 
             foreach (T item in list)
-
             {
                 result.Append("<tr>");
                 foreach (PropertyInfo prop in props)
@@ -1039,10 +1046,17 @@ namespace Cocoon
             string whereClause = "";
             bool usePrimaryKeysInWhereClause = false;
             if (where != null)
+            {
+                checkWhereForMultiTenantID(def, where);
                 whereClause = "where " + generateWhereClause(def.TableName, where, useOrLogic, "where_");
+            }
             else if (def.primaryKeys.Count > 0)
             {
-                usePrimaryKeysInWhereClause = true;
+
+                if (def.multiTenantIDColumns.Count > 0)
+                    multiTenantMatch(def, def.primaryKeys.ToArray());
+
+                        usePrimaryKeysInWhereClause = true;
                 whereClause = "where " + generateWhereClause(def.TableName, def.primaryKeys, values, useOrLogic, "where_");
             }
 
@@ -1074,7 +1088,7 @@ namespace Cocoon
 
                 return connection.command.ExecuteNonQuery();
 
-        }
+            }
 
         }
 
@@ -1119,10 +1133,49 @@ namespace Cocoon
 
         }
 
+        private void checkWhereForMultiTenantID(TableDefinition def, object where)
+        {
+
+            //check for multi tenant columns in where clause
+            if (def.multiTenantIDColumns.Count > 0)
+            {
+
+                if (where == null)
+                    throw new Exception("Where clause cannot be ommitted when model has multi tenant identifiers.");
+
+                multiTenantMatch(def, where.GetType().GetProperties());
+
+            }
+
+        }
+
+        private void multiTenantMatch(TableDefinition def, PropertyInfo[] props)
+        {
+
+            foreach (PropertyInfo i in def.multiTenantIDColumns)
+            {
+
+                bool matched = false;
+                foreach (PropertyInfo w in props)
+                    if (w.Name == i.Name)
+                    {
+                        matched = true;
+                        break;
+                    }
+
+                if (!matched)
+                    throw new Exception(string.Format("Where clause does not contain multi tenant id ({0}).", i.Name));
+
+            }
+
+        }
+
         private void select(Type type, int top, object where, bool useOrLogic, out DataSet ds, out int rowsFilled)
         {
 
             TableDefinition def = getDef(type);
+
+            checkWhereForMultiTenantID(def, where);
 
             //generate columns
             List<string> columnsToSelect = new List<string>();
@@ -1150,14 +1203,14 @@ namespace Cocoon
                     if (annotation.objectModel != null)
                         annotation.tableName = getTableName(annotation.objectModel);
 
-                    joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ", 
-                        adapter.getObjectName(annotation.tableName), 
-                        adapter.getObjectName(annotation.primaryKey), 
-                        adapter.getObjectName(def.TableName), 
+                    joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ",
+                        adapter.getObjectName(annotation.tableName),
+                        adapter.getObjectName(annotation.primaryKey),
+                        adapter.getObjectName(def.TableName),
                         adapter.getObjectName(annotation.foreignKey)));
 
-                    columnsToSelect.Add(string.Format("{0}.{1}", 
-                        adapter.getObjectName(annotation.tableName), 
+                    columnsToSelect.Add(string.Format("{0}.{1}",
+                        adapter.getObjectName(annotation.tableName),
                         adapter.getObjectName(getColumnName(linkedField))));
 
                 }
@@ -1254,13 +1307,13 @@ namespace Cocoon
             string columnName = getColumnName(property);
             string param = adapter.getParamName(paramPrefix + columnName);
             if (isCondition)
-                return string.Format(value == null ? "{0}.{1} is null" : "{0}.{1} = {2}", 
+                return string.Format(value == null ? "{0}.{1} is null" : "{0}.{1} = {2}",
                     adapter.getObjectName(tableName),
                     adapter.getObjectName(columnName),
                     param);
             else
-                return string.Format("{0}.{1} = {2}", 
-                    adapter.getObjectName(tableName), 
+                return string.Format("{0}.{1} = {2}",
+                    adapter.getObjectName(tableName),
                     adapter.getObjectName(getColumnName(property)),
                     param);
         }
@@ -1296,6 +1349,9 @@ namespace Cocoon
                     if (!Utilities.HasAttribute<Column>(property))
                         continue;
 
+                    //get column
+                    Column column = property.GetCustomAttribute<Column>(false);
+
                     //add primary key
                     if (Utilities.HasAttribute<PrimaryKey>(property))
                         def.primaryKeys.Add(property);
@@ -1303,6 +1359,10 @@ namespace Cocoon
                     //add foreign key
                     if (Utilities.HasAttribute<ForeignKey>(property))
                         def.foreignKeys.Add(property);
+
+                    //multi tenant columns
+                    if (column.isMultiTenantID)
+                        def.multiTenantIDColumns.Add(property);
 
                     //add too all fields
                     def.allColumns.Add(property);
@@ -1374,7 +1434,7 @@ namespace Cocoon
             else
                 name = member.Name;
 
-                return name;
+            return name;
 
         }
 
@@ -1396,7 +1456,7 @@ namespace Cocoon
             else
                 name = type.Name;
 
-                return name;
+            return name;
 
         }
 

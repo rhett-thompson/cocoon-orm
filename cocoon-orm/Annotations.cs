@@ -12,6 +12,7 @@ namespace Cocoon.Annotations
         internal string overrideName;
         internal string dataType;
         internal string defaultValue;
+        internal bool isMultiTenantID;
 
         /// <summary>
         /// This field is a database column.
@@ -19,11 +20,13 @@ namespace Cocoon.Annotations
         /// <param name="OverrideName">Overrides the name of this column.</param>
         /// <param name="DataType">The SQL datatype of the column.</param>
         /// <param name="DefaultValue">The default value of the column.</param>
-        public Column(string OverrideName = null, string DataType = null, string DefaultValue = null)
+        /// <param name="IsMultiTenantID">This column is a multi tenant id.</param>
+        public Column(string OverrideName = null, string DataType = null, string DefaultValue = null, bool IsMultiTenantID = false)
         {
             this.overrideName = OverrideName;
             this.dataType = DataType;
             this.defaultValue = DefaultValue;
+            this.isMultiTenantID = IsMultiTenantID;
         }
 
     }
