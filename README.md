@@ -131,10 +131,10 @@ SQLServerAdapter adapter = new SQLServerAdapter();
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //insert a new customer into the database
-Customer newCustomer = db.Insert<customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
+Customer newCustomer = db.Insert<Customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
 
 //retrieve a single customer from the database
-Customer someCustomer = db.GetSingle<customer>(new { CustomerID = newCustomer.CustomerID });
+Customer someCustomer = db.GetSingle<Customer>(new { CustomerID = newCustomer.CustomerID });
 
 //change the customers last name
 someCustomer.LastName = "barker";
