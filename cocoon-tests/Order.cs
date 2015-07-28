@@ -8,6 +8,9 @@ namespace Cocoon.Tests
     internal class Order
     {
 
+        [Column(IsMultiTenantID: true), IgnoreOnUpdate, NotNull]
+        public int WebsiteID { get; set; }
+
         [Column, PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate, Identity(1, 1)]
         public int OrderID { get; set; }
 

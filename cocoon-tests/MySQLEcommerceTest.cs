@@ -57,6 +57,7 @@ namespace Cocoon.Tests
                 //customer
                 newCustomer = db.Insert<Customer>(new Customer()
                 {
+                    WebsiteID = 1,
                     Address1 = "address 1",
                     Address2 = "address 2",
                     City = "city",
@@ -74,6 +75,7 @@ namespace Cocoon.Tests
                 //order
                 newOrder = db.Insert<Order>(new Order()
                 {
+                    WebsiteID = 1,
                     CustomerID = newCustomer.CustomerID,
                     OrderTypeID = OrderType.WEBSITE,
                     CreateDate = DateTime.UtcNow
@@ -146,26 +148,26 @@ namespace Cocoon.Tests
             Random rng = new Random();
 
             //GetSingle
-            performTest("GetSingle", "", () => { return db.GetSingle<Order>(new { OrderID = 1 }).OrderID == 1; });
+            performTest("GetSingle", "", () => { return db.GetSingle<Order>(new { WebsiteID = 1, OrderID = 1 }).OrderID == 1; });
 
             //Update
             performTest("Update", "", () =>
             {
-                Order order = db.GetSingle<Order>(new { OrderID = 1 });
+                Order order = db.GetSingle<Order>(new { WebsiteID = 1, OrderID = 1 });
                 order.OrderTypeID = OrderType.PHONE;
-                db.Update(order);
-                order = db.GetSingle<Order>(new { OrderID = 1 });
+                db.Update(order, new { WebsiteID = 1, OrderID = 1 });
+                order = db.GetSingle<Order>(new { WebsiteID = 1, OrderID = 1 });
                 return order.OrderTypeID == OrderType.PHONE;
             });
 
             //GetList
-            performTest("GetList", "", () => { return db.GetList<Order>().Count == dataCount; });
+            performTest("GetList", "", () => { return db.GetList<Order>(new { WebsiteID = 1 }).Count == dataCount; });
 
             //GetScalarList
             performTest("GetScalarList", "", () => { return db.GetScalarList<string>("OrderType").Count == 4; });
 
             //GetScalar
-            performTest("GetScalar", "", () => { return db.GetScalar<string>(typeof(Customer), "LastName", new { CustomerID = 1 }) == "last name"; });
+            performTest("GetScalar", "", () => { return db.GetScalar<string>(typeof(Customer), "LastName", new { WebsiteID = 1, CustomerID = 1 }) == "last name"; });
 
             //ExecuteSQLSingle
             performTest("ExecuteSQLSingle", "", () => { return db.ExecuteSQLSingle<Order>("select * from `Order` where `OrderID` = @OrderID", new { OrderID = 1 }).OrderID == 1; });
@@ -202,8 +204,8 @@ namespace Cocoon.Tests
             {
                 db.Delete(typeof(Payment), new { OrderID = 1 });
                 db.Delete(typeof(OrderLine), new { OrderID = 1 });
-                db.Delete(typeof(Order), new { OrderID = 1 });
-                return db.GetList<Order>().Count == dataCount - 1;
+                db.Delete(typeof(Order), new { WebsiteID = 1, OrderID = 1 });
+                return db.GetList<Order>(new { WebsiteID = 1 }).Count == dataCount - 1;
             });
 
             //DropTable
@@ -270,7 +272,7 @@ namespace Cocoon.Tests
             Console.WriteLine("* Get single row or object *");
 
             //GetSingle
-            performBenchmark("GetSingle", iterations, () => { Order order = db.GetSingle<Order>(new { OrderID = 2 }); });
+            performBenchmark("GetSingle", iterations, () => { Order order = db.GetSingle<Order>(new { WebsiteID = 1, OrderID = 2 }); });
 
             //ExecuteSingle
             performBenchmark("ExecuteSProcSingle", iterations, () => { Order layout = db.ExecuteSProcSingle<Order>("OrderGet", new { OrderID = 2 }); });
@@ -318,7 +320,7 @@ namespace Cocoon.Tests
             Console.WriteLine("* Get list of rows or list of object *");
 
             //GetList
-            performBenchmark("GetList", iterations, () => { List<Order> orders = db.GetList<Order>(new { OrderID = 2 }); });
+            performBenchmark("GetList", iterations, () => { List<Order> orders = db.GetList<Order>(new { WebsiteID = 1, OrderID = 2 }); });
 
             //Execute
             performBenchmark("ExecuteSProcList", iterations, () => { List<Order> layout = db.ExecuteSProcList<Order>("OrderList"); });
