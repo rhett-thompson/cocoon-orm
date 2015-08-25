@@ -7,7 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm", "cocoon-orm.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-tests", "..\cocoon-tests\cocoon-tests.csproj", "{EFF59863-AAB2-413A-861C-07C0683B37C4}"
 	ProjectSection(ProjectDependencies) = postProject
-		{05AFF4A9-A1F3-4790-9508-782D0BA2EEA5} = {05AFF4A9-A1F3-4790-9508-782D0BA2EEA5}
 		{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7} = {9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}
 		{F9E715F5-3590-436F-9781-75628E104108} = {F9E715F5-3590-436F-9781-75628E104108}
 	EndProjectSection
@@ -16,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm.mysql", "..\coco
 	ProjectSection(ProjectDependencies) = postProject
 		{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7} = {9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm.sqlserver", "..\cocoon-orm.sqlserver\cocoon-orm.sqlserver.csproj", "{05AFF4A9-A1F3-4790-9508-782D0BA2EEA5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,10 +34,6 @@ Global
 		{F9E715F5-3590-436F-9781-75628E104108}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9E715F5-3590-436F-9781-75628E104108}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9E715F5-3590-436F-9781-75628E104108}.Release|Any CPU.Build.0 = Release|Any CPU
-		{05AFF4A9-A1F3-4790-9508-782D0BA2EEA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{05AFF4A9-A1F3-4790-9508-782D0BA2EEA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{05AFF4A9-A1F3-4790-9508-782D0BA2EEA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{05AFF4A9-A1F3-4790-9508-782D0BA2EEA5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
