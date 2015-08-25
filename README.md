@@ -131,10 +131,10 @@ SQLServerAdapter adapter = new SQLServerAdapter();
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //insert a new customer into the database
-Customer newCustomer = db.Insert<customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
+Customer newCustomer = db.Insert<Customer>(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
 
 //retrieve a single customer from the database
-Customer someCustomer = db.GetSingle<customer>(new { CustomerID = newCustomer.CustomerID });
+Customer someCustomer = db.GetSingle<Customer>(new { CustomerID = newCustomer.CustomerID });
 
 //change the customers last name
 someCustomer.LastName = "barker";
@@ -152,10 +152,10 @@ SQLServerAdapter adapter = new SQLServerAdapter();
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //retrieve a single order from a stored procedure
-db.ExecuteSProcSingle<order>("OrderGet", new { OrderID = 5 });
+db.ExecuteSProcSingle<Order>("OrderGet", new { OrderID = 5 });
 
 //get a list of orders from a stored procedure that returns a list of orders
-List<order> listOfOrders = db.ExecuteSProcList<order>("OrderList");
+List<Order> listOfOrders = db.ExecuteSProcList<Order>("OrderList");
 ```
 
 ## Parameterized SQL
@@ -166,10 +166,10 @@ SQLServerAdapter adapter = new SQLServerAdapter();
 DBConnection db = new DBConnection("Server={your server};Database={your database};Uid={user id};Pwd={password};", adapter);
 
 //@OrderID is parameterized from the OrderID in the new { OrderID = 5 }
-db.ExecuteSQLSingle<order>("select * from Orders where OrderID = @OrderID", new { OrderID = 5 });
+db.ExecuteSQLSingle<Order>("select * from Orders where OrderID = @OrderID", new { OrderID = 5 });
 
 //a basic SQL list
-List<order> listOfOrders = db.ExecuteSQLList<order>("select * from Orders");
+List<Order> listOfOrders = db.ExecuteSQLList<Order>("select * from Orders");
 ```
 
 ## Transactions
