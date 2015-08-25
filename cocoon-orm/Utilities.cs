@@ -117,7 +117,7 @@ namespace Cocoon
         /// <typeparam name="T"></typeparam>
         /// <param name="member"></param>
         /// <returns></returns>
-        internal static bool HasAttribute<T>(MemberInfo member)
+        public static bool HasAttribute<T>(MemberInfo member)
         {
 
             return member.GetCustomAttributes(typeof(T), false).Length > 0;
@@ -130,7 +130,7 @@ namespace Cocoon
         /// <typeparam name="T"></typeparam>
         /// <param name="property"></param>
         /// <returns></returns>
-        internal static bool HasAttribute<T>(Type property)
+        public static bool HasAttribute<T>(Type property)
         {
 
             return property.GetCustomAttributes(typeof(T), false).Length > 0;

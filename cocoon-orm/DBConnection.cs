@@ -23,10 +23,18 @@ namespace Cocoon
         /// </summary>
         public string ConnectionString;
 
-        internal Dictionary<Type, TableDefinition> tableDefinitions = new Dictionary<Type, TableDefinition>();
-        private Action<string> logMethod;
-        internal DBServerAdapter adapter;
+        /// <summary>
+        /// 
+        /// </summary>
+        public Dictionary<Type, TableDefinition> tableDefinitions = new Dictionary<Type, TableDefinition>();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public DBServerAdapter adapter;
+
+        private Action<string> logMethod;
+        
         #region Public Interface
 
         /// <summary>
@@ -84,12 +92,14 @@ namespace Cocoon
             if (rowsFilled == 0)
                 return new List<T>();
 
+            bool isTable = Utilities.HasAttribute<Table>(type);
+
             //fill list
             List<T> list = new List<T>();
             foreach (DataRow row in ds.Tables[0].Rows)
             {
 
-                if (Utilities.HasAttribute<Table>(type) && fieldToMap == null)
+                if (isTable && fieldToMap == null)
                 {
 
                     T item = (T)Activator.CreateInstance(type);
@@ -437,7 +447,7 @@ namespace Cocoon
 
             checkWhereForMultiTenantID(def, where);
 
-            return GetScalar<T>(def.TableName, scalarField, where, useOrLogic);
+            return GetScalar<T>(def.tableName, scalarField, where, useOrLogic);
 
         }
 
@@ -519,7 +529,7 @@ namespace Cocoon
 
             checkWhereForMultiTenantID(def, where);
 
-            return GetScalarList<T>(def.TableName, where, fieldToMap, useOrLogic, top);
+            return GetScalarList<T>(def.tableName, where, fieldToMap, useOrLogic, top);
 
         }
 
@@ -577,7 +587,7 @@ namespace Cocoon
 
             checkWhereForMultiTenantID(def, where);
 
-            return Delete(def.TableName, where, useOrLogic);
+            return Delete(def.tableName, where, useOrLogic);
 
         }
 
@@ -644,7 +654,7 @@ namespace Cocoon
                 if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
                 {
                     string propName = getColumnName(prop);
-                    columns.Add(string.Format("{0}.{1}", adapter.getObjectName(def.TableName), adapter.getObjectName(propName)));
+                    columns.Add(string.Format("{0}.{1}", def.objectName, adapter.getObjectName(propName)));
                     values.Add(adapter.getParamName(string.Format("value_{0}", propName)));
                     parameters.Add(prop);
                 }
@@ -655,7 +665,7 @@ namespace Cocoon
             }
 
             //put together sql
-            string sql = adapter.insertSQL(def.TableName, columns, values, primaryKeys);
+            string sql = adapter.insertSQL(def.tableName, columns, values, primaryKeys);
 
             log("Generated SQL (Insert) " + sql);
 
@@ -698,7 +708,7 @@ namespace Cocoon
         #endregion
 
         #region Utility API
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -709,7 +719,7 @@ namespace Cocoon
 
             TableDefinition def = getDef(objectModel);
 
-            string sql = adapter.tableExistsSQL(def.TableName);
+            string sql = adapter.tableExistsSQL(def.tableName);
 
             log("Generated SQL (TableExists) " + sql);
 
@@ -741,7 +751,7 @@ namespace Cocoon
 
             }
 
-            string sql = adapter.createTableSQL(columns, primaryKeys, foreignKeys, def.TableName);
+            string sql = adapter.createTableSQL(columns, primaryKeys, foreignKeys, def.tableName);
 
             log("Generated SQL (CreateTable) " + sql);
 
@@ -809,7 +819,7 @@ namespace Cocoon
 
             TableDefinition def = getDef(objectModel);
 
-            string sql = adapter.dropTableSQL(def.TableName);
+            string sql = adapter.dropTableSQL(def.tableName);
 
             log("Generated SQL (DropTable) " + sql);
 
@@ -827,7 +837,7 @@ namespace Cocoon
 
             TableDefinition def = getDef(objectModel);
 
-            DataSet ds = ExecuteSQLDataSet(adapter.verifyTableSQL(def.TableName));
+            DataSet ds = ExecuteSQLDataSet(adapter.verifyTableSQL(def.tableName));
 
             if (ds == null || ds.Tables.Count != 1 || def.allColumns.Count != ds.Tables[0].Rows.Count)
                 return false;
@@ -1048,7 +1058,7 @@ namespace Cocoon
             if (where != null)
             {
                 checkWhereForMultiTenantID(def, where);
-                whereClause = "where " + generateWhereClause(def.TableName, where, useOrLogic, "where_");
+                whereClause = "where " + generateWhereClause(def.tableName, where, useOrLogic, "where_");
             }
             else if (def.primaryKeys.Count > 0)
             {
@@ -1057,7 +1067,7 @@ namespace Cocoon
                     multiTenantMatch(def, def.primaryKeys.ToArray());
 
                         usePrimaryKeysInWhereClause = true;
-                whereClause = "where " + generateWhereClause(def.TableName, def.primaryKeys, values, useOrLogic, "where_");
+                whereClause = "where " + generateWhereClause(def.tableName, def.primaryKeys, values, useOrLogic, "where_");
             }
 
             //generate columns
@@ -1066,11 +1076,11 @@ namespace Cocoon
             foreach (PropertyInfo field in fieldsToUpdate)
                 if (!Utilities.HasAttribute<IgnoreOnUpdate>(field))
                 {
-                    columnsToUpdate.Add(generateAssignmentClause(def.TableName, field, values, "update_", false));
+                    columnsToUpdate.Add(generateAssignmentClause(def.tableName, field, values, "update_", false));
                     columnsToUpdateParams.Add(field);
                 }
 
-            string sql = string.Format("update {0} set {1} {2}", adapter.getObjectName(def.TableName), string.Join(", ", columnsToUpdate), whereClause);
+            string sql = string.Format("update {0} set {1} {2}", def.objectName, string.Join(", ", columnsToUpdate), whereClause);
 
             log("Generated SQL (Update) " + sql);
 
@@ -1151,7 +1161,7 @@ namespace Cocoon
 
         private void multiTenantMatch(TableDefinition def, PropertyInfo[] props)
         {
-
+            
             foreach (PropertyInfo i in def.multiTenantIDColumns)
             {
 
@@ -1181,12 +1191,12 @@ namespace Cocoon
             List<string> columnsToSelect = new List<string>();
             foreach (PropertyInfo prop in def.allColumns)
                 if (!Utilities.HasAttribute<IgnoreOnSelect>(prop))
-                    columnsToSelect.Add(string.Format("{0}.{1}", adapter.getObjectName(def.TableName), adapter.getObjectName(getColumnName(prop))));
+                    columnsToSelect.Add(string.Format("{0}.{1}", def.objectName, adapter.getObjectName(getColumnName(prop))));
 
             //generate where clause
             string whereClause = "";
             if (where != null)
-                whereClause = "where " + generateWhereClause(def.TableName, where, useOrLogic, "where_");
+                whereClause = "where " + generateWhereClause(def.tableName, where, useOrLogic, "where_");
 
             //generate join
             string joinClause = "";
@@ -1206,7 +1216,7 @@ namespace Cocoon
                     joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ",
                         adapter.getObjectName(annotation.tableName),
                         adapter.getObjectName(annotation.primaryKey),
-                        adapter.getObjectName(def.TableName),
+                        def.objectName,
                         adapter.getObjectName(annotation.foreignKey)));
 
                     columnsToSelect.Add(string.Format("{0}.{1}",
@@ -1220,7 +1230,7 @@ namespace Cocoon
             }
 
             //generate select statement
-            string sql = adapter.selectSQL(def.TableName, columnsToSelect, joinClause, whereClause, top);
+            string sql = adapter.selectSQL(def.tableName, columnsToSelect, joinClause, whereClause, top);
 
             log("Generated SQL (select) " + sql);
 
@@ -1378,9 +1388,10 @@ namespace Cocoon
                 }
 
                 //get table name
-                def.TableName = getTableName(type);
+                def.tableName = getTableName(type);
+                def.objectName = adapter.getObjectName(def.tableName);
 
-                if (string.IsNullOrEmpty(def.TableName))
+                if (string.IsNullOrEmpty(def.tableName))
                     throw new Exception(string.Format("Could not define object {0}.  Could not determine table name.", type.Name));
 
                 //get fields
@@ -1399,7 +1410,7 @@ namespace Cocoon
 
                 tableDefinitions[type] = def;
 
-                log(string.Format("Defined object: {0} - {1}", def.TableName, string.Join(", ", def.allColumns)));
+                log(string.Format("Defined object: {0} - {1}", def.tableName, string.Join(", ", def.allColumns)));
 
             }
 
@@ -1407,7 +1418,7 @@ namespace Cocoon
 
         }
 
-        internal string getColumnName(MemberInfo member)
+        public string getColumnName(MemberInfo member)
         {
 
             string name = null;
@@ -1438,7 +1449,7 @@ namespace Cocoon
 
         }
 
-        internal string getTableName(Type type)
+        public string getTableName(Type type)
         {
 
             string name;

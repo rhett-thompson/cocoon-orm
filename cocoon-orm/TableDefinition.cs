@@ -3,18 +3,21 @@ using System.Reflection;
 
 namespace Cocoon
 {
-    internal class TableDefinition
+
+    public class TableDefinition
     {
 
         public DBConnection connection;
 
-        public string TableName;
+        public string tableName;
+        public string objectName;
 
         public List<PropertyInfo> primaryKeys = new List<PropertyInfo>();
         public List<PropertyInfo> foreignKeys = new List<PropertyInfo>();
         public List<PropertyInfo> allColumns = new List<PropertyInfo>();
         public List<PropertyInfo> linkedColumns = new List<PropertyInfo>();
         public List<PropertyInfo> multiTenantIDColumns = new List<PropertyInfo>();
+
         public List<FieldInfo> fields = new List<FieldInfo>();
         
 

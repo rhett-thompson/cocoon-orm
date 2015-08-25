@@ -9,10 +9,10 @@ namespace Cocoon.Annotations
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class Column : Attribute
     {
-        internal string overrideName;
-        internal string dataType;
-        internal string defaultValue;
-        internal bool isMultiTenantID;
+        public string overrideName;
+        public string dataType;
+        public string defaultValue;
+        public bool isMultiTenantID;
 
         /// <summary>
         /// This field is a database column.
@@ -38,8 +38,8 @@ namespace Cocoon.Annotations
     public class Identity : Attribute
     {
 
-        internal int seed;
-        internal int increment;
+        public int seed;
+        public int increment;
 
         /// <summary>
         /// 
@@ -81,8 +81,8 @@ namespace Cocoon.Annotations
     public class ForeignKey : Attribute
     {
 
-        internal Type referencesTable;
-        internal string referenceTablePrimaryKeyOverride;
+        public Type referencesTable;
+        public string referenceTablePrimaryKeyOverride;
 
         /// <summary>
         /// 
@@ -134,11 +134,11 @@ namespace Cocoon.Annotations
     public class ForeignColumn : Attribute
     {
 
-        internal string foreignKey;
-        internal string tableName;
-        internal string overrideName;
-        internal string primaryKey;
-        internal Type objectModel;
+        public string foreignKey;
+        public string tableName;
+        public string overrideName;
+        public string primaryKey;
+        public Type objectModel;
  
         /// <summary>
         /// A foreign column linked by a foreign key in this class
