@@ -40,9 +40,6 @@
     <Reference Include="cocoon-orm.mysql">
       <HintPath>..\cocoon-orm.mysql\bin\Debug\cocoon-orm.mysql.dll</HintPath>
     </Reference>
-    <Reference Include="cocoon-orm.sqlserver">
-      <HintPath>..\cocoon-orm.sqlserver\bin\Debug\cocoon-orm.sqlserver.dll</HintPath>
-    </Reference>
     <Reference Include="MySql.Data, Version=6.9.7.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
       <HintPath>..\cocoon-orm\packages\MySql.Data.6.9.7\lib\net45\MySql.Data.dll</HintPath>
       <Private>True</Private>
