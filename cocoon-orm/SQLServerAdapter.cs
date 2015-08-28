@@ -171,7 +171,7 @@ namespace Cocoon
         {
 
             Column columnAnnotation = member.GetCustomAttribute<Column>(false);
-            string columnName = connection.getColumnName(member);
+            string columnName = Utilities.GetColumnName(member);
 
             //data type
             string dataType = "";
@@ -214,7 +214,7 @@ namespace Cocoon
                         primaryKeyColumn = foreignKeyAnnotation.referenceTablePrimaryKeyOverride;
 
                     foreignKey = string.Format("foreign key references {0}({1})",
-                        getObjectName(connection.getTableName(foreignKeyAnnotation.referencesTable)), 
+                        getObjectName(Utilities.GetTableName(foreignKeyAnnotation.referencesTable)), 
                         primaryKeyColumn);
                 }
 
@@ -285,7 +285,7 @@ namespace Cocoon
             List<string> primaryKeysForInsertTable = new List<string>();
             foreach (PropertyInfo pk in primaryKeys)
             {
-                string propName = connection.getColumnName(pk);
+                string propName = Utilities.GetColumnName(pk);
                 insertedPrimaryKeys.Add("inserted." + getObjectName(propName));
                 primaryKeysForInsertTable.Add(string.Format("{0} {1}", getObjectName(propName), csToDBTypeMap[pk.PropertyType]));
                 wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", getObjectName(propName), getObjectName(tableName)));

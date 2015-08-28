@@ -66,7 +66,7 @@ namespace Cocoon
             foreach (PropertyInfo prop in props)
             {
 
-                string propName = connection.getColumnName(prop);
+                string propName = Utilities.GetColumnName(prop);
                 string paramName = getParamName(propName);
 
                 if (conn.command.Parameters.Contains(paramName))
@@ -113,7 +113,7 @@ namespace Cocoon
                 object value = prop.GetValue(valueObject);
 
                 IDbDataParameter param = conn.command.CreateParameter();
-                param.ParameterName = getParamName(paramPrefix + connection.getColumnName(prop));
+                param.ParameterName = getParamName(paramPrefix + Utilities.GetColumnName(prop));
                 param.Value = value == null ? DBNull.Value : value;
 
                 conn.command.Parameters.Add(param);

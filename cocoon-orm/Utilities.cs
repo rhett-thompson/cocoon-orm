@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Cocoon.Annotations;
+using System;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -134,6 +135,69 @@ namespace Cocoon
         {
 
             return property.GetCustomAttributes(typeof(T), false).Length > 0;
+
+        }
+
+        /// <summary>
+        /// Returns the name of a column
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        public static string GetColumnName(MemberInfo member)
+        {
+
+            string name = null;
+            string overrideName = null;
+
+            if (HasAttribute<ForeignColumn>(member))
+            {
+
+                ForeignColumn annotation = member.GetCustomAttribute<ForeignColumn>(false);
+                overrideName = annotation.overrideName;
+
+            }
+            else
+            {
+
+                Column annotation = member.GetCustomAttribute<Column>(false);
+                if (annotation != null)
+                    overrideName = annotation.overrideName;
+
+            }
+
+            if (!string.IsNullOrEmpty(overrideName))
+                name = overrideName;
+            else
+                name = member.Name;
+
+            return name;
+
+        }
+
+        /// <summary>
+        /// Returns the name of a table
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static string GetTableName(Type type)
+        {
+
+            string name;
+            if (HasAttribute<Table>(type))
+            {
+
+                Table annotation = type.GetCustomAttribute<Table>(false);
+
+                if (annotation.tableName == null)
+                    name = type.Name;
+                else
+                    name = annotation.tableName;
+
+            }
+            else
+                name = type.Name;
+
+            return name;
 
         }
 

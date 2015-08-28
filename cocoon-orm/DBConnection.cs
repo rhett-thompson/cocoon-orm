@@ -33,7 +33,7 @@ namespace Cocoon
         /// </summary>
         public DBServerAdapter adapter;
 
-        private Action<string> logMethod;
+        private Action<string> loggerMethod;
         
         #region Public Interface
 
@@ -46,15 +46,30 @@ namespace Cocoon
         public DBConnection(string connectionString, DBServerAdapter dataBaseAdapter, Action<string> logMethod = null)
         {
 
-            this.logMethod = logMethod;
-            this.adapter = dataBaseAdapter;
+            loggerMethod = logMethod;
 
-            this.ConnectionString = connectionString;
+            adapter = dataBaseAdapter;
+            adapter.connection = this;
 
-            dataBaseAdapter.connection = this;
-
+            ConnectionString = connectionString;
+            
         }
 
+        /// <summary>
+        /// Creates a new SQLServer database connection
+        /// </summary>
+        /// <param name="connectionString">The connection string to use to connect to the database</param>
+        /// <param name="logMethod">A method to call for logging purposes</param>
+        public DBConnection(string connectionString, Action<string> logMethod = null)
+        {
+            loggerMethod = logMethod;
+
+            adapter = new SQLServerAdapter();
+            adapter.connection = this;
+
+            ConnectionString = connectionString;
+        }
+        
         #region Stored Procedures
 
         /// <summary>
@@ -653,7 +668,7 @@ namespace Cocoon
             {
                 if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
                 {
-                    string propName = getColumnName(prop);
+                    string propName = Utilities.GetColumnName(prop);
                     columns.Add(string.Format("{0}.{1}", def.objectName, adapter.getObjectName(propName)));
                     values.Add(adapter.getParamName(string.Format("value_{0}", propName)));
                     parameters.Add(prop);
@@ -744,7 +759,7 @@ namespace Cocoon
                 columns.Add(adapter.getColumnDefinition(prop));
 
                 if (Utilities.HasAttribute<PrimaryKey>(prop))
-                    primaryKeys.Add(getColumnName(prop));
+                    primaryKeys.Add(Utilities.GetColumnName(prop));
 
                 if (Utilities.HasAttribute<ForeignKey>(prop))
                     foreignKeys.Add(prop);
@@ -778,7 +793,7 @@ namespace Cocoon
                 if (!field.IsStatic || !Utilities.HasAttribute<Column>(field))
                     continue;
 
-                string columnName = getColumnName(field);
+                string columnName = Utilities.GetColumnName(field);
 
                 if (!columnNames.Contains(columnName))
                 {
@@ -802,7 +817,7 @@ namespace Cocoon
             if (primaryKeys.Count > 0)
                 columns.Add(string.Format("primary key ({0})", string.Join(", ", primaryKeys)));
 
-            string sql = adapter.createLookupTableSQL(columns, values, primaryKeys, getTableName(objectModel));
+            string sql = adapter.createLookupTableSQL(columns, values, primaryKeys, Utilities.GetTableName(objectModel));
 
             log("Generated SQL (CreateLookupTable) " + sql);
 
@@ -858,7 +873,7 @@ namespace Cocoon
         public bool VerifyLookupTable(Type objectModel)
         {
 
-            DataSet ds = ExecuteSQLDataSet(adapter.verifyLookupTableSQL(getTableName(objectModel)));
+            DataSet ds = ExecuteSQLDataSet(adapter.verifyLookupTableSQL(Utilities.GetTableName(objectModel)));
 
             if (ds == null || ds.Tables.Count != 1 || ds.Tables[0].Rows.Count == 0 || ds.Tables[0].Columns.Count == 0)
                 return false;
@@ -870,7 +885,7 @@ namespace Cocoon
                 if (field.IsStatic)
                 {
 
-                    if (!ds.Tables[0].Columns.Contains(getColumnName(field)))
+                    if (!ds.Tables[0].Columns.Contains(Utilities.GetColumnName(field)))
                         return false;
 
                     validFields.Add(field);
@@ -882,7 +897,7 @@ namespace Cocoon
 
             //check values
             foreach (FieldInfo field in validFields)
-                if (!lookupTableColumnHasValue(ds.Tables[0].Rows, getColumnName(field), field.GetValue(null)))
+                if (!lookupTableColumnHasValue(ds.Tables[0].Rows, Utilities.GetColumnName(field), field.GetValue(null)))
                     return false;
 
             return true;
@@ -1138,8 +1153,8 @@ namespace Cocoon
         private void log(string msg)
         {
 
-            if (logMethod != null)
-                logMethod(msg);
+            if (loggerMethod != null)
+                loggerMethod(msg);
 
         }
 
@@ -1191,7 +1206,7 @@ namespace Cocoon
             List<string> columnsToSelect = new List<string>();
             foreach (PropertyInfo prop in def.allColumns)
                 if (!Utilities.HasAttribute<IgnoreOnSelect>(prop))
-                    columnsToSelect.Add(string.Format("{0}.{1}", def.objectName, adapter.getObjectName(getColumnName(prop))));
+                    columnsToSelect.Add(string.Format("{0}.{1}", def.objectName, adapter.getObjectName(Utilities.GetColumnName(prop))));
 
             //generate where clause
             string whereClause = "";
@@ -1211,7 +1226,7 @@ namespace Cocoon
                     ForeignColumn annotation = linkedField.GetCustomAttribute<ForeignColumn>(false);
 
                     if (annotation.objectModel != null)
-                        annotation.tableName = getTableName(annotation.objectModel);
+                        annotation.tableName = Utilities.GetTableName(annotation.objectModel);
 
                     joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ",
                         adapter.getObjectName(annotation.tableName),
@@ -1221,7 +1236,7 @@ namespace Cocoon
 
                     columnsToSelect.Add(string.Format("{0}.{1}",
                         adapter.getObjectName(annotation.tableName),
-                        adapter.getObjectName(getColumnName(linkedField))));
+                        adapter.getObjectName(Utilities.GetColumnName(linkedField))));
 
                 }
 
@@ -1259,7 +1274,7 @@ namespace Cocoon
             foreach (PropertyInfo prop in propertiesToSet)
             {
 
-                string propName = getColumnName(prop);
+                string propName = Utilities.GetColumnName(prop);
 
                 if (!row.Table.Columns.Contains(propName))
                     continue;
@@ -1314,7 +1329,7 @@ namespace Cocoon
         private string generateAssignmentClause(string tableName, PropertyInfo property, object valueObject, string paramPrefix, bool isCondition)
         {
             object value = property.GetValue(valueObject);
-            string columnName = getColumnName(property);
+            string columnName = Utilities.GetColumnName(property);
             string param = adapter.getParamName(paramPrefix + columnName);
             if (isCondition)
                 return string.Format(value == null ? "{0}.{1} is null" : "{0}.{1} = {2}",
@@ -1324,7 +1339,7 @@ namespace Cocoon
             else
                 return string.Format("{0}.{1} = {2}",
                     adapter.getObjectName(tableName),
-                    adapter.getObjectName(getColumnName(property)),
+                    adapter.getObjectName(Utilities.GetColumnName(property)),
                     param);
         }
 
@@ -1388,7 +1403,7 @@ namespace Cocoon
                 }
 
                 //get table name
-                def.tableName = getTableName(type);
+                def.tableName = Utilities.GetTableName(type);
                 def.objectName = adapter.getObjectName(def.tableName);
 
                 if (string.IsNullOrEmpty(def.tableName))
@@ -1418,58 +1433,7 @@ namespace Cocoon
 
         }
 
-        public string getColumnName(MemberInfo member)
-        {
-
-            string name = null;
-            string overrideName = null;
-
-            if (Utilities.HasAttribute<ForeignColumn>(member))
-            {
-
-                ForeignColumn annotation = member.GetCustomAttribute<ForeignColumn>(false);
-                overrideName = annotation.overrideName;
-
-            }
-            else
-            {
-
-                Column annotation = member.GetCustomAttribute<Column>(false);
-                if (annotation != null)
-                    overrideName = annotation.overrideName;
-
-            }
-
-            if (!string.IsNullOrEmpty(overrideName))
-                name = overrideName;
-            else
-                name = member.Name;
-
-            return name;
-
-        }
-
-        public string getTableName(Type type)
-        {
-
-            string name;
-            if (Utilities.HasAttribute<Table>(type))
-            {
-
-                Table annotation = type.GetCustomAttribute<Table>(false);
-
-                if (annotation.tableName == null)
-                    name = type.Name;
-                else
-                    name = annotation.tableName;
-
-            }
-            else
-                name = type.Name;
-
-            return name;
-
-        }
+        
 
         #endregion
 

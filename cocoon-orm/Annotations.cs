@@ -192,7 +192,7 @@ namespace Cocoon.Annotations
     public class Table : Attribute
     {
 
-        internal string tableName;
+        public string tableName;
 
         /// <summary>
         /// 

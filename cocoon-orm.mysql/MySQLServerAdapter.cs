@@ -172,7 +172,7 @@ namespace Cocoon
         {
 
             Column columnAnnotation = member.GetCustomAttribute<Column>(false);
-            string columnName = connection.getColumnName(member);
+            string columnName = Utilities.GetColumnName(member);
 
             //data type
             string dataType = "";
@@ -248,14 +248,14 @@ namespace Cocoon
                     if (foreignKeyAnnotation.referencesTable != null)
                     {
 
-                        string foreignKeyColumn = connection.getColumnName(fk);
+                        string foreignKeyColumn = Utilities.GetColumnName(fk);
                         string primaryKeyColumn = foreignKeyColumn;
                         if (!string.IsNullOrEmpty(foreignKeyAnnotation.referenceTablePrimaryKeyOverride))
                             primaryKeyColumn = foreignKeyAnnotation.referenceTablePrimaryKeyOverride;
 
                         columns.Add(string.Format("foreign key ({0}) references {1}({2})", 
                             foreignKeyColumn,
-                            getObjectName(connection.getTableName(foreignKeyAnnotation.referencesTable)), 
+                            getObjectName(Utilities.GetTableName(foreignKeyAnnotation.referencesTable)), 
                             primaryKeyColumn));
 
                     }
@@ -307,7 +307,7 @@ namespace Cocoon
             string returnSelect = "";
 
             if (primaryKeys.Count == 1 && Utilities.HasAttribute<Identity>(primaryKeys[0]))
-                returnSelect = string.Format("select {0}.* from {0} where {0}.{1} = last_insert_id()", tableName, getObjectName(connection.getColumnName(primaryKeys[0])));
+                returnSelect = string.Format("select {0}.* from {0} where {0}.{1} = last_insert_id()", tableName, getObjectName(Utilities.GetColumnName(primaryKeys[0])));
             else if(primaryKeys.Count > 0)
             {
 
@@ -318,7 +318,7 @@ namespace Cocoon
                     if(Utilities.HasAttribute<Identity>(pk))
                         throw new Exception("MySQL adapter does not support inserts into tables with composite primary keys with auto_increment.");
                     
-                    string propName = connection.getColumnName(pk);
+                    string propName = Utilities.GetColumnName(pk);
                     wherePrimaryKeys.Add(string.Format("{0}.{1} = {2}", tableName, getObjectName(propName), getParamName("value_" + propName)));
 
                 }

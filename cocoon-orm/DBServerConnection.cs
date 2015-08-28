@@ -9,7 +9,7 @@ namespace Cocoon
     /// </summary>
     public class DBServerConnection : IDisposable
     {
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -23,9 +23,9 @@ namespace Cocoon
         /// <summary>
         /// 
         /// </summary>
-        public void Dispose()
+        public virtual void Dispose()
         {
-
+ 
             command.Dispose();
             connection.Dispose();
 

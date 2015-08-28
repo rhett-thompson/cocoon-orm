@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
-using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Transactions;
 using System.Linq;
 
 namespace Cocoon.Tests
@@ -17,7 +14,7 @@ namespace Cocoon.Tests
 
         static void Main(string[] args)
         {
-
+            
             Console.WriteLine("SQLServer Regression Test");
             SQLServerEcommerceTest sqlServerTest = new SQLServerEcommerceTest(new DBConnection("Data Source=72.3.204.234,4120;Initial Catalog=424828_espresso_test;User ID=424828_espresso_test;Password=espressoDB90;Connection Timeout=600", new SQLServerAdapter(), new Action<string>(log)));
             sqlServerTest.runTests();
@@ -41,6 +38,8 @@ namespace Cocoon.Tests
             mySqlTest.runBenchmark(5);
             mySqlTest.checkMethodsTested();
 
+            Console.WriteLine("Finished");
+
             Console.ReadLine();
 
         }
@@ -60,6 +59,8 @@ namespace Cocoon.Tests
             //Console.WriteLine(msg);
 
         }
+
+        
 
     }
 }

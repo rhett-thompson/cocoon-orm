@@ -32,7 +32,7 @@ namespace Cocoon
        {
 
             foreach (PropertyInfo prop in foreignKeys)
-                if (connection.getColumnName(prop) == fieldName)
+                if (Utilities.GetColumnName(prop) == fieldName)
                     return prop;
 
             return null;
@@ -43,7 +43,7 @@ namespace Cocoon
         {
 
             foreach (PropertyInfo prop in allColumns)
-                if (connection.getColumnName(prop) == columnName)
+                if (Utilities.GetColumnName(prop) == columnName)
                     return true;
 
             return false;
