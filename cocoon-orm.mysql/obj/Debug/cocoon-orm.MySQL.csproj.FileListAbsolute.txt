@@ -1,9 +1,9 @@
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\obj\Debug\cocoon-orm.MySQL.csprojResolveAssemblyReference.cache
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Debug\cocoon-orm.mysql.dll.config
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Debug\cocoon-orm.mysql.dll
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Debug\cocoon-orm.mysql.pdb
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Debug\cocoon-orm.dll
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Debug\MySql.Data.dll
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Debug\cocoon-orm.pdb
+C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\obj\Debug\cocoon-orm.mysql.csprojResolveAssemblyReference.cache
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\obj\Debug\cocoon-orm.mysql.dll
 C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\obj\Debug\cocoon-orm.mysql.pdb
