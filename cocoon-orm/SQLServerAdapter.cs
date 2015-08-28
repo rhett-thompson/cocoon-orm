@@ -175,8 +175,8 @@ namespace Cocoon
 
             //data type
             string dataType = "";
-            if (!string.IsNullOrEmpty(columnAnnotation.dataType))
-                dataType = columnAnnotation.dataType;
+            if (!string.IsNullOrEmpty(columnAnnotation.DataType))
+                dataType = columnAnnotation.DataType;
             else if (member.MemberType == MemberTypes.Field && csToDBTypeMap.ContainsKey(((FieldInfo)member).FieldType))
                 dataType = csToDBTypeMap[((FieldInfo)member).FieldType];
             else if (member.MemberType == MemberTypes.Property && csToDBTypeMap.ContainsKey(((PropertyInfo)member).PropertyType))
@@ -194,10 +194,10 @@ namespace Cocoon
             if (Utilities.HasAttribute<Identity>(member))
             {
                 Identity identityAnnotation = member.GetCustomAttribute<Identity>(false);
-                defaultValue = string.Format("identity({0}, {1})", identityAnnotation.seed, identityAnnotation.increment);
+                defaultValue = string.Format("identity({0}, {1})", identityAnnotation.Seed, identityAnnotation.Increment);
             }
-            else if (!string.IsNullOrEmpty(columnAnnotation.defaultValue))
-                defaultValue = string.Format("default {0}", columnAnnotation.defaultValue);
+            else if (!string.IsNullOrEmpty(columnAnnotation.DefaultValue))
+                defaultValue = string.Format("default {0}", columnAnnotation.DefaultValue);
 
             //foreign key
             string foreignKey = "";
@@ -206,15 +206,15 @@ namespace Cocoon
 
                 ForeignKey foreignKeyAnnotation = member.GetCustomAttribute<ForeignKey>(false);
 
-                if (foreignKeyAnnotation.referencesTable != null)
+                if (foreignKeyAnnotation.ReferencesTable != null)
                 {
 
                     string primaryKeyColumn = columnName;
-                    if (!string.IsNullOrEmpty(foreignKeyAnnotation.referenceTablePrimaryKeyOverride))
-                        primaryKeyColumn = foreignKeyAnnotation.referenceTablePrimaryKeyOverride;
+                    if (!string.IsNullOrEmpty(foreignKeyAnnotation.ReferenceTablePrimaryKeyOverride))
+                        primaryKeyColumn = foreignKeyAnnotation.ReferenceTablePrimaryKeyOverride;
 
                     foreignKey = string.Format("foreign key references {0}({1})",
-                        getObjectName(Utilities.GetTableName(foreignKeyAnnotation.referencesTable)), 
+                        getObjectName(Utilities.GetTableName(foreignKeyAnnotation.ReferencesTable)), 
                         primaryKeyColumn);
                 }
 

@@ -22,11 +22,8 @@ namespace Cocoon
         /// The connection string cocoon is using
         /// </summary>
         public string ConnectionString;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public Dictionary<Type, TableDefinition> tableDefinitions = new Dictionary<Type, TableDefinition>();
+        
+        internal Dictionary<Type, TableDefinition> tableDefinitions = new Dictionary<Type, TableDefinition>();
 
         /// <summary>
         /// 
@@ -1230,9 +1227,9 @@ namespace Cocoon
 
                     joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ",
                         adapter.getObjectName(annotation.tableName),
-                        adapter.getObjectName(annotation.primaryKey),
+                        adapter.getObjectName(annotation.PrimaryKey),
                         def.objectName,
-                        adapter.getObjectName(annotation.foreignKey)));
+                        adapter.getObjectName(annotation.ForeignKey)));
 
                     columnsToSelect.Add(string.Format("{0}.{1}",
                         adapter.getObjectName(annotation.tableName),
@@ -1386,7 +1383,7 @@ namespace Cocoon
                         def.foreignKeys.Add(property);
 
                     //multi tenant columns
-                    if (column.isMultiTenantID)
+                    if (column.IsMultiTenantID)
                         def.multiTenantIDColumns.Add(property);
 
                     //add too all fields
@@ -1398,7 +1395,7 @@ namespace Cocoon
                 foreach (PropertyInfo linkedField in def.linkedColumns)
                 {
                     ForeignColumn annotation = linkedField.GetCustomAttribute<ForeignColumn>(false);
-                    if (def.getForeginKey(annotation.foreignKey) == null)
+                    if (def.getForeginKey(annotation.ForeignKey) == null)
                         throw new Exception(string.Format("Foreign key {0} does not exist in class {1}.  Forgot ForeignKey attribute?", linkedField.Name, type.Name));
                 }
 

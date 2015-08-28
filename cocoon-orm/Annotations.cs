@@ -9,10 +9,26 @@ namespace Cocoon.Annotations
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class Column : Attribute
     {
-        public string overrideName;
-        public string dataType;
-        public string defaultValue;
-        public bool isMultiTenantID;
+
+        /// <summary>
+        /// Overrides the name of this column.
+        /// </summary>
+        public readonly string OverrideName;
+
+        /// <summary>
+        /// The SQL datatype of the column.
+        /// </summary>
+        public readonly string DataType;
+
+        /// <summary>
+        /// The default value of the column.
+        /// </summary>
+        public readonly string DefaultValue;
+
+        /// <summary>
+        /// This column is a multi tenant id.
+        /// </summary>
+        public readonly bool IsMultiTenantID;
 
         /// <summary>
         /// This field is a database column.
@@ -23,10 +39,10 @@ namespace Cocoon.Annotations
         /// <param name="IsMultiTenantID">This column is a multi tenant id.</param>
         public Column(string OverrideName = null, string DataType = null, string DefaultValue = null, bool IsMultiTenantID = false)
         {
-            this.overrideName = OverrideName;
-            this.dataType = DataType;
-            this.defaultValue = DefaultValue;
-            this.isMultiTenantID = IsMultiTenantID;
+            this.OverrideName = OverrideName;
+            this.DataType = DataType;
+            this.DefaultValue = DefaultValue;
+            this.IsMultiTenantID = IsMultiTenantID;
         }
 
     }
@@ -38,19 +54,26 @@ namespace Cocoon.Annotations
     public class Identity : Attribute
     {
 
-        public int seed;
-        public int increment;
+        /// <summary>
+        /// Is the value that is used for the very first row loaded into the table.
+        /// </summary>
+        public readonly int Seed;
 
         /// <summary>
-        /// 
+        /// Is the incremental value that is added to the identity value of the previous row that was loaded.
+        /// </summary>
+        public readonly int Increment;
+
+        /// <summary>
+        /// This field is an identity column
         /// </summary>
         /// <param name="Seed">Is the value that is used for the very first row loaded into the table.</param>
         /// <param name="Increment">Is the incremental value that is added to the identity value of the previous row that was loaded.</param>
         public Identity(int Seed, int Increment)
         {
 
-            this.seed = Seed;
-            this.increment = Increment;
+            this.Seed = Seed;
+            this.Increment = Increment;
 
         }
 
@@ -81,19 +104,26 @@ namespace Cocoon.Annotations
     public class ForeignKey : Attribute
     {
 
-        public Type referencesTable;
-        public string referenceTablePrimaryKeyOverride;
+        /// <summary>
+        /// The table where the primary key resides
+        /// </summary>
+        public readonly Type ReferencesTable;
 
         /// <summary>
-        /// 
+        /// Specifiy this if the name of the column in the primary table is different than the foreign key.
         /// </summary>
-        /// <param name="ReferencesTable"></param>
-        /// <param name="ReferenceTablePrimaryKeyOverride"></param>
+        public readonly string ReferenceTablePrimaryKeyOverride;
+
+        /// <summary>
+        /// This field is a foreign key in the database
+        /// </summary>
+        /// <param name="ReferencesTable">The table where the primary key resides</param>
+        /// <param name="ReferenceTablePrimaryKeyOverride">Specifiy this if the name of the column in the primary table is different than the foreign key.</param>
         public ForeignKey(Type ReferencesTable = null, string ReferenceTablePrimaryKeyOverride = null)
         {
 
-            this.referencesTable = ReferencesTable;
-            this.referenceTablePrimaryKeyOverride = ReferenceTablePrimaryKeyOverride;
+            this.ReferencesTable = ReferencesTable;
+            this.ReferenceTablePrimaryKeyOverride = ReferenceTablePrimaryKeyOverride;
 
         }
 
@@ -134,11 +164,23 @@ namespace Cocoon.Annotations
     public class ForeignColumn : Attribute
     {
 
-        public string foreignKey;
-        public string tableName;
-        public string overrideName;
-        public string primaryKey;
-        public Type objectModel;
+        /// <summary>
+        /// The foreign key in this class to use
+        /// </summary>
+        public readonly string ForeignKey;
+
+        /// <summary>
+        /// Overrides the name of this column.
+        /// </summary>
+        public readonly string OverrideName;
+
+        /// <summary>
+        /// The name of the primary key in the primary table. If null, then the primary key is the same as the foreign key.
+        /// </summary>
+        public readonly string PrimaryKey;
+
+        internal string tableName;
+        internal Type objectModel;
  
         /// <summary>
         /// A foreign column linked by a foreign key in this class
@@ -156,30 +198,30 @@ namespace Cocoon.Annotations
             if (string.IsNullOrEmpty(TableName))
                 throw new Exception("No table provided.");
 
-            this.foreignKey = ForeignKey;
+            this.ForeignKey = ForeignKey;
             this.tableName = TableName;
-            this.overrideName = OverrideName;
-            this.primaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
+            this.OverrideName = OverrideName;
+            this.PrimaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
 
         }
 
         /// <summary>
-        /// 
+        /// A foreign column linked by a foreign key in this class
         /// </summary>
-        /// <param name="ForeignKey"></param>
-        /// <param name="ObjectModel"></param>
-        /// <param name="OverrideName"></param>
-        /// <param name="PrimaryKey"></param>
+        /// <param name="ForeignKey">The foreign key in this class to use</param>
+        /// <param name="ObjectModel">The table to join to.</param>
+        /// <param name="OverrideName">Overrides the name of this column.</param>
+        /// <param name="PrimaryKey">The name of the primary key in the primary table. If null, then the primary key is the same as the foreign key.</param>
         public ForeignColumn(string ForeignKey, Type ObjectModel, string OverrideName = null, string PrimaryKey = null)
         {
 
             if (string.IsNullOrEmpty(ForeignKey))
                 throw new Exception("No foreign key provided.");
 
-            this.foreignKey = ForeignKey;
+            this.ForeignKey = ForeignKey;
             this.objectModel = ObjectModel;
-            this.overrideName = OverrideName;
-            this.primaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
+            this.OverrideName = OverrideName;
+            this.PrimaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
 
         }
 
@@ -192,7 +234,7 @@ namespace Cocoon.Annotations
     public class Table : Attribute
     {
 
-        public string tableName;
+        internal string tableName;
 
         /// <summary>
         /// 

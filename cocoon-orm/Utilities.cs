@@ -153,7 +153,7 @@ namespace Cocoon
             {
 
                 ForeignColumn annotation = member.GetCustomAttribute<ForeignColumn>(false);
-                overrideName = annotation.overrideName;
+                overrideName = annotation.OverrideName;
 
             }
             else
@@ -161,7 +161,7 @@ namespace Cocoon
 
                 Column annotation = member.GetCustomAttribute<Column>(false);
                 if (annotation != null)
-                    overrideName = annotation.overrideName;
+                    overrideName = annotation.OverrideName;
 
             }
 

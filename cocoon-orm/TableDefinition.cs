@@ -4,7 +4,7 @@ using System.Reflection;
 namespace Cocoon
 {
 
-    public class TableDefinition
+    internal class TableDefinition
     {
 
         public DBConnection connection;
