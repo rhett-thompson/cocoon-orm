@@ -21,7 +21,7 @@ namespace Cocoon.Tests
 
         public override void generateData()
         {
-       
+
             Console.WriteLine("*** Generating Test Data ***");
 
             DateTime startTime = DateTime.Now;
@@ -50,9 +50,6 @@ namespace Cocoon.Tests
                 Order newOrder = null;
                 OrderLine newOrderLine = null;
                 Payment newPayment = null;
-
-                //try
-                //{
 
                 //customer
                 newCustomer = db.Insert<Customer>(new Customer()
@@ -98,9 +95,6 @@ namespace Cocoon.Tests
                     PaymentAmount = newOrderLine.UnitPrice * newOrderLine.Quantity,
                     CreateDate = DateTime.UtcNow
                 });
-
-                //}
-                //catch { }
 
             }
 
@@ -231,7 +225,8 @@ namespace Cocoon.Tests
             });
 
             //Insert
-            performTest("Insert", "", () => {
+            performTest("Insert", "", () =>
+            {
 
                 var insert1 = db.Insert<TestTable>(new TestTable() { Prim1 = Guid.NewGuid(), Prim2 = "Prim2", Prim3 = 123, Name = "asd" });
 
@@ -357,7 +352,7 @@ namespace Cocoon.Tests
                 }
 
             });
-            
+
             //Classic Stored Proc Single
             performBenchmark("Classic Stored Proc List", iterations, () =>
             {

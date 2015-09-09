@@ -71,60 +71,55 @@ namespace Cocoon.Tests
                 Order newOrder = null;
                 OrderLine newOrderLine = null;
                 Payment newPayment = null;
- 
-                try
+
+
+                //customer
+                newCustomer = db.Insert<Customer>(new Customer()
                 {
+                    WebsiteID = 1,
+                    Address1 = "address 1",
+                    Address2 = "address 2",
+                    City = "city",
+                    Country = "country",
+                    FirstName = "first name",
+                    LastName = "last name",
+                    LoginEmail = "email@email.com",
+                    Password = string.Format("({0}{0}{0}) {0}{0}{0}-{0}{0}{0}{0}", rng.Next(10)),
+                    Phone = "phone",
+                    PostalCode = "postal code",
+                    State = "state",
+                    CreateDate = DateTime.UtcNow
+                });
 
-                    //customer
-                    newCustomer = db.Insert<Customer>(new Customer()
-                    {
-                        WebsiteID = 1,
-                        Address1 = "address 1",
-                        Address2 = "address 2",
-                        City = "city",
-                        Country = "country",
-                        FirstName = "first name",
-                        LastName = "last name",
-                        LoginEmail = "email@email.com",
-                        Password = string.Format("({0}{0}{0}) {0}{0}{0}-{0}{0}{0}{0}", rng.Next(10)),
-                        Phone = "phone",
-                        PostalCode = "postal code",
-                        State = "state",
-                        CreateDate = DateTime.UtcNow
-                    });
+                //order
+                newOrder = db.Insert<Order>(new Order()
+                {
+                    WebsiteID = 1,
+                    CustomerID = newCustomer.CustomerID,
+                    OrderTypeID = OrderType.WEBSITE,
+                    CreateDate = DateTime.UtcNow
 
-                    //order
-                    newOrder = db.Insert<Order>(new Order()
-                    {
-                        WebsiteID = 1,
-                        CustomerID = newCustomer.CustomerID,
-                        OrderTypeID = OrderType.WEBSITE,
-                        CreateDate = DateTime.UtcNow
+                });
 
-                    });
+                //orderline
+                newOrderLine = db.Insert<OrderLine>(new OrderLine()
+                {
+                    OrderID = newOrder.OrderID,
+                    SKU = "SKU_" + rng.Next(1000),
+                    UnitPrice = (decimal)(rng.NextDouble() * 1000),
+                    Quantity = rng.Next(10),
+                    CreateDate = DateTime.UtcNow
 
-                    //orderline
-                    newOrderLine = db.Insert<OrderLine>(new OrderLine()
-                    {
-                        OrderID = newOrder.OrderID,
-                        SKU = "SKU_" + rng.Next(1000),
-                        UnitPrice = (decimal)(rng.NextDouble() * 1000),
-                        Quantity = rng.Next(10),
-                        CreateDate = DateTime.UtcNow
+                });
 
-                    });
+                //payment
+                newPayment = db.Insert<Payment>(new Payment()
+                {
+                    OrderID = newOrder.OrderID,
+                    PaymentAmount = newOrderLine.UnitPrice * newOrderLine.Quantity,
+                    CreateDate = DateTime.UtcNow
 
-                    //payment
-                    newPayment = db.Insert<Payment>(new Payment()
-                    {
-                        OrderID = newOrder.OrderID,
-                        PaymentAmount = newOrderLine.UnitPrice * newOrderLine.Quantity,
-                        CreateDate = DateTime.UtcNow
-
-                    });
-
-                }
-                catch { }
+                });
 
             }
 
@@ -177,12 +172,13 @@ namespace Cocoon.Tests
             performTest("GetSingle", "", () => { return db.GetSingle<Order>(new { WebsiteID = 1, OrderID = 1 }).OrderID == 1; });
 
             //Update
-            performTest("Update", "", () => {
+            performTest("Update", "", () =>
+            {
                 Order order = db.GetSingle<Order>(new { WebsiteID = 1, OrderID = 1 });
                 order.OrderTypeID = OrderType.PHONE;
                 db.Update(order, new { WebsiteID = 1, OrderID = 1 });
                 order = db.GetSingle<Order>(new { WebsiteID = 1, OrderID = 1 });
-                return order.OrderTypeID == OrderType.PHONE; 
+                return order.OrderTypeID == OrderType.PHONE;
             });
 
             //GetList
@@ -234,16 +230,19 @@ namespace Cocoon.Tests
             });
 
             //DropTable
-            performTest("DropTable", "", () => { 
+            performTest("DropTable", "", () =>
+            {
                 db.DropTable(typeof(TestTable));
-                db.DropTable(typeof(TestLookupTable)); 
-                return true; 
+                db.DropTable(typeof(TestLookupTable));
+                return true;
             });
 
             //CreateTable
-            performTest("CreateTable", "", () => {
+            performTest("CreateTable", "", () =>
+            {
                 db.CreateTable(typeof(TestTable));
-                return true; });
+                return true;
+            });
 
             //CreateLookupTable
             performTest("CreateLookupTable", "", () =>
@@ -253,7 +252,8 @@ namespace Cocoon.Tests
             });
 
             //Insert
-            performTest("Insert", "", () => {
+            performTest("Insert", "", () =>
+            {
 
                 var insert1 = db.Insert<TestTable>(new TestTable() { Prim1 = Guid.NewGuid(), Prim2 = "Prim2", Prim3 = 123, Name = "asd" });
 
@@ -269,8 +269,9 @@ namespace Cocoon.Tests
             });
 
             //TableExists
-            performTest("TableExists", "", () => {
-                return db.TableExists(typeof(TestTable)) && db.TableExists(typeof(TestLookupTable)); 
+            performTest("TableExists", "", () =>
+            {
+                return db.TableExists(typeof(TestTable)) && db.TableExists(typeof(TestLookupTable));
             });
 
             //GetCSV
