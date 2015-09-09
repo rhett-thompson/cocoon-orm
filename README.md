@@ -5,7 +5,8 @@ Cocoon ORM is for developers who are unwilling to trust the Entity Framework or 
 
 NOTE. Some features will be disabled in the MySQL database adapter.
 
-Webpage: http://guidelinetech.github.io/cocoon-orm/
+- Nuget: https://www.nuget.org/packages/cocoon-orm/
+- Webpage: http://guidelinetech.github.io/cocoon-orm/
 
 ### The goals of Cocoon ORM 
 - Leverage simplicity and elegance.
