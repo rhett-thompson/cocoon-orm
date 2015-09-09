@@ -181,7 +181,8 @@ namespace Cocoon.Annotations
 
         internal string tableName;
         internal Type objectModel;
- 
+        internal JoinType joinType;
+
         /// <summary>
         /// A foreign column linked by a foreign key in this class
         /// </summary>
@@ -189,7 +190,7 @@ namespace Cocoon.Annotations
         /// <param name="TableName">The table to join to.</param>
         /// <param name="OverrideName">Overrides the name of this column.</param>
         /// <param name="PrimaryKey">The name of the primary key in the primary table. If null, then the primary key is the same as the foreign key.</param>
-        public ForeignColumn(string ForeignKey, string TableName, string OverrideName = null, string PrimaryKey = null)
+        public ForeignColumn(string ForeignKey, string TableName, string OverrideName = null, string PrimaryKey = null, JoinType JoinType = JoinType.INNER)
         {
 
             if (string.IsNullOrEmpty(ForeignKey))
@@ -199,9 +200,11 @@ namespace Cocoon.Annotations
                 throw new Exception("No table provided.");
 
             this.ForeignKey = ForeignKey;
-            this.tableName = TableName;
             this.OverrideName = OverrideName;
             this.PrimaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
+
+            tableName = TableName;
+            joinType = JoinType;
 
         }
 
@@ -212,16 +215,18 @@ namespace Cocoon.Annotations
         /// <param name="ObjectModel">The table to join to.</param>
         /// <param name="OverrideName">Overrides the name of this column.</param>
         /// <param name="PrimaryKey">The name of the primary key in the primary table. If null, then the primary key is the same as the foreign key.</param>
-        public ForeignColumn(string ForeignKey, Type ObjectModel, string OverrideName = null, string PrimaryKey = null)
+        public ForeignColumn(string ForeignKey, Type ObjectModel, string OverrideName = null, string PrimaryKey = null, JoinType JoinType = JoinType.INNER)
         {
 
             if (string.IsNullOrEmpty(ForeignKey))
                 throw new Exception("No foreign key provided.");
 
             this.ForeignKey = ForeignKey;
-            this.objectModel = ObjectModel;
             this.OverrideName = OverrideName;
             this.PrimaryKey = PrimaryKey == null ? ForeignKey : PrimaryKey;
+
+            objectModel = ObjectModel;
+            joinType = JoinType;
 
         }
 
@@ -249,5 +254,17 @@ namespace Cocoon.Annotations
 
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    public enum JoinType
+    {
+
+        LEFT,
+        INNER,
+        RIGHT,
+        FULL_OUTER
+
+    }
 
 }

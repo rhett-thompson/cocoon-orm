@@ -6,7 +6,6 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Web;
 
 namespace Cocoon
@@ -22,7 +21,7 @@ namespace Cocoon
         /// The connection string cocoon is using
         /// </summary>
         public string ConnectionString;
-        
+
         internal Dictionary<Type, TableDefinition> tableDefinitions = new Dictionary<Type, TableDefinition>();
 
         /// <summary>
@@ -31,7 +30,7 @@ namespace Cocoon
         public DBServerAdapter adapter;
 
         private Action<string> loggerMethod;
-        
+
         #region Public Interface
 
         /// <summary>
@@ -49,7 +48,7 @@ namespace Cocoon
             adapter.connection = this;
 
             ConnectionString = connectionString;
-            
+
         }
 
         /// <summary>
@@ -66,7 +65,7 @@ namespace Cocoon
 
             ConnectionString = connectionString;
         }
-        
+
         #region Stored Procedures
 
         /// <summary>
@@ -339,7 +338,7 @@ namespace Cocoon
         }
 
         #endregion
-
+        
         #region Simple CRUD API
 
         /// <summary>
@@ -642,6 +641,99 @@ namespace Cocoon
                 useOrLogic);
 
         }
+        
+        /// <summary>
+        /// Inserts a list of records into the database and returns a list of the inserted objects.
+        /// </summary>
+        /// <typeparam name="T">The type of objects to return</typeparam>
+        /// <param name="listToInsert">The list of objects to use for the insert</param>
+        /// <returns>A list of the inserted objects</returns>
+        public IEnumerable<T> Insert<T>(IEnumerable<T> listToInsert)
+        {
+
+            if (listToInsert.Count() == 0)
+                throw new Exception("List to insert cannot be empty.");
+
+            Type returnType = typeof(T);
+            TableDefinition def = getDef(returnType);
+
+            //get columns and values
+            List<string> columns;
+            List<string> notUsedValues;
+            
+            List<PropertyInfo> primaryKeys;
+            List<PropertyInfo> parameters;
+            insertColumns(def, out columns, out notUsedValues, out primaryKeys, out parameters);
+
+            //generate sql
+            List<string> insertParts = new List<string>();
+
+            insertParts.Add(adapter.insertInitSQL(def.tableName, primaryKeys));
+            
+            List<string> whereParts = new List<string>();
+            for (int i = 0; i < listToInsert.Count(); i++)
+            {
+
+                List<string> values = new List<string>();
+                List<string> innerWhereParts = new List<string>();
+                foreach (PropertyInfo prop in def.allColumns)
+                    if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
+                    {
+                        string propName = Utilities.GetColumnName(prop);
+                        string valueParam = adapter.getParamName(string.Format("value_{0}_{1}", i, propName));
+
+                        values.Add(valueParam);
+
+                        if(primaryKeys.Contains(prop))
+                            innerWhereParts.Add(string.Format("{0}.{1} = {2}", adapter.getObjectName(def.tableName), propName, valueParam));
+
+                    }
+
+                whereParts.Add(string.Format("({0})", string.Join(" and ", innerWhereParts)));
+
+                insertParts.Add(adapter.insertSQL(def.tableName, columns, values, primaryKeys));
+
+            }
+            
+            insertParts.Add(adapter.insertSelectSQL(def.tableName, string.Join(" or ", whereParts), primaryKeys));
+
+            insertParts.RemoveAll(s => s == null);
+            string sql = string.Join(";", insertParts);
+
+            log("Generated SQL (Insert) " + sql);
+
+            using (var connection = adapter.getConnection(ConnectionString))
+            {
+
+                //set sql
+                adapter.openSQL(connection, sql);
+
+                //add parameters
+                for (int i = 0; i < listToInsert.Count(); i++)
+                    adapter.addParams(connection, parameters, listToInsert.ElementAt(i), string.Format("value_{0}_", i));
+                
+                //get data
+                DataSet ds;
+                int rowsFilled = adapter.fillDataSet(connection, out ds);
+
+                if (rowsFilled == 0)
+                    return default(IEnumerable<T>);
+                    
+                List<T> returnList = new List<T>();
+                foreach(DataRow row in ds.Tables[0].Rows)
+                {
+
+                    T item = (T)Activator.CreateInstance(returnType);
+                    setFromRow(item, row);
+                    returnList.Add(item);
+
+                }
+
+                return returnList;
+
+            }
+            
+        }
 
         /// <summary>
         /// Inserts a new record into the database and returns an output object.
@@ -657,27 +749,29 @@ namespace Cocoon
             Type returnType = typeof(T);
 
             //get columns and values
-            List<string> columns = new List<string>();
-            List<string> values = new List<string>();
-            List<PropertyInfo> primaryKeys = new List<PropertyInfo>();
-            List<PropertyInfo> parameters = new List<PropertyInfo>();
-            foreach (PropertyInfo prop in def.allColumns)
-            {
-                if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
-                {
-                    string propName = Utilities.GetColumnName(prop);
-                    columns.Add(string.Format("{0}.{1}", def.objectName, adapter.getObjectName(propName)));
-                    values.Add(adapter.getParamName(string.Format("value_{0}", propName)));
-                    parameters.Add(prop);
-                }
+            List<string> columns;
+            List<string> values;
+            List<PropertyInfo> primaryKeys;
+            List<PropertyInfo> parameters;
+            insertColumns(def, out columns, out values, out primaryKeys, out parameters);
 
-                if (Utilities.HasAttribute<PrimaryKey>(prop))
-                    primaryKeys.Add(prop);
+            List<string> wherePrimaryKeys = new List<string>();
+            foreach (PropertyInfo pk in primaryKeys)
+            {
+
+                string propName = Utilities.GetColumnName(pk);
+                wherePrimaryKeys.Add(string.Format("{0}.{1} = {2}", def.tableName, adapter.getObjectName(propName), adapter.getParamName("value_" + propName)));
 
             }
 
             //put together sql
-            string sql = adapter.insertSQL(def.tableName, columns, values, primaryKeys);
+            List<string> insertParts = new List<string>();
+            insertParts.Add(adapter.insertInitSQL(def.tableName, primaryKeys));
+            insertParts.Add(adapter.insertSQL(def.tableName, columns, values, primaryKeys));
+            insertParts.Add(adapter.insertSelectSQL(def.tableName, string.Join(" and ", wherePrimaryKeys), primaryKeys));
+            string sql = string.Join(";", insertParts);
+
+
 
             log("Generated SQL (Insert) " + sql);
 
@@ -701,7 +795,7 @@ namespace Cocoon
                         return default(T);
 
                     T objectToReturn = (T)Activator.CreateInstance(returnType);
-                    setFromRow<T>(objectToReturn, ds.Tables[0].Rows[0]);
+                    setFromRow(objectToReturn, ds.Tables[0].Rows[0]);
 
                     return objectToReturn;
 
@@ -720,7 +814,7 @@ namespace Cocoon
         #endregion
 
         #region Utility API
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -1061,6 +1155,30 @@ namespace Cocoon
 
         #region Private Implementation Methods
 
+        private void insertColumns(TableDefinition def, out List<string> columns, out List<string> values, out List<PropertyInfo> primaryKeys, out List<PropertyInfo> parameters)
+        {
+
+            columns = new List<string>();
+            values = new List<string>();
+            primaryKeys = new List<PropertyInfo>();
+            parameters = new List<PropertyInfo>();
+            foreach (PropertyInfo prop in def.allColumns)
+            {
+                if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
+                {
+                    string propName = Utilities.GetColumnName(prop);
+                    columns.Add(string.Format("{0}.{1}", def.objectName, adapter.getObjectName(propName)));
+                    values.Add(adapter.getParamName(string.Format("value_{0}", propName)));
+                    parameters.Add(prop);
+                }
+
+                if (Utilities.HasAttribute<PrimaryKey>(prop))
+                    primaryKeys.Add(prop);
+
+            }
+
+        }
+
         private int update(TableDefinition def, List<PropertyInfo> fieldsToUpdate, object values, object where = null, bool useOrLogic = false)
         {
 
@@ -1078,7 +1196,7 @@ namespace Cocoon
                 if (def.multiTenantIDColumns.Count > 0)
                     multiTenantMatch(def, def.primaryKeys.ToArray());
 
-                        usePrimaryKeysInWhereClause = true;
+                usePrimaryKeysInWhereClause = true;
                 whereClause = "where " + generateWhereClause(def.tableName, def.primaryKeys, values, useOrLogic, "where_");
             }
 
@@ -1173,7 +1291,7 @@ namespace Cocoon
 
         private void multiTenantMatch(TableDefinition def, PropertyInfo[] props)
         {
-            
+
             foreach (PropertyInfo i in def.multiTenantIDColumns)
             {
 
@@ -1225,11 +1343,20 @@ namespace Cocoon
                     if (annotation.objectModel != null)
                         annotation.tableName = Utilities.GetTableName(annotation.objectModel);
 
-                    joinClauseList.Add(string.Format("join {0} on {0}.{1} = {2}.{3} ",
+                    string joinPart = "join";
+                    if (annotation.joinType == JoinType.LEFT)
+                        joinPart = "left join";
+                    else if (annotation.joinType == JoinType.RIGHT)
+                        joinPart = "right join";
+                    else if (annotation.joinType == JoinType.FULL_OUTER)
+                        joinPart = "full outer join";
+
+                    joinClauseList.Add(string.Format("{4} {0} on {0}.{1} = {2}.{3} ",
                         adapter.getObjectName(annotation.tableName),
                         adapter.getObjectName(annotation.PrimaryKey),
                         def.objectName,
-                        adapter.getObjectName(annotation.ForeignKey)));
+                        adapter.getObjectName(annotation.ForeignKey),
+                        joinPart));
 
                     columnsToSelect.Add(string.Format("{0}.{1}",
                         adapter.getObjectName(annotation.tableName),
@@ -1430,7 +1557,7 @@ namespace Cocoon
 
         }
 
-        
+
 
         #endregion
 

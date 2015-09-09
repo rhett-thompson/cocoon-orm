@@ -82,17 +82,17 @@ namespace Cocoon
 
         private static readonly Dictionary<Type, string> _dbTypeMap = new Dictionary<Type, string>
         {
-            {typeof(Int64), "bigint"}, 
-            {typeof(UInt64), "bigint"}, 
+            {typeof(Int64), "bigint"},
+            {typeof(UInt64), "bigint"},
 
-            {typeof(Byte[]), "varbinary"}, 
-            {typeof(Boolean), "bit"}, 
-            {typeof(String), "nvarchar(max)"}, 
-            {typeof(Char), "nchar"}, 
-            {typeof(DateTime), "datetime"}, 
-            {typeof(DateTimeOffset), "datetimeoffset"}, 
-            {typeof(Decimal), "decimal"}, 
-            {typeof(Double), "float"}, 
+            {typeof(Byte[]), "varbinary"},
+            {typeof(Boolean), "bit"},
+            {typeof(String), "nvarchar(max)"},
+            {typeof(Char), "nchar"},
+            {typeof(DateTime), "datetime"},
+            {typeof(DateTimeOffset), "datetimeoffset"},
+            {typeof(Decimal), "decimal"},
+            {typeof(Double), "float"},
             {typeof(Int32), "int"},
             {typeof(UInt32), "int"},
             {typeof(TimeSpan), "time"},
@@ -101,15 +101,15 @@ namespace Cocoon
             {typeof(UInt16), "smallint"},
             {typeof(Single), "real"},
 
-            {typeof(Int64?), "bigint"}, 
-            {typeof(UInt64?), "bigint"}, 
-            {typeof(Byte?[]), "varbinary"}, 
+            {typeof(Int64?), "bigint"},
+            {typeof(UInt64?), "bigint"},
+            {typeof(Byte?[]), "varbinary"},
             {typeof(Boolean?), "bit"},
-            {typeof(Char?), "nchar"}, 
-            {typeof(DateTime?), "date"}, 
-            {typeof(DateTimeOffset?), "datetimeoffset"}, 
-            {typeof(Decimal?), "decimal"}, 
-            {typeof(Double?), "float"}, 
+            {typeof(Char?), "nchar"},
+            {typeof(DateTime?), "date"},
+            {typeof(DateTimeOffset?), "datetimeoffset"},
+            {typeof(Decimal?), "decimal"},
+            {typeof(Double?), "float"},
             {typeof(Int32?), "int"},
             {typeof(UInt32?), "int"},
             {typeof(TimeSpan?), "time"},
@@ -214,7 +214,7 @@ namespace Cocoon
                         primaryKeyColumn = foreignKeyAnnotation.ReferenceTablePrimaryKeyOverride;
 
                     foreignKey = string.Format("foreign key references {0}({1})",
-                        getObjectName(Utilities.GetTableName(foreignKeyAnnotation.ReferencesTable)), 
+                        getObjectName(Utilities.GetTableName(foreignKeyAnnotation.ReferencesTable)),
                         primaryKeyColumn);
                 }
 
@@ -261,12 +261,12 @@ namespace Cocoon
             foreach (KeyValuePair<string, object> value in values)
                 insert += string.Format("insert into {0} ({1}) values ('{2}') ", getObjectName(tableName), value.Key, value.Value);
 
-            return string.Format("if not exists (select name from sysobjects where name = '{0}') begin create table {1} ({2}) {3} end", 
-                tableName, 
-                getObjectName(tableName), 
-                string.Join(", ", columns), 
+            return string.Format("if not exists (select name from sysobjects where name = '{0}') begin create table {1} ({2}) {3} end",
+                tableName,
+                getObjectName(tableName),
+                string.Join(", ", columns),
                 insert);
-        
+
         }
 
         /// <summary>
@@ -280,25 +280,57 @@ namespace Cocoon
         public override string insertSQL(string tableName, List<string> columns, List<string> values, List<PropertyInfo> primaryKeys)
         {
 
+            string tableObjectName = getObjectName(tableName);
+
             List<string> insertedPrimaryKeys = new List<string>();
-            List<string> wherePrimaryKeys = new List<string>();
-            List<string> primaryKeysForInsertTable = new List<string>();
             foreach (PropertyInfo pk in primaryKeys)
-            {
-                string propName = Utilities.GetColumnName(pk);
-                insertedPrimaryKeys.Add("inserted." + getObjectName(propName));
-                primaryKeysForInsertTable.Add(string.Format("{0} {1}", getObjectName(propName), csToDBTypeMap[pk.PropertyType]));
-                wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", getObjectName(propName), getObjectName(tableName)));
-
-            }
-
-            return string.Format("declare @ids table({0});insert into {1} ({2}) output {3} into @ids values ({4});select {1}.* from {1} join @ids ids on {5}",
-                string.Join(", ", primaryKeysForInsertTable),
-                getObjectName(tableName),
+                insertedPrimaryKeys.Add("inserted." + getObjectName(Utilities.GetColumnName(pk)));
+  
+            return string.Format("insert into {0} ({1}) output {2} into @ids values ({3})",
+                tableObjectName,
                 string.Join(", ", columns),
                 string.Join(", ", insertedPrimaryKeys),
-                string.Join(", ", values),
-                string.Join(" and ", wherePrimaryKeys));
+                string.Join(", ", values));
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="primaryKeys"></param>
+        /// <returns></returns>
+        public override string insertInitSQL(string tableName, List<PropertyInfo> primaryKeys)
+        {
+
+            List<string> primaryKeysForInsertTable = new List<string>();
+            foreach (PropertyInfo pk in primaryKeys)
+                primaryKeysForInsertTable.Add(string.Format("{0} {1}", getObjectName(Utilities.GetColumnName(pk)), csToDBTypeMap[pk.PropertyType]));
+
+            return string.Format("declare @ids table({0})", string.Join(", ", primaryKeysForInsertTable));
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columns"></param>
+        /// <param name="values"></param>
+        /// <param name="primaryKeys"></param>
+        /// <returns></returns>
+        public override string insertSelectSQL(string tableName, string whereClause, List<PropertyInfo> primaryKeys)
+        {
+
+            tableName = getObjectName(tableName);
+
+            List<string> wherePrimaryKeys = new List<string>();
+            foreach (PropertyInfo pk in primaryKeys)
+                wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", getObjectName(Utilities.GetColumnName(pk)), tableName));
+
+            return string.Format("select {0}.* from {0} join @ids ids on {1}", tableName, string.Join(" and ", wherePrimaryKeys));
+
+            //return string.Format("select {0}.* from {0} where {1}", tableName, whereClause);
 
         }
 

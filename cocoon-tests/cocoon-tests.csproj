@@ -37,7 +37,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\cocoon-orm\bin\Debug\cocoon-orm.dll</HintPath>
     </Reference>
-    <Reference Include="cocoon-orm.mysql">
+    <Reference Include="cocoon-orm.mysql, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\cocoon-orm.mysql\bin\Debug\cocoon-orm.mysql.dll</HintPath>
     </Reference>
     <Reference Include="MySql.Data, Version=6.9.7.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">

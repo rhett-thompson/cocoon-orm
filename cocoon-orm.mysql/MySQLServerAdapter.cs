@@ -176,8 +176,8 @@ namespace Cocoon
 
             //data type
             string dataType = "";
-            if (!string.IsNullOrEmpty(columnAnnotation.dataType))
-                dataType = columnAnnotation.dataType;
+            if (!string.IsNullOrEmpty(columnAnnotation.DataType))
+                dataType = columnAnnotation.DataType;
             else if (member.MemberType == MemberTypes.Field && csToDBTypeMap.ContainsKey(((FieldInfo)member).FieldType))
                 dataType = csToDBTypeMap[((FieldInfo)member).FieldType];
             else if (member.MemberType == MemberTypes.Property && csToDBTypeMap.ContainsKey(((PropertyInfo)member).PropertyType))
@@ -197,8 +197,8 @@ namespace Cocoon
                 Identity identityAnnotation = member.GetCustomAttribute<Identity>(false);
                 defaultValue = "auto_increment";
             }
-            else if (!string.IsNullOrEmpty(columnAnnotation.defaultValue))
-                defaultValue = string.Format("default {0}", columnAnnotation.defaultValue);
+            else if (!string.IsNullOrEmpty(columnAnnotation.DefaultValue))
+                defaultValue = string.Format("default {0}", columnAnnotation.DefaultValue);
 
             //foreign key
             //string foreignKey = "";
@@ -245,17 +245,17 @@ namespace Cocoon
 
                     ForeignKey foreignKeyAnnotation = fk.GetCustomAttribute<ForeignKey>(false);
 
-                    if (foreignKeyAnnotation.referencesTable != null)
+                    if (foreignKeyAnnotation.ReferencesTable != null)
                     {
 
                         string foreignKeyColumn = Utilities.GetColumnName(fk);
                         string primaryKeyColumn = foreignKeyColumn;
-                        if (!string.IsNullOrEmpty(foreignKeyAnnotation.referenceTablePrimaryKeyOverride))
-                            primaryKeyColumn = foreignKeyAnnotation.referenceTablePrimaryKeyOverride;
+                        if (!string.IsNullOrEmpty(foreignKeyAnnotation.ReferenceTablePrimaryKeyOverride))
+                            primaryKeyColumn = foreignKeyAnnotation.ReferenceTablePrimaryKeyOverride;
 
                         columns.Add(string.Format("foreign key ({0}) references {1}({2})", 
                             foreignKeyColumn,
-                            getObjectName(Utilities.GetTableName(foreignKeyAnnotation.referencesTable)), 
+                            getObjectName(Utilities.GetTableName(foreignKeyAnnotation.ReferencesTable)), 
                             primaryKeyColumn));
 
                     }
@@ -304,34 +304,31 @@ namespace Cocoon
 
             tableName = getObjectName(tableName);
 
-            string returnSelect = "";
-
-            if (primaryKeys.Count == 1 && Utilities.HasAttribute<Identity>(primaryKeys[0]))
-                returnSelect = string.Format("select {0}.* from {0} where {0}.{1} = last_insert_id()", tableName, getObjectName(Utilities.GetColumnName(primaryKeys[0])));
-            else if(primaryKeys.Count > 0)
-            {
-
-                List<string> wherePrimaryKeys = new List<string>();
-                foreach (PropertyInfo pk in primaryKeys)
-                {
-
-                    if(Utilities.HasAttribute<Identity>(pk))
-                        throw new Exception("MySQL adapter does not support inserts into tables with composite primary keys with auto_increment.");
-                    
-                    string propName = Utilities.GetColumnName(pk);
-                    wherePrimaryKeys.Add(string.Format("{0}.{1} = {2}", tableName, getObjectName(propName), getParamName("value_" + propName)));
-
-                }
-
-                returnSelect = string.Format("select {0}.* from {0} where {1}", tableName, string.Join(" and ", wherePrimaryKeys));
-
-            }
-
-            return string.Format("insert into {0} ({1}) values ({2});{3}",
+            return string.Format("insert into {0} ({1}) values ({2})",
                 tableName,
                 string.Join(", ", columns),
-                string.Join(", ", values),
-                returnSelect);
+                string.Join(", ", values));
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columns"></param>
+        /// <param name="values"></param>
+        /// <param name="primaryKeys"></param>
+        /// <returns></returns>
+        public override string insertSelectSQL(string tableName, string whereClause, List<PropertyInfo> primaryKeys)
+        {
+
+            tableName = getObjectName(tableName);
+
+            if (primaryKeys.Count == 1 && Utilities.HasAttribute<Identity>(primaryKeys[0]))
+                return string.Format("select {0}.* from {0} where {0}.{1} = last_insert_id()", tableName, getObjectName(Utilities.GetColumnName(primaryKeys[0])));
+            else
+                return string.Format("select {0}.* from {0} where {1}", tableName, whereClause);
+
 
         }
 

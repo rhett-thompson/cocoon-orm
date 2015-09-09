@@ -230,6 +230,29 @@ namespace Cocoon
         /// 
         /// </summary>
         /// <param name="tableName"></param>
+        /// <param name="columns"></param>
+        /// <param name="values"></param>
+        /// <param name="primaryKeys"></param>
+        /// <returns></returns>
+        public abstract string insertSelectSQL(string tableName, string whereClause, List<PropertyInfo> primaryKeys);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="primaryKeys"></param>
+        /// <returns></returns>
+        public virtual string insertInitSQL(string tableName, List<PropertyInfo> primaryKeys)
+        {
+
+            return null;
+
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
         /// <returns></returns>
         public abstract string verifyLookupTableSQL(string tableName);
 

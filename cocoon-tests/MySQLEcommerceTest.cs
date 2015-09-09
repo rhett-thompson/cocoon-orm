@@ -231,7 +231,20 @@ namespace Cocoon.Tests
             });
 
             //Insert
-            performTest("Insert", "", () => { return db.Insert<TestTable>(new TestTable() { Prim1 = Guid.NewGuid(), Prim2 = "Prim2", Prim3 = 123, Name = "asd" }).Prim2 != null; });
+            performTest("Insert", "", () => {
+
+                var insert1 = db.Insert<TestTable>(new TestTable() { Prim1 = Guid.NewGuid(), Prim2 = "Prim2", Prim3 = 123, Name = "asd" });
+
+                List<TestTable> tt = new List<TestTable>();
+                tt.Add(new TestTable() { Name = "a", Prim1 = Guid.NewGuid(), Prim2 = "a", Prim3 = 1 });
+                tt.Add(new TestTable() { Name = "b", Prim1 = Guid.NewGuid(), Prim2 = "b", Prim3 = 2 });
+                tt.Add(new TestTable() { Name = "c", Prim1 = Guid.NewGuid(), Prim2 = "c", Prim3 = 3 });
+
+                var insert2 = db.Insert(tt);
+
+                return insert1 != null && insert2.Count() > 0;
+
+            });
 
             //TableExists
             performTest("TableExists", "", () =>
