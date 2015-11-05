@@ -1335,6 +1335,7 @@ namespace Cocoon
 
                 List<string> joinClauseList = new List<string>();
 
+                int joinIndex = 0;
                 foreach (PropertyInfo linkedField in def.linkedColumns)
                 {
 
@@ -1351,16 +1352,22 @@ namespace Cocoon
                     else if (annotation.joinType == JoinType.FULL_OUTER)
                         joinPart = "full outer join";
 
-                    joinClauseList.Add(string.Format("{4} {0} on {0}.{1} = {2}.{3} ",
+                    string correlateTable = adapter.getObjectName(annotation.tableName + "_" + joinIndex);
+
+                    joinClauseList.Add(string.Format("{4} {0} {5} on {5}.{1} = {2}.{3} ",
                         adapter.getObjectName(annotation.tableName),
                         adapter.getObjectName(annotation.PrimaryKey),
                         def.objectName,
                         adapter.getObjectName(annotation.ForeignKey),
-                        joinPart));
+                        joinPart,
+                        correlateTable));
 
-                    columnsToSelect.Add(string.Format("{0}.{1}",
-                        adapter.getObjectName(annotation.tableName),
-                        adapter.getObjectName(Utilities.GetColumnName(linkedField))));
+                    columnsToSelect.Add(string.Format("{0}.{1} as {2}",
+                        correlateTable,
+                        adapter.getObjectName(Utilities.GetColumnName(linkedField)),
+                        adapter.getObjectName(linkedField.Name)));
+
+                    joinIndex++;
 
                 }
 
@@ -1398,7 +1405,12 @@ namespace Cocoon
             foreach (PropertyInfo prop in propertiesToSet)
             {
 
-                string propName = Utilities.GetColumnName(prop);
+                string propName;
+
+                if (Utilities.HasAttribute<ForeignColumn>(prop))
+                    propName = prop.Name;
+                else
+                    propName = Utilities.GetColumnName(prop);
 
                 if (!row.Table.Columns.Contains(propName))
                     continue;
@@ -1456,7 +1468,7 @@ namespace Cocoon
             string columnName = Utilities.GetColumnName(property);
             string param = adapter.getParamName(paramPrefix + columnName);
             if (isCondition)
-                return string.Format(value == null ? "{0}.{1} is null" : "{0}.{1} = {2}",
+                return string.Format(value == null || value == DBNull.Value ? "{0}.{1} is null" : "{0}.{1} = {2}",
                     adapter.getObjectName(tableName),
                     adapter.getObjectName(columnName),
                     param);
@@ -1494,6 +1506,13 @@ namespace Cocoon
 
                     }
 
+                    //add many2many lists
+                    if(Utilities.HasAttribute<Many2Many>(property))
+                    {
+                        def.many2ManyColumns.Add(property);
+                        continue;
+                    }
+
                     //ignore column
                     if (!Utilities.HasAttribute<Column>(property))
                         continue;
@@ -1519,12 +1538,12 @@ namespace Cocoon
                 }
 
                 //check to make sure linked foreign keys exist
-                foreach (PropertyInfo linkedField in def.linkedColumns)
-                {
-                    ForeignColumn annotation = linkedField.GetCustomAttribute<ForeignColumn>(false);
-                    if (def.getForeginKey(annotation.ForeignKey) == null)
-                        throw new Exception(string.Format("Foreign key {0} does not exist in class {1}.  Forgot ForeignKey attribute?", linkedField.Name, type.Name));
-                }
+                //foreach (PropertyInfo linkedField in def.linkedColumns)
+                //{
+                //    ForeignColumn annotation = linkedField.GetCustomAttribute<ForeignColumn>(false);
+                //    if (def.getForeginKey(annotation.ForeignKey) == null)
+                //        throw new Exception(string.Format("Foreign key {0} does not exist in class {1}.  Forgot ForeignKey attribute?", annotation.ForeignKey, type.Name));
+                //}
 
                 //get table name
                 def.tableName = Utilities.GetTableName(type);

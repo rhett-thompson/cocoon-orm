@@ -6,7 +6,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field is a database column.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class Column : Attribute
     {
 
@@ -50,7 +50,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field is an identity column
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class Identity : Attribute
     {
 
@@ -82,7 +82,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field may not be null
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class NotNull : Attribute
     {
 
@@ -91,7 +91,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field is a primary key in the database
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class PrimaryKey : Attribute
     {
 
@@ -100,7 +100,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field is a foreign key in the database
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class ForeignKey : Attribute
     {
 
@@ -132,7 +132,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field should be ignored on inserts (e.g. it's an identity column, or has a default value)
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnInsert : Attribute
     {
 
@@ -142,7 +142,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field should be ignored on updates (e.g. it's a primary key)
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnUpdate : Attribute
     {
 
@@ -151,7 +151,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field should be ignored on select (i.e. Get methods etc.)
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnSelect : Attribute
     {
 
@@ -160,7 +160,7 @@ namespace Cocoon.Annotations
     /// <summary>
     /// This field exists in another table and should be joined by a foreign key.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class ForeignColumn : Attribute
     {
 
@@ -229,7 +229,7 @@ namespace Cocoon.Annotations
             joinType = JoinType;
 
         }
-
+        
     }
 
     /// <summary>
@@ -249,6 +249,31 @@ namespace Cocoon.Annotations
         {
 
             this.tableName = TableName;
+
+        }
+
+    }
+
+    /// <summary>
+    /// This is a list of values from a Many2Many table
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
+    public class Many2Many : Attribute
+    {
+
+        internal string primaryKey;
+        internal string many2ManyTable;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="PrimaryKey">The primary key to use in this class</param>
+        /// <param name="Many2ManyTable">The name of the many2many table</param>
+        public Many2Many(string PrimaryKey, string Many2ManyTable)
+        {
+
+            primaryKey = PrimaryKey;
+            many2ManyTable = Many2ManyTable;
 
         }
 

@@ -17,6 +17,7 @@ namespace Cocoon
         public List<PropertyInfo> allColumns = new List<PropertyInfo>();
         public List<PropertyInfo> linkedColumns = new List<PropertyInfo>();
         public List<PropertyInfo> multiTenantIDColumns = new List<PropertyInfo>();
+        public List<PropertyInfo> many2ManyColumns = new List<PropertyInfo>();
 
         public List<FieldInfo> fields = new List<FieldInfo>();
         
