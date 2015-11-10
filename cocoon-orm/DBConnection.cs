@@ -114,7 +114,7 @@ namespace Cocoon
                 {
 
                     T item = (T)Activator.CreateInstance(type);
-                    setFromRow<T>(item, row);
+                    Utilities.SetFromRow<T>(item, row);
                     list.Add(item);
 
                 }
@@ -244,7 +244,7 @@ namespace Cocoon
                 {
 
                     T item = (T)Activator.CreateInstance(type);
-                    setFromRow<T>(item, row);
+                    Utilities.SetFromRow<T>(item, row);
                     list.Add(item);
 
                 }
@@ -367,7 +367,7 @@ namespace Cocoon
 
             //fill our object
             T obj = (T)Activator.CreateInstance(type);
-            setFromRow<T>(obj, ds.Tables[0].Rows[0]);
+            Utilities.SetFromRow<T>(obj, ds.Tables[0].Rows[0]);
 
             return obj;
 
@@ -400,7 +400,7 @@ namespace Cocoon
             foreach (DataRow row in ds.Tables[0].Rows)
             {
                 T obj = (T)Activator.CreateInstance(type);
-                setFromRow<T>(obj, row);
+                Utilities.SetFromRow<T>(obj, row);
                 list.Add(obj);
             }
 
@@ -509,17 +509,8 @@ namespace Cocoon
                     return new List<T>();
 
                 //fill list
-                List<T> list = new List<T>();
-                foreach (DataRow row in ds.Tables[0].Rows)
-                {
-                    if (fieldToMap == null)
-                        list.Add((T)row[0]);
-                    else if (row.Table.Columns.Contains(fieldToMap))
-                        list.Add((T)row[fieldToMap]);
-                }
-
-                return list;
-
+                return Utilities.FillScalarList<T>(ds.Tables[0], fieldToMap);
+                
             }
 
         }
@@ -724,7 +715,7 @@ namespace Cocoon
                 {
 
                     T item = (T)Activator.CreateInstance(returnType);
-                    setFromRow(item, row);
+                    Utilities.SetFromRow(item, row);
                     returnList.Add(item);
 
                 }
@@ -795,7 +786,7 @@ namespace Cocoon
                         return default(T);
 
                     T objectToReturn = (T)Activator.CreateInstance(returnType);
-                    setFromRow(objectToReturn, ds.Tables[0].Rows[0]);
+                    Utilities.SetFromRow(objectToReturn, ds.Tables[0].Rows[0]);
 
                     return objectToReturn;
 
@@ -1395,51 +1386,7 @@ namespace Cocoon
             }
 
         }
-
-        private void setFromRow<T>(T objectToSet, DataRow row)
-        {
-
-            Type type = typeof(T);
-
-            PropertyInfo[] propertiesToSet = type.GetProperties();
-            foreach (PropertyInfo prop in propertiesToSet)
-            {
-
-                string propName;
-
-                if (Utilities.HasAttribute<ForeignColumn>(prop))
-                    propName = prop.Name;
-                else
-                    propName = Utilities.GetColumnName(prop);
-
-                if (!row.Table.Columns.Contains(propName))
-                    continue;
-
-                DataColumn column = row.Table.Columns[propName];
-
-                if (column == null)
-                    continue;
-
-                try
-                {
-
-                    if (row[column] == DBNull.Value)
-                        prop.SetValue(objectToSet, null);
-                    else
-                        prop.SetValue(objectToSet, row[column]);
-
-                }
-                catch
-                {
-
-                    throw new Exception(string.Format("Could not assign value to '{0}'.", propName));
-
-                }
-
-            }
-
-        }
-
+        
         private string generateWhereClause(string tableName, object whereClause, bool orLogic, string paramPrefix)
         {
 

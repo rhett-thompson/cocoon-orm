@@ -3,6 +3,8 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Collections.Generic;
+using System.Data;
 
 namespace Cocoon
 {
@@ -198,6 +200,98 @@ namespace Cocoon
                 name = type.Name;
 
             return name;
+
+        }
+
+        /// <summary>
+        /// Fills a list from a DataTable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="table"></param>
+        /// <param name="fieldToMap"></param>
+        /// <returns></returns>
+        public static List<T> FillScalarList<T>(DataTable table, string fieldToMap = null)
+        {
+
+            List<T> list = new List<T>();
+            foreach (DataRow row in table.Rows)
+            {
+                if (fieldToMap == null)
+                    list.Add((T)row[0]);
+                else if (row.Table.Columns.Contains(fieldToMap))
+                    list.Add((T)row[fieldToMap]);
+            }
+            return list;
+
+        }
+
+        /// <summary>
+        /// Fills a list of objects from the rows of a DataTable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="table"></param>
+        /// <returns></returns>
+        public static List<T> FillList<T>(DataTable table)
+        {
+
+            List<T> list = new List<T>();
+            foreach (DataRow row in table.Rows)
+            {
+                T obj = (T)Activator.CreateInstance(typeof(T));
+                SetFromRow<T>(obj, row);
+                list.Add(obj);
+            }
+            return list;
+
+        }
+
+        /// <summary>
+        /// Sets an objects properties from a DataRow
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="objectToSet"></param>
+        /// <param name="row"></param>
+        public static void SetFromRow<T>(T objectToSet, DataRow row)
+        {
+
+            Type type = typeof(T);
+
+            PropertyInfo[] propertiesToSet = type.GetProperties();
+            foreach (PropertyInfo prop in propertiesToSet)
+            {
+
+                string propName;
+
+                if (Utilities.HasAttribute<ForeignColumn>(prop))
+                    propName = prop.Name;
+                else
+                    propName = Utilities.GetColumnName(prop);
+
+                if (!row.Table.Columns.Contains(propName))
+                    continue;
+
+                DataColumn column = row.Table.Columns[propName];
+
+                if (column == null)
+                    continue;
+
+                try
+                {
+
+                    if (row[column] == DBNull.Value)
+                        prop.SetValue(objectToSet, null);
+                    else
+                        prop.SetValue(objectToSet, row[column]);
+
+                }
+                catch
+                {
+
+                    throw new Exception(string.Format("Could not assign value to '{0}'.", propName));
+
+                }
+
+            }
 
         }
 
