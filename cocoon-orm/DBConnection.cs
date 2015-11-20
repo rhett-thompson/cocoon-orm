@@ -114,7 +114,7 @@ namespace Cocoon
                 {
 
                     T item = (T)Activator.CreateInstance(type);
-                    Utilities.SetFromRow<T>(item, row);
+                    Utilities.SetFromRow(item, row);
                     list.Add(item);
 
                 }
@@ -244,7 +244,7 @@ namespace Cocoon
                 {
 
                     T item = (T)Activator.CreateInstance(type);
-                    Utilities.SetFromRow<T>(item, row);
+                    Utilities.SetFromRow(item, row);
                     list.Add(item);
 
                 }
@@ -367,7 +367,7 @@ namespace Cocoon
 
             //fill our object
             T obj = (T)Activator.CreateInstance(type);
-            Utilities.SetFromRow<T>(obj, ds.Tables[0].Rows[0]);
+            Utilities.SetFromRow(obj, ds.Tables[0].Rows[0]);
 
             return obj;
 
@@ -400,7 +400,7 @@ namespace Cocoon
             foreach (DataRow row in ds.Tables[0].Rows)
             {
                 T obj = (T)Activator.CreateInstance(type);
-                Utilities.SetFromRow<T>(obj, row);
+                Utilities.SetFromRow(obj, row);
                 list.Add(obj);
             }
 

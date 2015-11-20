@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Data;
+using System.ComponentModel;
 
 namespace Cocoon
 {
@@ -17,6 +18,39 @@ namespace Cocoon
 
         private const string base36Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
         private static DateTime baseDate = new DateTime(1900, 1, 1);
+
+        /// <summary>
+        /// Changes the type of an object
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="conversionType"></param>
+        /// <returns></returns>
+        public static object ChangeType(object value, Type conversionType)
+        {
+
+            if (value == null)
+                if (conversionType.IsValueType)
+                    return Activator.CreateInstance(conversionType);
+                else
+                    return null;
+
+            if (value.GetType() == conversionType)
+                return value;
+
+            if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+                conversionType = Nullable.GetUnderlyingType(conversionType);
+
+            try
+            {
+                return TypeDescriptor.GetConverter(conversionType).ConvertFrom(value);
+            }
+            catch
+            {
+                return Convert.ChangeType(value, conversionType);
+
+            }
+
+        }
 
         /// <summary>
         /// 
@@ -217,9 +251,9 @@ namespace Cocoon
             foreach (DataRow row in table.Rows)
             {
                 if (fieldToMap == null)
-                    list.Add((T)row[0]);
+                    list.Add((T)ChangeType(row[0], typeof(T)));
                 else if (row.Table.Columns.Contains(fieldToMap))
-                    list.Add((T)row[fieldToMap]);
+                    list.Add((T)ChangeType(row[fieldToMap], typeof(T)));
             }
             return list;
 
@@ -238,7 +272,7 @@ namespace Cocoon
             foreach (DataRow row in table.Rows)
             {
                 T obj = (T)Activator.CreateInstance(typeof(T));
-                SetFromRow<T>(obj, row);
+                SetFromRow(obj, row);
                 list.Add(obj);
             }
             return list;
@@ -248,13 +282,12 @@ namespace Cocoon
         /// <summary>
         /// Sets an objects properties from a DataRow
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="objectToSet"></param>
         /// <param name="row"></param>
-        public static void SetFromRow<T>(T objectToSet, DataRow row)
+        public static void SetFromRow(object objectToSet, DataRow row)
         {
 
-            Type type = typeof(T);
+            Type type = objectToSet.GetType();
 
             PropertyInfo[] propertiesToSet = type.GetProperties();
             foreach (PropertyInfo prop in propertiesToSet)
@@ -262,10 +295,10 @@ namespace Cocoon
 
                 string propName;
 
-                if (Utilities.HasAttribute<ForeignColumn>(prop))
+                if (HasAttribute<ForeignColumn>(prop))
                     propName = prop.Name;
                 else
-                    propName = Utilities.GetColumnName(prop);
+                    propName = GetColumnName(prop);
 
                 if (!row.Table.Columns.Contains(propName))
                     continue;
@@ -294,6 +327,6 @@ namespace Cocoon
             }
 
         }
-
+        
     }
 }
