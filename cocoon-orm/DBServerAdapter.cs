@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using System.Linq.Expressions;
 
 namespace Cocoon
 {
@@ -174,48 +175,7 @@ namespace Cocoon
         /// <param name="name"></param>
         /// <returns></returns>
         public abstract string getObjectName(string name);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public abstract string dropTableSQL(string tableName);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public abstract string tableExistsSQL(string tableName);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="member"></param>
-        /// <returns></returns>
-        public abstract string getColumnDefinition(MemberInfo member);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="columns"></param>
-        /// <param name="primaryKeys"></param>
-        /// <param name="foreignKeys"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public abstract string createTableSQL(List<string> columns, List<string> primaryKeys, List<MemberInfo> foreignKeys, string tableName);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="columns"></param>
-        /// <param name="values"></param>
-        /// <param name="primaryKeys"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public abstract string createLookupTableSQL(List<string> columns, List<KeyValuePair<string, object>> values, List<string> primaryKeys, string tableName);
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -253,20 +213,6 @@ namespace Cocoon
         /// 
         /// </summary>
         /// <param name="tableName"></param>
-        /// <returns></returns>
-        public abstract string verifyLookupTableSQL(string tableName);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public abstract string verifyTableSQL(string tableName);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="tableName"></param>
         /// <param name="columnsToSelect"></param>
         /// <param name="joinClause"></param>
         /// <param name="whereClause"></param>
@@ -281,6 +227,8 @@ namespace Cocoon
         /// <param name="paramPrefix"></param>
         /// <returns></returns>
         public abstract string parseWhereString(string whereClause, string paramPrefix);
+
+        public abstract string whereExpression(Expression expression);
 
     }
 }

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Collections;
 
 namespace Cocoon.Tests
 {
@@ -11,15 +13,15 @@ namespace Cocoon.Tests
     {
 
         public static DBConnection db;
-
+        
         static void Main(string[] args)
         {
-
+            
             //var db = new DBConnection("Server=174.143.28.19;Database=424828_edb_mysql;Uid=424828_edb_mysql;Pwd=espressoDB90;", new MySQLServerAdapter());
             //var db = new DBConnection("Data Source=72.3.204.234,4120;Initial Catalog=424828_espresso_test;User ID=424828_espresso_test;Password=espressoDB90;Connection Timeout=600");
 
             Console.WriteLine("SQLServer Regression Test");
-            SQLServerEcommerceTest sqlServerTest = new SQLServerEcommerceTest(new DBConnection("Data Source=72.3.204.234,4120;Initial Catalog=424828_espresso_test;User ID=424828_espresso_test;Password=espressoDB90;Connection Timeout=600", new SQLServerAdapter(), new Action<string>(log)));
+            SQLServerEcommerceTest sqlServerTest = new SQLServerEcommerceTest(new DBConnection("Data Source=172.99.97.188,4120;Initial Catalog=424828_espresso_test;User ID=424828_espresso_test;Password=espressoDB90;Connection Timeout=600", new SQLServerAdapter(), new Action<string>(log)));
             sqlServerTest.runTests();
             sqlServerTest.runBenchmark(5);
             sqlServerTest.checkMethodsTested();
@@ -35,7 +37,6 @@ namespace Cocoon.Tests
 
             //}
             Console.ReadLine();
-            return;
 
             Console.WriteLine("MySQL Regression Test");
             MySQLEcommerceTest mySqlTest = new MySQLEcommerceTest(new DBConnection("Server=174.143.28.19;Database=424828_edb_mysql;Uid=424828_edb_mysql;Pwd=espressoDB90;", new MySQLServerAdapter(), new Action<string>(log)));
@@ -48,7 +49,7 @@ namespace Cocoon.Tests
             Console.ReadLine();
 
         }
-
+        
         private static void output(object msg)
         {
 

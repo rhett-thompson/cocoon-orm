@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Web;
+using System.Linq.Expressions;
 
 namespace Cocoon
 {
@@ -64,6 +65,7 @@ namespace Cocoon
             adapter.connection = this;
 
             ConnectionString = connectionString;
+
         }
 
         #region Stored Procedures
@@ -338,7 +340,7 @@ namespace Cocoon
         }
 
         #endregion
-        
+
         #region Simple CRUD API
 
         /// <summary>
@@ -374,6 +376,17 @@ namespace Cocoon
         }
 
         /// <summary>
+        /// Retrieves a single item from the database
+        /// </summary>
+        /// <typeparam name="T">The object model/table to get the item from</typeparam>
+        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
+        /// <returns>An object of type T</returns>
+        public T GetSingle<T>(Expression<Func<T, bool>> where)
+        {
+            return GetSingle<T>(adapter.whereExpression(where.Body));
+        }
+
+        /// <summary>
         /// Returns a list of T objects
         /// </summary>
         /// <typeparam name="T">The object model/table to select items from</typeparam>
@@ -405,6 +418,20 @@ namespace Cocoon
             }
 
             return list;
+
+        }
+
+        /// <summary>
+        /// Returns a list of T objects
+        /// </summary>
+        /// <typeparam name="T">The object model/table to select items from</typeparam>
+        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
+        /// <param name="top">If greater than 0, selects the top N items</param>
+        /// <returns></returns>
+        public List<T> GetList<T>(Expression<Func<T, bool>> where, int top = 0)
+        {
+
+            return GetList<T>(adapter.whereExpression(where.Body), false, top);
 
         }
 
@@ -510,7 +537,7 @@ namespace Cocoon
 
                 //fill list
                 return Utilities.FillScalarList<T>(ds.Tables[0], fieldToMap);
-                
+
             }
 
         }
@@ -548,7 +575,12 @@ namespace Cocoon
             if (where == null)
                 throw new Exception("Where clause must be supplied.");
 
-            string whereClause = generateWhereClause(tableName, where, useOrLogic, "where_");
+            string whereClause;
+
+            if (where is string)
+                whereClause = where.ToString();
+            else
+                whereClause = generateWhereClause(tableName, where, useOrLogic, "where_");
 
             string sql = string.Format("delete from {0} where {1}", adapter.getObjectName(tableName), whereClause);
 
@@ -587,9 +619,23 @@ namespace Cocoon
 
             TableDefinition def = getDef(objectModel);
 
-            checkWhereForMultiTenantID(def, where);
-
+            if (where is string == false) 
+                checkWhereForMultiTenantID(def, where);
+     
             return Delete(def.tableName, where, useOrLogic);
+
+        }
+
+        /// <summary>
+        /// Deletes an object in the database
+        /// </summary>
+        /// <typeparam name="T">The object model/table to delete a record from</typeparam>
+        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
+        /// <returns>The number of rows affected by the delete</returns>
+        public int Delete<T>(Expression<Func<T, bool>> where)
+        {
+
+            return Delete(typeof(T), adapter.whereExpression(where.Body));
 
         }
 
@@ -632,7 +678,21 @@ namespace Cocoon
                 useOrLogic);
 
         }
-        
+
+        /// <summary>
+        /// Updates and existing record in the database
+        /// </summary>
+        /// <typeparam name="T">The object model/table to update</typeparam>
+        /// <param name="objectToUpdate">The object to use as values for the update</param>
+        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
+        /// <returns>The number of rows affected by the update</returns>
+        public int Update<T>(T objectToUpdate, Expression<Func<T, bool>> where)
+        {
+
+            return Update(typeof(T), adapter.whereExpression(where.Body));
+
+        }
+
         /// <summary>
         /// Inserts a list of records into the database and returns a list of the inserted objects.
         /// </summary>
@@ -651,7 +711,7 @@ namespace Cocoon
             //get columns and values
             List<string> columns;
             List<string> notUsedValues;
-            
+
             List<PropertyInfo> primaryKeys;
             List<PropertyInfo> parameters;
             insertColumns(def, out columns, out notUsedValues, out primaryKeys, out parameters);
@@ -660,7 +720,7 @@ namespace Cocoon
             List<string> insertParts = new List<string>();
 
             insertParts.Add(adapter.insertInitSQL(def.tableName, primaryKeys));
-            
+
             List<string> whereParts = new List<string>();
             for (int i = 0; i < listToInsert.Count(); i++)
             {
@@ -675,7 +735,7 @@ namespace Cocoon
 
                         values.Add(valueParam);
 
-                        if(primaryKeys.Contains(prop))
+                        if (primaryKeys.Contains(prop))
                             innerWhereParts.Add(string.Format("{0}.{1} = {2}", adapter.getObjectName(def.tableName), propName, valueParam));
 
                     }
@@ -685,7 +745,7 @@ namespace Cocoon
                 insertParts.Add(adapter.insertSQL(def.tableName, columns, values, primaryKeys));
 
             }
-            
+
             insertParts.Add(adapter.insertSelectSQL(def.tableName, string.Join(" or ", whereParts), primaryKeys));
 
             insertParts.RemoveAll(s => s == null);
@@ -702,16 +762,16 @@ namespace Cocoon
                 //add parameters
                 for (int i = 0; i < listToInsert.Count(); i++)
                     adapter.addParams(connection, parameters, listToInsert.ElementAt(i), string.Format("value_{0}_", i));
-                
+
                 //get data
                 DataSet ds;
                 int rowsFilled = adapter.fillDataSet(connection, out ds);
 
                 if (rowsFilled == 0)
                     return default(IEnumerable<T>);
-                    
+
                 List<T> returnList = new List<T>();
-                foreach(DataRow row in ds.Tables[0].Rows)
+                foreach (DataRow row in ds.Tables[0].Rows)
                 {
 
                     T item = (T)Activator.CreateInstance(returnType);
@@ -723,7 +783,7 @@ namespace Cocoon
                 return returnList;
 
             }
-            
+
         }
 
         /// <summary>
@@ -799,190 +859,6 @@ namespace Cocoon
                 }
 
             }
-
-        }
-
-        #endregion
-
-        #region Utility API
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="objectModel"></param>
-        /// <returns></returns>
-        public bool TableExists(Type objectModel)
-        {
-
-            TableDefinition def = getDef(objectModel);
-
-            string sql = adapter.tableExistsSQL(def.tableName);
-
-            log("Generated SQL (TableExists) " + sql);
-
-            return ExecuteSQLScalar<string>(sql).ToLower() == "true";
-
-        }
-
-        /// <summary>
-        /// Creates a table based on objectModel.  The database is only modified if the table does not already exist.
-        /// </summary>
-        /// <param name="objectModel"></param>
-        public void CreateTable(Type objectModel)
-        {
-
-            TableDefinition def = getDef(objectModel);
-
-            List<string> columns = new List<string>();
-            List<string> primaryKeys = new List<string>();
-            List<MemberInfo> foreignKeys = new List<MemberInfo>();
-            foreach (PropertyInfo prop in def.allColumns)
-            {
-                columns.Add(adapter.getColumnDefinition(prop));
-
-                if (Utilities.HasAttribute<PrimaryKey>(prop))
-                    primaryKeys.Add(Utilities.GetColumnName(prop));
-
-                if (Utilities.HasAttribute<ForeignKey>(prop))
-                    foreignKeys.Add(prop);
-
-            }
-
-            string sql = adapter.createTableSQL(columns, primaryKeys, foreignKeys, def.tableName);
-
-            log("Generated SQL (CreateTable) " + sql);
-
-            ExecuteSQLVoid(sql);
-
-        }
-
-        /// <summary>
-        /// Creates a lookup type table based on objectModel.  The database is only modified if the table does not already exist.
-        /// Only static fields will be used; properties will be ignored.
-        /// </summary>
-        /// <param name="objectModel"></param>
-        public void CreateLookupTable(Type objectModel)
-        {
-
-            FieldInfo[] fields = objectModel.GetFields();
-            List<string> columns = new List<string>();
-            List<string> columnNames = new List<string>();
-            List<KeyValuePair<string, object>> values = new List<KeyValuePair<string, object>>();
-            List<string> primaryKeys = new List<string>();
-            foreach (FieldInfo field in fields)
-            {
-
-                if (!field.IsStatic || !Utilities.HasAttribute<Column>(field))
-                    continue;
-
-                string columnName = Utilities.GetColumnName(field);
-
-                if (!columnNames.Contains(columnName))
-                {
-                    columnNames.Add(columnName);
-                    columns.Add(adapter.getColumnDefinition(field));
-                }
-
-                values.Add(new KeyValuePair<string, object>(columnName, field.GetValue(null)));
-
-                if (Utilities.HasAttribute<PrimaryKey>(field))
-                    primaryKeys.Add(columnName);
-
-            }
-
-            if (columns.Count == 0)
-                throw new Exception("No columns for table " + objectModel.Name);
-
-            if (values.Count == 0)
-                throw new Exception("No values to insert for table " + objectModel.Name);
-
-            if (primaryKeys.Count > 0)
-                columns.Add(string.Format("primary key ({0})", string.Join(", ", primaryKeys)));
-
-            string sql = adapter.createLookupTableSQL(columns, values, primaryKeys, Utilities.GetTableName(objectModel));
-
-            log("Generated SQL (CreateLookupTable) " + sql);
-
-            ExecuteSQLVoid(sql);
-
-        }
-
-        /// <summary>
-        /// Drops a table from the database
-        /// </summary>
-        /// <param name="objectModel"></param>
-        public void DropTable(Type objectModel)
-        {
-
-            TableDefinition def = getDef(objectModel);
-
-            string sql = adapter.dropTableSQL(def.tableName);
-
-            log("Generated SQL (DropTable) " + sql);
-
-            ExecuteSQLVoid(sql);
-
-        }
-
-        /// <summary>
-        /// Verifies an object model matches a table
-        /// </summary>
-        /// <param name="objectModel"></param>
-        /// <returns></returns>
-        public bool VerifyTable(Type objectModel)
-        {
-
-            TableDefinition def = getDef(objectModel);
-
-            DataSet ds = ExecuteSQLDataSet(adapter.verifyTableSQL(def.tableName));
-
-            if (ds == null || ds.Tables.Count != 1 || def.allColumns.Count != ds.Tables[0].Rows.Count)
-                return false;
-
-            foreach (DataRow row in ds.Tables[0].Rows)
-                if (!def.hasColumn((string)row["COLUMN_NAME"]))
-                    return false;
-
-            return true;
-
-        }
-
-        /// <summary>
-        /// Verifies the static class values match a look up table
-        /// </summary>
-        /// <param name="objectModel"></param>
-        /// <returns></returns>
-        public bool VerifyLookupTable(Type objectModel)
-        {
-
-            DataSet ds = ExecuteSQLDataSet(adapter.verifyLookupTableSQL(Utilities.GetTableName(objectModel)));
-
-            if (ds == null || ds.Tables.Count != 1 || ds.Tables[0].Rows.Count == 0 || ds.Tables[0].Columns.Count == 0)
-                return false;
-
-            //get valid fields
-            FieldInfo[] fields = objectModel.GetFields();
-            List<FieldInfo> validFields = new List<FieldInfo>();
-            foreach (FieldInfo field in fields)
-                if (field.IsStatic)
-                {
-
-                    if (!ds.Tables[0].Columns.Contains(Utilities.GetColumnName(field)))
-                        return false;
-
-                    validFields.Add(field);
-
-                }
-
-            if (ds.Tables[0].Rows.Count != validFields.Count)
-                return false;
-
-            //check values
-            foreach (FieldInfo field in validFields)
-                if (!lookupTableColumnHasValue(ds.Tables[0].Rows, Utilities.GetColumnName(field), field.GetValue(null)))
-                    return false;
-
-            return true;
 
         }
 
@@ -1176,10 +1052,17 @@ namespace Cocoon
             //generate where clause
             string whereClause = "";
             bool usePrimaryKeysInWhereClause = false;
+
             if (where != null)
             {
-                checkWhereForMultiTenantID(def, where);
-                whereClause = "where " + generateWhereClause(def.tableName, where, useOrLogic, "where_");
+
+                if (where is string)
+                    whereClause = "where " + where;
+                else
+                {
+                    checkWhereForMultiTenantID(def, where);
+                    whereClause = "where " + generateWhereClause(def.tableName, where, useOrLogic, "where_");
+                }
             }
             else if (def.primaryKeys.Count > 0)
             {
@@ -1220,20 +1103,6 @@ namespace Cocoon
                 return connection.command.ExecuteNonQuery();
 
             }
-
-        }
-
-        private bool lookupTableColumnHasValue(DataRowCollection rows, string columnName, object value)
-        {
-
-            foreach (DataRow row in rows)
-            {
-                object r = row[columnName];
-                if (r.Equals(value))
-                    return true;
-            }
-
-            return false;
 
         }
 
@@ -1316,8 +1185,15 @@ namespace Cocoon
 
             //generate where clause
             string whereClause = "";
+            bool addParams = true;
             if (where != null)
-                whereClause = "where " + generateWhereClause(def.tableName, where, useOrLogic, "where_");
+                if (where is string)
+                {
+                    whereClause = "where " + where;
+                    addParams = false;
+                }
+                else
+                    whereClause = "where " + generateWhereClause(def.tableName, where, useOrLogic, "where_");
 
             //generate join
             string joinClause = "";
@@ -1378,7 +1254,8 @@ namespace Cocoon
                 connection.command.CommandText = sql;
 
                 //add parameters
-                adapter.addParams(connection, where, "where_");
+                if (addParams)
+                    adapter.addParams(connection, where, "where_");
 
                 //fill data set
                 rowsFilled = adapter.fillDataSet(connection, out ds);
@@ -1386,7 +1263,7 @@ namespace Cocoon
             }
 
         }
-        
+
         private string generateWhereClause(string tableName, object whereClause, bool orLogic, string paramPrefix)
         {
 
@@ -1426,7 +1303,7 @@ namespace Cocoon
                     param);
         }
 
-        private TableDefinition getDef(Type type)
+        internal TableDefinition getDef(Type type)
         {
 
             if (!Utilities.HasAttribute<Table>(type))
@@ -1453,13 +1330,6 @@ namespace Cocoon
 
                     }
 
-                    //add many2many lists
-                    if(Utilities.HasAttribute<Many2Many>(property))
-                    {
-                        def.many2ManyColumns.Add(property);
-                        continue;
-                    }
-
                     //ignore column
                     if (!Utilities.HasAttribute<Column>(property))
                         continue;
@@ -1470,10 +1340,6 @@ namespace Cocoon
                     //add primary key
                     if (Utilities.HasAttribute<PrimaryKey>(property))
                         def.primaryKeys.Add(property);
-
-                    //add foreign key
-                    if (Utilities.HasAttribute<ForeignKey>(property))
-                        def.foreignKeys.Add(property);
 
                     //multi tenant columns
                     if (column.IsMultiTenantID)
@@ -1522,8 +1388,6 @@ namespace Cocoon
             return tableDefinitions[type];
 
         }
-
-
 
         #endregion
 

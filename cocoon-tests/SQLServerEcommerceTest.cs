@@ -21,6 +21,8 @@ namespace Cocoon.Tests
         public override void generateData()
         {
 
+            db.GetList((TestTable t) => t.Prim2 == "a");
+
             Console.WriteLine("*** Generating Test Data ***");
 
             DateTime startTime = DateTime.Now;

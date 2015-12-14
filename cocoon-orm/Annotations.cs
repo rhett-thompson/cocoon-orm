@@ -78,54 +78,13 @@ namespace Cocoon.Annotations
         }
 
     }
-
-    /// <summary>
-    /// This field may not be null
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
-    public class NotNull : Attribute
-    {
-
-    }
-
+    
     /// <summary>
     /// This field is a primary key in the database
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class PrimaryKey : Attribute
     {
-
-    }
-
-    /// <summary>
-    /// This field is a foreign key in the database
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
-    public class ForeignKey : Attribute
-    {
-
-        /// <summary>
-        /// The table where the primary key resides
-        /// </summary>
-        public readonly Type ReferencesTable;
-
-        /// <summary>
-        /// Specifiy this if the name of the column in the primary table is different than the foreign key.
-        /// </summary>
-        public readonly string ReferenceTablePrimaryKeyOverride;
-
-        /// <summary>
-        /// This field is a foreign key in the database
-        /// </summary>
-        /// <param name="ReferencesTable">The table where the primary key resides</param>
-        /// <param name="ReferenceTablePrimaryKeyOverride">Specifiy this if the name of the column in the primary table is different than the foreign key.</param>
-        public ForeignKey(Type ReferencesTable = null, string ReferenceTablePrimaryKeyOverride = null)
-        {
-
-            this.ReferencesTable = ReferencesTable;
-            this.ReferenceTablePrimaryKeyOverride = ReferenceTablePrimaryKeyOverride;
-
-        }
 
     }
 
@@ -253,32 +212,7 @@ namespace Cocoon.Annotations
         }
 
     }
-
-    /// <summary>
-    /// This is a list of values from a Many2Many table
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
-    public class Many2Many : Attribute
-    {
-
-        internal string primaryKey;
-        internal string many2ManyTable;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="PrimaryKey">The primary key to use in this class</param>
-        /// <param name="Many2ManyTable">The name of the many2many table</param>
-        public Many2Many(string PrimaryKey, string Many2ManyTable)
-        {
-
-            primaryKey = PrimaryKey;
-            many2ManyTable = Many2ManyTable;
-
-        }
-
-    }
-
+    
     /// <summary>
     /// 
     /// </summary>
