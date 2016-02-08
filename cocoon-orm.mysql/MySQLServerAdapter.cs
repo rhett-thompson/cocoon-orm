@@ -218,11 +218,6 @@ namespace Cocoon
         {
             return whereClause.Replace("?", "?" + paramPrefix);
         }
-
-        public override string whereExpression(Expression expression)
-        {
-            throw new NotImplementedException();
-        }
-
+        
     }
 }
