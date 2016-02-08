@@ -240,12 +240,6 @@ namespace Cocoon
         {
             return whereClause.Replace("@", "@" + paramPrefix);
         }
-
-        public override string whereExpression(Expression expression)
-        {
-            var visitor = new SQLExpressionTranslator();
-            return visitor.GenerateSQLExpression(this, expression);
-        }
-
+        
     }
 }

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Cocoon</RootNamespace>
     <AssemblyName>cocoon-orm</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -47,7 +47,6 @@
     <Compile Include="DBServerConnection.cs" />
     <Compile Include="Annotations.cs" />
     <Compile Include="DBConnection.cs" />
-    <Compile Include="SQLExpressionVisitor.cs" />
     <Compile Include="SQLServerAdapter.cs" />
     <Compile Include="TableDefinition.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

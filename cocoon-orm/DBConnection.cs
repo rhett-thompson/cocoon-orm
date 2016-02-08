@@ -374,18 +374,7 @@ namespace Cocoon
             return obj;
 
         }
-
-        /// <summary>
-        /// Retrieves a single item from the database
-        /// </summary>
-        /// <typeparam name="T">The object model/table to get the item from</typeparam>
-        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
-        /// <returns>An object of type T</returns>
-        public T GetSingle<T>(Expression<Func<T, bool>> where)
-        {
-            return GetSingle<T>(adapter.whereExpression(where.Body));
-        }
-
+        
         /// <summary>
         /// Returns a list of T objects
         /// </summary>
@@ -396,42 +385,36 @@ namespace Cocoon
         /// <returns>A list of items of type T</returns>
         public List<T> GetList<T>(object where = null, bool useOrLogic = false, int top = 0)
         {
+            List<object> list = GetList(typeof(T), where, useOrLogic, top);
+            List<T> newList = new List<T>();
+            foreach (object item in list)
+                newList.Add((T)item);
 
-            //get type
-            Type type = typeof(T);
+            return newList;
+            
+        }
 
+        public List<object> GetList(Type type, object where = null, bool useOrLogic = false, int top = 0)
+        {
+            
             //do select
             DataSet ds;
             int rowsFilled;
             select(type, top, where, useOrLogic, out ds, out rowsFilled);
 
             if (rowsFilled == 0)
-                return new List<T>();
+                return new List<object>();
 
             //fill list
-            List<T> list = new List<T>();
+            List<object> list = new List<object>();
             foreach (DataRow row in ds.Tables[0].Rows)
             {
-                T obj = (T)Activator.CreateInstance(type);
+                object obj = Activator.CreateInstance(type);
                 Utilities.SetFromRow(obj, row);
                 list.Add(obj);
             }
 
             return list;
-
-        }
-
-        /// <summary>
-        /// Returns a list of T objects
-        /// </summary>
-        /// <typeparam name="T">The object model/table to select items from</typeparam>
-        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
-        /// <param name="top">If greater than 0, selects the top N items</param>
-        /// <returns></returns>
-        public List<T> GetList<T>(Expression<Func<T, bool>> where, int top = 0)
-        {
-
-            return GetList<T>(adapter.whereExpression(where.Body), false, top);
 
         }
 
@@ -629,14 +612,66 @@ namespace Cocoon
         /// <summary>
         /// Deletes an object in the database
         /// </summary>
-        /// <typeparam name="T">The object model/table to delete a record from</typeparam>
-        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
+        /// <param name="objectToDelete">The object model/record to delete from the database</param>
+        /// <param name="where">A where clause to add to the delete. If null the primary key fields of the table are used</param>
+        /// <param name="useOrLogic">If true, the where clause will use OR logic instead of AND logic</param>
         /// <returns>The number of rows affected by the delete</returns>
-        public int Delete<T>(Expression<Func<T, bool>> where)
+        public int Delete(object objectToDelete, object where = null, bool useOrLogic = false)
         {
 
-            return Delete(typeof(T), adapter.whereExpression(where.Body));
+            TableDefinition def = getDef(objectToDelete.GetType());
 
+            if (where == null && def.primaryKeys.Count == 0)
+                throw new Exception("Where clause must be supplied when no primary keys exist in table.");
+
+            //generate where clause
+            string whereClause = "";
+            bool usePrimaryKeysInWhereClause = false;
+
+            if (where != null)
+            {
+
+                if (where is string)
+                    whereClause = (string)where;
+                else
+                {
+                    checkWhereForMultiTenantID(def, where);
+                    whereClause = generateWhereClause(def.tableName, where, useOrLogic, "where_");
+                }
+            }
+            else if (def.primaryKeys.Count > 0)
+            {
+
+                if (def.multiTenantIDColumns.Count > 0)
+                    multiTenantMatch(def, def.primaryKeys.ToArray());
+
+                usePrimaryKeysInWhereClause = true;
+                whereClause = generateWhereClause(def.tableName, def.primaryKeys, objectToDelete, useOrLogic, "where_");
+            }
+
+            string sql = string.Format("delete from {0} where {1}", def.objectName, whereClause);
+
+            log("Generated SQL (Delete) " + sql);
+
+            using (var connection = adapter.getConnection(ConnectionString))
+            {
+
+                //set sql
+                connection.command.CommandText = sql;
+
+                //add parameters
+                if (usePrimaryKeysInWhereClause)
+                    adapter.addParams(connection, def.primaryKeys, objectToDelete, "where_");
+                else
+                    adapter.addParams(connection, where, "where_");
+
+                //execute
+                connection.connection.Open();
+
+                return connection.command.ExecuteNonQuery();
+
+            }
+            
         }
 
         /// <summary>
@@ -678,21 +713,7 @@ namespace Cocoon
                 useOrLogic);
 
         }
-
-        /// <summary>
-        /// Updates and existing record in the database
-        /// </summary>
-        /// <typeparam name="T">The object model/table to update</typeparam>
-        /// <param name="objectToUpdate">The object to use as values for the update</param>
-        /// <param name="where">An expression to use as the where clause (e.g. (T item) => item.field > 0)</param>
-        /// <returns>The number of rows affected by the update</returns>
-        public int Update<T>(T objectToUpdate, Expression<Func<T, bool>> where)
-        {
-
-            return Update(typeof(T), adapter.whereExpression(where.Body));
-
-        }
-
+        
         /// <summary>
         /// Inserts a list of records into the database and returns a list of the inserted objects.
         /// </summary>
@@ -794,11 +815,20 @@ namespace Cocoon
         /// <returns></returns>
         public T Insert<T>(object objectToInsert)
         {
+            return (T)Insert(objectToInsert, typeof(T));
+        }
+
+        /// <summary>
+        /// Inserts a new record into the database and returns an output object.
+        /// </summary>
+        /// <param name="objectToInsert">The object to use for the insert</param>
+        /// <param name="returnType">The type of object to return</param>
+        /// <returns></returns>
+        public object Insert(object objectToInsert, Type returnType)
+        {
 
             TableDefinition def = getDef(objectToInsert.GetType());
-
-            Type returnType = typeof(T);
-
+            
             //get columns and values
             List<string> columns;
             List<string> values;
@@ -843,9 +873,9 @@ namespace Cocoon
                     int rowsFilled = adapter.fillDataSet(connection, out ds);
 
                     if (rowsFilled == 0)
-                        return default(T);
+                        return null;
 
-                    T objectToReturn = (T)Activator.CreateInstance(returnType);
+                    object objectToReturn = Activator.CreateInstance(returnType);
                     Utilities.SetFromRow(objectToReturn, ds.Tables[0].Rows[0]);
 
                     return objectToReturn;
@@ -854,7 +884,7 @@ namespace Cocoon
                 else
                 {
 
-                    return (T)connection.command.ExecuteScalar();
+                    return connection.command.ExecuteScalar();
 
                 }
 

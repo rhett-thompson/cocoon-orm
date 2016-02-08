@@ -227,8 +227,6 @@ namespace Cocoon
         /// <param name="paramPrefix"></param>
         /// <returns></returns>
         public abstract string parseWhereString(string whereClause, string paramPrefix);
-
-        public abstract string whereExpression(Expression expression);
-
+        
     }
 }
