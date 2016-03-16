@@ -1,5 +1,4 @@
-﻿using Cocoon.Annotations;
-using System;
+﻿using System;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -7,7 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.ComponentModel;
 
-namespace Cocoon
+namespace Cocoon.ORM
 {
 
     /// <summary>
@@ -28,7 +27,7 @@ namespace Cocoon
         public static object ChangeType(object value, Type conversionType)
         {
 
-            if (value == null)
+            if (value == null || value == DBNull.Value)
                 if (conversionType.IsValueType)
                     return Activator.CreateInstance(conversionType);
                 else
@@ -174,69 +173,7 @@ namespace Cocoon
 
         }
 
-        /// <summary>
-        /// Returns the name of a column
-        /// </summary>
-        /// <param name="member"></param>
-        /// <returns></returns>
-        public static string GetColumnName(MemberInfo member)
-        {
-
-            string name = null;
-            string overrideName = null;
-
-            if (HasAttribute<ForeignColumn>(member))
-            {
-
-                ForeignColumn annotation = member.GetCustomAttribute<ForeignColumn>(false);
-                overrideName = annotation.OverrideName;
-
-            }
-            else
-            {
-
-                Column annotation = member.GetCustomAttribute<Column>(false);
-                if (annotation != null)
-                    overrideName = annotation.OverrideName;
-
-            }
-
-            if (!string.IsNullOrEmpty(overrideName))
-                name = overrideName;
-            else
-                name = member.Name;
-
-            return name;
-
-        }
-
-        /// <summary>
-        /// Returns the name of a table
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public static string GetTableName(Type type)
-        {
-
-            string name;
-            if (HasAttribute<Table>(type))
-            {
-
-                Table annotation = type.GetCustomAttribute<Table>(false);
-
-                if (annotation.tableName == null)
-                    name = type.Name;
-                else
-                    name = annotation.tableName;
-
-            }
-            else
-                name = type.Name;
-
-            return name;
-
-        }
-
+        /*
         /// <summary>
         /// Fills a list from a DataTable
         /// </summary>
@@ -254,26 +191,6 @@ namespace Cocoon
                     list.Add((T)ChangeType(row[0], typeof(T)));
                 else if (row.Table.Columns.Contains(fieldToMap))
                     list.Add((T)ChangeType(row[fieldToMap], typeof(T)));
-            }
-            return list;
-
-        }
-
-        /// <summary>
-        /// Fills a list of objects from the rows of a DataTable
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="table"></param>
-        /// <returns></returns>
-        public static List<T> FillList<T>(DataTable table)
-        {
-
-            List<T> list = new List<T>();
-            foreach (DataRow row in table.Rows)
-            {
-                T obj = (T)Activator.CreateInstance(typeof(T));
-                SetFromRow(obj, row);
-                list.Add(obj);
             }
             return list;
 
@@ -298,7 +215,7 @@ namespace Cocoon
                 if (HasAttribute<ForeignColumn>(prop))
                     propName = prop.Name;
                 else
-                    propName = GetColumnName(prop);
+                    propName = CocoonORM.getName(prop);
 
                 if (!row.Table.Columns.Contains(propName))
                     continue;
@@ -326,7 +243,39 @@ namespace Cocoon
 
             }
 
+        }*/
+
+        public static object SetFromReader(object objectToSet, IDataReader reader)
+        {
+
+            Type type = objectToSet.GetType();
+
+            PropertyInfo[] propertiesToSet = type.GetProperties();
+            List<string> columns = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToList();
+
+            foreach (PropertyInfo prop in propertiesToSet)
+            {
+
+                string propName;
+
+                if (HasAttribute<ForeignColumn>(prop))
+                    propName = prop.Name;
+                else
+                    propName = CocoonORM.getName(prop);
+
+                if (!columns.Contains(propName))
+                    continue;
+
+                if (reader[propName] == DBNull.Value)
+                    prop.SetValue(objectToSet, null);
+                else
+                    prop.SetValue(objectToSet, reader[propName]);
+
+            }
+
+            return objectToSet;
+
         }
-        
+
     }
 }
