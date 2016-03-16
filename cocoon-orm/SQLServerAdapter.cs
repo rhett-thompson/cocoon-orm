@@ -215,19 +215,20 @@ namespace Cocoon
         /// <param name="whereClause"></param>
         /// <param name="top"></param>
         /// <returns></returns>
-        public override string selectSQL(string tableName, List<string> columnsToSelect, string joinClause, string whereClause, int top)
+        public override string selectSQL(string tableName, List<string> columnsToSelect, string joinClause, string whereClause, string orderByClause, int top)
         {
 
             string topClause = "";
             if (top > 0)
                 topClause = string.Format("top {0}", top);
 
-            return string.Format("select {0} {1} from {2} {3} {4}",
+            return string.Format("select {0} {1} from {2} {3} {4} {5}",
                 topClause,
                 string.Join(", ", columnsToSelect),
                 getObjectName(tableName),
                 joinClause,
-                whereClause);
+                whereClause,
+                orderByClause);
         }
 
         /// <summary>

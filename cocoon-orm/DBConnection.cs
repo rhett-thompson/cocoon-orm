@@ -866,7 +866,7 @@ namespace Cocoon
                 adapter.addParams(connection, parameters, objectToInsert, "value_");
 
                 //get return
-                if (Utilities.HasAttribute<Table>(returnType))
+                if (returnType != null && Utilities.HasAttribute<Table>(returnType))
                 {
 
                     DataSet ds;
@@ -1225,6 +1225,27 @@ namespace Cocoon
                 else
                     whereClause = "where " + generateWhereClause(def.tableName, where, useOrLogic, "where_");
 
+            //generate order by clause
+            string orderByClause = "";
+            if(def.orderByColumns.Count > 0)
+            {
+                List<string> orderByTerms = new List<string>();
+                foreach (PropertyInfo prop in def.orderByColumns)
+                {
+
+                    string columnName = adapter.getObjectName(Utilities.GetColumnName(prop));
+
+                    if (Utilities.HasAttribute<OrderByASC>(prop))
+                        orderByTerms.Add(string.Format("{0} asc", columnName));
+                    else if(Utilities.HasAttribute<OrderByDESC>(prop))
+                        orderByTerms.Add(string.Format("{0} desc", columnName));
+
+                }
+
+                orderByClause = string.Format("order by {0}", string.Join(",", orderByTerms));
+
+            }
+
             //generate join
             string joinClause = "";
             if (def.linkedColumns.Count > 0)
@@ -1273,7 +1294,7 @@ namespace Cocoon
             }
 
             //generate select statement
-            string sql = adapter.selectSQL(def.tableName, columnsToSelect, joinClause, whereClause, top);
+            string sql = adapter.selectSQL(def.tableName, columnsToSelect, joinClause, whereClause, orderByClause, top);
 
             log("Generated SQL (select) " + sql);
 
@@ -1370,6 +1391,10 @@ namespace Cocoon
                     //add primary key
                     if (Utilities.HasAttribute<PrimaryKey>(property))
                         def.primaryKeys.Add(property);
+
+                    //order by
+                    if (Utilities.HasAttribute<OrderByASC>(property) || Utilities.HasAttribute<OrderByDESC>(property))
+                        def.orderByColumns.Add(property);
 
                     //multi tenant columns
                     if (column.IsMultiTenantID)

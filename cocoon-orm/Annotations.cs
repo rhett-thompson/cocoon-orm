@@ -116,6 +116,18 @@ namespace Cocoon.Annotations
 
     }
 
+    [AttributeUsage(AttributeTargets.Property)]
+    public class OrderByASC : Attribute
+    {
+
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public class OrderByDESC : Attribute
+    {
+
+    }
+
     /// <summary>
     /// This field exists in another table and should be joined by a foreign key.
     /// </summary>

@@ -218,7 +218,7 @@ namespace Cocoon
         /// <param name="whereClause"></param>
         /// <param name="top"></param>
         /// <returns></returns>
-        public abstract string selectSQL(string tableName, List<string> columnsToSelect, string joinClause, string whereClause, int top);
+        public abstract string selectSQL(string tableName, List<string> columnsToSelect, string joinClause, string whereClause, string orderByClause, int top);
 
         /// <summary>
         /// 
