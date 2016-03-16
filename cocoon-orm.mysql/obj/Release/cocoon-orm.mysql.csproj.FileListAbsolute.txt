@@ -1,8 +1,0 @@
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Release\cocoon-orm.mysql.dll.config
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Release\cocoon-orm.mysql.dll
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Release\cocoon-orm.mysql.pdb
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Release\cocoon-orm.dll
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Release\MySql.Data.dll
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\bin\Release\cocoon-orm.pdb
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\obj\Release\cocoon-orm.mysql.dll
-C:\Users\Rhett\Desktop\git\cocoon-orm\cocoon-orm.MySQL\obj\Release\cocoon-orm.mysql.pdb
