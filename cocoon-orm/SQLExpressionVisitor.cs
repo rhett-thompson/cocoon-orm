@@ -2,6 +2,7 @@
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using Cocoon.ORM;
 
@@ -64,41 +65,49 @@ namespace Cocoon.ORM
             else
                 throw new NotSupportedException(string.Format("Binary operator '{0}' not supported", node.NodeType));
 
+            //var r = (MemberExpression)node.Right;
+            //whereBuilder.Append(CocoonORM.addWhereParam(cmd, getValue(r)).ParameterName);
             Visit(node.Right);
 
             whereBuilder.Append(")");
 
             return node;
         }
-
+        
         protected override Expression VisitMember(MemberExpression node)
         {
+            if (node.Expression != null)
+                if (node.Expression.NodeType == ExpressionType.Parameter)
+                {
+                    whereBuilder.Append(node.Member.Name);
+                    return node;
+                }
+                else if (node.Expression.NodeType == ExpressionType.Constant)
+                {
+                    whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)).ParameterName);
+                    return node;
+                }
+                else if (node.Expression.NodeType == ExpressionType.MemberAccess)
+                {
+                    whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)).ParameterName);
+                    return node;
+                }
 
-            if (node.Expression != null && Utilities.HasAttribute<Column>(node.Member))
-            {
-
-                TableDefinition def = orm.getTable(node.Member.DeclaringType);
-                whereBuilder.Append(string.Format("{0}.{1}", def.objectName, CocoonORM.getObjectName(node.Member)));
-                
-            }
-            else
-                throw new NotSupportedException(string.Format("Member '{0}' not supported", node.Member.Name));
-
-            return node;
+            throw new NotSupportedException(string.Format("The member '{0}' is not supported", node.Member.Name));
 
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
 
-            if(node.Method.Name == "StartsWith")
-                addLike(node, ((ConstantExpression)node.Arguments[0]).Value + "%");
-            else if(node.Method.Name == "EndsWith")
-                addLike(node, "%" + ((ConstantExpression)node.Arguments[0]).Value);
-            else if(node.Method.Name == "Contains")
-                addLike(node, "%" + ((ConstantExpression)node.Arguments[0]).Value + "%");
+            if (node.Method.Name == "StartsWith")
+                addLikeParam(node, getExpressionValue(node.Arguments[0]) + "%");
+            else if (node.Method.Name == "EndsWith")
+                addLikeParam(node, "%" + getExpressionValue(node.Arguments[0]));
+            else if (node.Method.Name == "Contains")
+                addLikeParam(node, "%" + getExpressionValue(node.Arguments[0]) + "%");
             else
-                throw new NotSupportedException("Methods are not supported.");
+                throw new NotSupportedException(string.Format("Method '{0}' not supported", node.Method.Name));
 
             return node;
 
@@ -124,27 +133,26 @@ namespace Cocoon.ORM
         protected override Expression VisitConstant(ConstantExpression node)
         {
 
-            IQueryable val = node.Value as IQueryable;
-
-            if (val == null && node.Value == null)
-                whereBuilder.Append("null");
-            else if (val == null)
-                whereBuilder.Append(CocoonORM.addWhereParam(cmd, node.Value).ParameterName);
-            else
-                throw new NotSupportedException("The constant not supported");
-
+            whereBuilder.Append(CocoonORM.addWhereParam(cmd, node.Value).ParameterName);
             return node;
+
         }
 
-        private bool isConstantNull(Expression exp)
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            return base.VisitParameter(node);
+        }
+
+        private static bool isConstantNull(Expression exp)
         {
             return exp.NodeType == ExpressionType.Constant && ((ConstantExpression)exp).Value == null;
         }
 
-        private void addLike(MethodCallExpression node, string like)
+        private void addLikeParam(MethodCallExpression node, string like)
         {
-            var member = (MemberExpression)node.Object;
-            var def = orm.getTable(member.Member.DeclaringType);
+            MemberExpression member = (MemberExpression)node.Object;
+            TableDefinition def = orm.getTable(member.Member.DeclaringType);
+
             whereBuilder.Append(string.Format("{0}.{1} like {2}",
                 def.objectName,
                 CocoonORM.getObjectName(member.Member),
@@ -152,5 +160,14 @@ namespace Cocoon.ORM
 
         }
 
+        private static object getExpressionValue(Expression member)
+        {
+            UnaryExpression objectMember = Expression.Convert(member, typeof(object));
+            Expression<Func<object>> getterLambda = Expression.Lambda<Func<object>>(objectMember);
+            Func<object> getter = getterLambda.Compile();
+
+            return getter();
+        }
+        
     }
 }

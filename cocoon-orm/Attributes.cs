@@ -25,7 +25,6 @@ namespace Cocoon.ORM
     public class Column : Attribute
     {
 
-
     }
 
     public class ForeignColumn : Attribute

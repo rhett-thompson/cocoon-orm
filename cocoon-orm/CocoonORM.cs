@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Numerics;
 using System.Reflection;
 
 namespace Cocoon.ORM
@@ -14,6 +16,7 @@ namespace Cocoon.ORM
         public string ConnectionString;
 
         internal Dictionary<Type, TableDefinition> tables = new Dictionary<Type, TableDefinition>();
+
 
         public CocoonORM(string connectionString)
         {
@@ -52,7 +55,7 @@ namespace Cocoon.ORM
                 select(conn, cmd, def.objectName, def.columns, def.foreignColumns, 1, where);
                 return readSingle<T>(cmd);
             }
-            
+
         }
 
         public FieldT GetScalar<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> fieldToSelect, Expression<Func<ModelT, bool>> where = null)
@@ -126,7 +129,7 @@ namespace Cocoon.ORM
                 //columns to select
                 List<string> columnsToUpdate = new List<string>();
                 foreach (PropertyInfo prop in fieldsToUpdate.GetType().GetProperties())
-                    if (!Utilities.HasAttribute<IgnoreOnUpdate>(prop))
+                    if (!HasAttribute<IgnoreOnUpdate>(prop))
                     {
                         SqlParameter param = addParam(cmd, "update_field_" + getGuid(), prop.GetValue(fieldsToUpdate));
                         columnsToUpdate.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
@@ -144,7 +147,7 @@ namespace Cocoon.ORM
 
             }
         }
-        
+
         public T Insert<T>(T objectToInsert)
         {
 
@@ -158,7 +161,7 @@ namespace Cocoon.ORM
                 List<string> columns = new List<string>();
                 List<string> values = new List<string>();
                 foreach (PropertyInfo prop in objectToInsert.GetType().GetProperties())
-                    if (def.columns.Contains(prop) && !Utilities.HasAttribute<IgnoreOnInsert>(prop))
+                    if (def.columns.Contains(prop) && !HasAttribute<IgnoreOnInsert>(prop))
                     {
 
                         columns.Add(string.Format("{0}.{1}", def.objectName, getObjectName(prop)));
@@ -188,10 +191,10 @@ namespace Cocoon.ORM
                     string.Join(", ", insertedPrimaryKeys),
                     string.Join(", ", values),
                     string.Join(" and ", wherePrimaryKeys));
-                
+
                 conn.Open();
                 return readSingle<T>(cmd);
-                
+
             }
 
         }
@@ -203,7 +206,7 @@ namespace Cocoon.ORM
         public List<T> ExecuteSQLList<T>(string sql, object parameters = null)
         {
 
-            bool isScalar = Utilities.HasAttribute<Table>(typeof(T));
+            bool isScalar = !HasAttribute<Table>(typeof(T));
             List<T> list = new List<T>();
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
@@ -229,7 +232,7 @@ namespace Cocoon.ORM
         public T ExecuteSQLSingle<T>(string sql, object parameters = null)
         {
 
-            bool isScalar = Utilities.HasAttribute<Table>(typeof(T));
+            bool isScalar = !HasAttribute<Table>(typeof(T));
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
@@ -246,9 +249,9 @@ namespace Cocoon.ORM
                     return readSingle<T>(cmd);
 
             }
-            
+
         }
-        
+
         public int ExecuteSQLVoid(string sql, object parameters = null)
         {
 
@@ -267,6 +270,28 @@ namespace Cocoon.ORM
 
         }
 
+        public DataSet ExecuteSQLDataSet(string sql, object parameters = null)
+        {
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+
+                addParamObject(cmd, parameters);
+
+                cmd.CommandText = sql;
+
+                using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                {
+                    DataSet ds = new DataSet();
+                    adapter.Fill(ds);
+                    return ds;
+                }
+                
+            }
+
+        }
+
         #endregion
 
         #region Stored Procedures
@@ -274,7 +299,7 @@ namespace Cocoon.ORM
         public List<T> ExecuteProcList<T>(string procedureName, object parameters = null)
         {
 
-            bool isScalar = Utilities.HasAttribute<Table>(typeof(T));
+            bool isScalar = !HasAttribute<Table>(typeof(T));
             List<T> list = new List<T>();
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
@@ -301,7 +326,7 @@ namespace Cocoon.ORM
         public T ExecuteProcSingle<T>(string procedureName, object parameters = null)
         {
 
-            bool isScalar = Utilities.HasAttribute<Table>(typeof(T));
+            bool isScalar = !HasAttribute<Table>(typeof(T));
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
@@ -319,7 +344,7 @@ namespace Cocoon.ORM
                     return readSingle<T>(cmd);
 
             }
-            
+
         }
 
         public int ExecuteProcVoid(string procedureName, object parameters = null)
@@ -340,6 +365,298 @@ namespace Cocoon.ORM
             }
 
         }
+
+        #endregion
+
+        #region Utilities
+
+        internal const string base36Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+        internal static DateTime baseDate = new DateTime(1900, 1, 1);
+
+        /// <summary>
+        /// Changes the type of an object
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="conversionType"></param>
+        /// <returns></returns>
+        public static object ChangeType(object value, Type conversionType)
+        {
+
+            if (value == null || value == DBNull.Value)
+                if (conversionType.IsValueType)
+                    return Activator.CreateInstance(conversionType);
+                else
+                    return null;
+
+            if (value.GetType() == conversionType)
+                return value;
+
+            if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+                conversionType = Nullable.GetUnderlyingType(conversionType);
+
+            try
+            {
+                return TypeDescriptor.GetConverter(conversionType).ConvertFrom(value);
+            }
+            catch
+            {
+                return Convert.ChangeType(value, conversionType);
+
+            }
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public static Guid GenerateSequentialGuid()
+        {
+
+            byte[] guidArray = Guid.NewGuid().ToByteArray();
+
+            DateTime now = DateTime.Now;
+
+            TimeSpan days = new TimeSpan(now.Ticks - baseDate.Ticks);
+            TimeSpan msecs = now.TimeOfDay;
+
+            byte[] daysArray = BitConverter.GetBytes(days.Days);
+            byte[] msecsArray = BitConverter.GetBytes((long)(msecs.TotalMilliseconds / 3.333333));
+
+            Array.Reverse(daysArray);
+            Array.Reverse(msecsArray);
+
+            Array.Copy(daysArray, daysArray.Length - 2, guidArray, guidArray.Length - 6, 2);
+            Array.Copy(msecsArray, msecsArray.Length - 4, guidArray, guidArray.Length - 4, 4);
+
+            return new Guid(guidArray);
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public static string GenerateSequentialUID()
+        {
+
+            return Base36Encode(DateTime.Now.Ticks);
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static long Base36Decode(string value)
+        {
+
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Empty value.");
+
+            value = value.ToUpper();
+
+            bool negative = false;
+
+            if (value[0] == '-')
+            {
+                negative = true;
+                value = value.Substring(1, value.Length - 1);
+            }
+
+            if (value.Any(c => !base36Digits.Contains(c)))
+                throw new ArgumentException("Invalid value: \"" + value + "\".");
+
+            long decoded = 0L;
+
+            for (var i = 0; i < value.Length; ++i)
+                decoded += base36Digits.IndexOf(value[i]) * (long)BigInteger.Pow(base36Digits.Length, value.Length - i - 1);
+
+            return negative ? decoded * -1 : decoded;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string Base36Encode(long value)
+        {
+            if (value == long.MinValue)
+                return "-1Y2P0IJ32E8E8";
+
+            bool negative = value < 0;
+
+            value = Math.Abs(value);
+
+            string encoded = string.Empty;
+
+            do
+                encoded = base36Digits[(int)(value % base36Digits.Length)] + encoded;
+
+            while ((value /= base36Digits.Length) != 0);
+
+            return negative ? "-" + encoded : encoded;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        public static bool HasAttribute<T>(MemberInfo member)
+        {
+
+            return member.GetCustomAttributes(typeof(T), false).Length > 0;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="property"></param>
+        /// <returns></returns>
+        public static bool HasAttribute<T>(Type property)
+        {
+
+            return property.GetCustomAttributes(typeof(T), false).Length > 0;
+
+        }
+
+        /// <summary>
+        /// Fills a list from a DataTable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="table"></param>
+        /// <param name="fieldToMap"></param>
+        /// <returns></returns>
+        public static List<T> FillScalarList<T>(DataTable table, string fieldToMap = null)
+        {
+
+            List<T> list = new List<T>();
+            foreach (DataRow row in table.Rows)
+            {
+                if (fieldToMap == null)
+                    list.Add((T)ChangeType(row[0], typeof(T)));
+                else if (row.Table.Columns.Contains(fieldToMap))
+                    list.Add((T)ChangeType(row[fieldToMap], typeof(T)));
+            }
+            return list;
+
+        }
+
+        /// <summary>
+        /// Fills a list of objects from the rows of a DataTable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="table"></param>
+        /// <returns></returns>
+        public static List<T> FillList<T>(DataTable table)
+        {
+
+            List<T> list = new List<T>();
+            foreach (DataRow row in table.Rows)
+            {
+                T obj = (T)Activator.CreateInstance(typeof(T));
+                SetFromRow(obj, row);
+                list.Add(obj);
+            }
+            return list;
+
+        }
+
+        /// <summary>
+        /// Sets an objects properties from a DataRow
+        /// </summary>
+        /// <param name="objectToSet"></param>
+        /// <param name="row"></param>
+        public static void SetFromRow(object objectToSet, DataRow row)
+        {
+
+            Type type = objectToSet.GetType();
+
+            PropertyInfo[] propertiesToSet = type.GetProperties();
+            foreach (PropertyInfo prop in propertiesToSet)
+            {
+
+                string propName;
+
+                if (HasAttribute<ForeignColumn>(prop))
+                    propName = prop.Name;
+                else
+                    propName = CocoonORM.getName(prop);
+
+                if (!row.Table.Columns.Contains(propName))
+                    continue;
+
+                DataColumn column = row.Table.Columns[propName];
+
+                if (column == null)
+                    continue;
+
+                try
+                {
+
+                    if (row[column] == DBNull.Value)
+                        prop.SetValue(objectToSet, null);
+                    else
+                        prop.SetValue(objectToSet, row[column]);
+
+                }
+                catch
+                {
+
+                    throw new Exception(string.Format("Could not assign value to '{0}'.", propName));
+
+                }
+
+            }
+
+        }
+
+        /// <summary>
+        /// Sets an objects properties from a DataReader
+        /// </summary>
+        /// <param name="objectToSet"></param>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static object SetFromReader(object objectToSet, IDataReader reader)
+        {
+
+            Type type = objectToSet.GetType();
+
+            PropertyInfo[] propertiesToSet = type.GetProperties();
+            List<string> columns = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToList();
+
+            foreach (PropertyInfo prop in propertiesToSet)
+            {
+
+                string propName;
+
+                if (HasAttribute<ForeignColumn>(prop))
+                    propName = prop.Name;
+                else
+                    propName = CocoonORM.getName(prop);
+
+                if (!columns.Contains(propName))
+                    continue;
+
+                if (reader[propName] == DBNull.Value)
+                    prop.SetValue(objectToSet, null);
+                else
+                    prop.SetValue(objectToSet, reader[propName]);
+
+            }
+
+            return objectToSet;
+
+        }
+
 
         #endregion
 
@@ -432,7 +749,7 @@ namespace Cocoon.ORM
         {
 
             T obj = (T)Activator.CreateInstance(typeof(T));
-            Utilities.SetFromReader(obj, reader);
+            SetFromReader(obj, reader);
             return obj;
 
         }
@@ -458,7 +775,7 @@ namespace Cocoon.ORM
         {
 
             //get columns to select
-            List<string> columnsToSelect = columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", tableObjectName, getObjectName(c))).ToList();
+            List<string> columnsToSelect = columns.Where(c => !HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", tableObjectName, getObjectName(c))).ToList();
             if (columnsToSelect.Count == 0)
                 throw new Exception("No columns to select");
 
@@ -494,13 +811,13 @@ namespace Cocoon.ORM
             foreach (var prop in type.GetProperties())
             {
 
-                if (Utilities.HasAttribute<Column>(prop))
+                if (HasAttribute<Column>(prop))
                     table.columns.Add(prop);
 
-                if (Utilities.HasAttribute<ForeignColumn>(prop))
+                if (HasAttribute<ForeignColumn>(prop))
                     table.foreignColumns.Add(prop);
 
-                if (Utilities.HasAttribute<PrimaryKey>(prop))
+                if (HasAttribute<PrimaryKey>(prop))
                     table.primaryKeys.Add(prop);
 
             }
@@ -518,7 +835,7 @@ namespace Cocoon.ORM
         {
 
             string name = member.Name;
-            if (Utilities.HasAttribute<OverrideName>(member))
+            if (HasAttribute<OverrideName>(member))
                 name = member.GetCustomAttribute<OverrideName>().name;
 
             return name;
