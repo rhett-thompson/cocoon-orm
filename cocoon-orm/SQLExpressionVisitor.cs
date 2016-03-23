@@ -73,27 +73,16 @@ namespace Cocoon.ORM
 
             return node;
         }
-        
+
         protected override Expression VisitMember(MemberExpression node)
         {
-            if (node.Expression != null)
-                if (node.Expression.NodeType == ExpressionType.Parameter)
-                {
-                    whereBuilder.Append(node.Member.Name);
-                    return node;
-                }
-                else if (node.Expression.NodeType == ExpressionType.Constant)
-                {
-                    whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)).ParameterName);
-                    return node;
-                }
-                else if (node.Expression.NodeType == ExpressionType.MemberAccess)
-                {
-                    whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)).ParameterName);
-                    return node;
-                }
+            if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
+                whereBuilder.Append(node.Member.Name);
+            else
+                whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)).ParameterName);
 
-            throw new NotSupportedException(string.Format("The member '{0}' is not supported", node.Member.Name));
+            return node;
+            //throw new NotSupportedException(string.Format("The member '{0}' is not supported", node.Member.Name));
 
         }
 
@@ -168,6 +157,6 @@ namespace Cocoon.ORM
 
             return getter();
         }
-        
+
     }
 }

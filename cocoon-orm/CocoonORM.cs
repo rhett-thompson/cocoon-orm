@@ -151,7 +151,7 @@ namespace Cocoon.ORM
         public T Insert<T>(T objectToInsert)
         {
 
-            TableDefinition def = getTable(typeof(T)); ;
+            TableDefinition def = getTable(typeof(T));
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
@@ -197,6 +197,41 @@ namespace Cocoon.ORM
 
             }
 
+        }
+
+        public List<T> Insert<T>(IEnumerable<T> objectsToInsert)
+        {
+
+            List<T> list = new List<T>();
+
+            foreach (T obj in objectsToInsert)
+                list.Add(Insert(obj));
+
+            return list;
+
+        }
+
+        public int Count<T>(Expression<Func<T, bool>> where = null)
+        {
+
+            TableDefinition def = getTable(typeof(T));
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+
+                //generate where clause
+                string whereClause = generateWhereClause(cmd, def.objectName, where);
+                
+                //generate sql
+                cmd.CommandText = string.Format("select count(*) from {0} {1}", def.objectName, whereClause);
+
+                //execute sql
+                conn.Open();
+                return readScalar<int>(cmd);
+
+            }
+            
         }
 
         #endregion
@@ -287,7 +322,7 @@ namespace Cocoon.ORM
                     adapter.Fill(ds);
                     return ds;
                 }
-                
+
             }
 
         }
