@@ -133,9 +133,9 @@
             this.label3.AutoSize = true;
             this.label3.Location = new System.Drawing.Point(12, 260);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(108, 19);
+            this.label3.Size = new System.Drawing.Size(121, 19);
             this.label3.TabIndex = 6;
-            this.label3.Text = "Generated Class";
+            this.label3.Text = "Generated Classes";
             // 
             // SelectAllButton
             // 
