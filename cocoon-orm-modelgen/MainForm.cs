@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Windows.Forms;
+using Cocoon.ORM.ModelGen.Properties;
 
 namespace Cocoon.ORM.ModelGen
 {
@@ -58,6 +59,12 @@ namespace Cocoon.ORM.ModelGen
             CLRToPrimitiveMappings.Add(typeof(String), "string");
             CLRToPrimitiveMappings.Add(typeof(Int16), "short");
             CLRToPrimitiveMappings.Add(typeof(Byte), "byte");
+
+            if (Settings.Default.ConnectionStrings == null)
+                Settings.Default.ConnectionStrings = new System.Collections.Specialized.StringCollection();
+
+            listConnectionStrings();
+            ConnectionStringComboBox.SelectedIndex = 0;
 
         }
 
@@ -137,6 +144,13 @@ namespace Cocoon.ORM.ModelGen
 
         }
 
+        private void listConnectionStrings()
+        {
+            ConnectionStringComboBox.Items.Clear();
+            foreach (string cs in Settings.Default.ConnectionStrings)
+                ConnectionStringComboBox.Items.Add(cs);
+        }
+
         private void ConnectButton_Click(object sender, EventArgs e)
         {
 
@@ -145,11 +159,18 @@ namespace Cocoon.ORM.ModelGen
             try
             {
 
-                db = new CocoonORM(ConnectionStringTextBox.Text);
+                db = new CocoonORM(ConnectionStringComboBox.Text);
 
                 PingReply reply = db.Ping();
                 
                 tables = db.ExecuteSQLList<SysTable>("select name, object_id from sys.tables order by Name");
+
+                if(!Settings.Default.ConnectionStrings.Contains(ConnectionStringComboBox.Text))
+                {
+                    Settings.Default.ConnectionStrings.Add(ConnectionStringComboBox.Text);
+                    Settings.Default.Save();
+                    listConnectionStrings();
+                }
 
                 listTables();
 

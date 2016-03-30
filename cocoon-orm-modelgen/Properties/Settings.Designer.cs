@@ -22,5 +22,16 @@ namespace Cocoon.ORM.ModelGen.Properties {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Specialized.StringCollection ConnectionStrings {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["ConnectionStrings"]));
+            }
+            set {
+                this["ConnectionStrings"] = value;
+            }
+        }
     }
 }

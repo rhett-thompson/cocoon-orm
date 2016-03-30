@@ -30,7 +30,6 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            this.ConnectionStringTextBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.TablesListBox = new System.Windows.Forms.ListBox();
             this.label2 = new System.Windows.Forms.Label();
@@ -41,19 +40,9 @@
             this.ClearSelectionButton = new System.Windows.Forms.Button();
             this.FilterTablesTextBox = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.ConnectionStringComboBox = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.ClassTextBox)).BeginInit();
             this.SuspendLayout();
-            // 
-            // ConnectionStringTextBox
-            // 
-            this.ConnectionStringTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.ConnectionStringTextBox.Location = new System.Drawing.Point(12, 35);
-            this.ConnectionStringTextBox.Name = "ConnectionStringTextBox";
-            this.ConnectionStringTextBox.Size = new System.Drawing.Size(679, 25);
-            this.ConnectionStringTextBox.TabIndex = 0;
-            this.ConnectionStringTextBox.Text = "Server=172.99.97.188,4120;Database=424828_TempTimeSystem;User ID=424828_TempTimeS" +
-    "ystem;Password=XraHFY639JH";
             // 
             // label1
             // 
@@ -191,11 +180,22 @@
             this.label4.TabIndex = 10;
             this.label4.Text = "Filter Tables";
             // 
+            // ConnectionStringComboBox
+            // 
+            this.ConnectionStringComboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.ConnectionStringComboBox.FormattingEnabled = true;
+            this.ConnectionStringComboBox.Location = new System.Drawing.Point(12, 35);
+            this.ConnectionStringComboBox.Name = "ConnectionStringComboBox";
+            this.ConnectionStringComboBox.Size = new System.Drawing.Size(679, 25);
+            this.ConnectionStringComboBox.TabIndex = 11;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 561);
+            this.Controls.Add(this.ConnectionStringComboBox);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.FilterTablesTextBox);
             this.Controls.Add(this.ClearSelectionButton);
@@ -206,7 +206,6 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.TablesListBox);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.ConnectionStringTextBox);
             this.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.MinimumSize = new System.Drawing.Size(800, 600);
@@ -220,8 +219,6 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.TextBox ConnectionStringTextBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ListBox TablesListBox;
         private System.Windows.Forms.Label label2;
@@ -232,6 +229,7 @@
         private System.Windows.Forms.Button ClearSelectionButton;
         private System.Windows.Forms.TextBox FilterTablesTextBox;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.ComboBox ConnectionStringComboBox;
     }
 }
 
