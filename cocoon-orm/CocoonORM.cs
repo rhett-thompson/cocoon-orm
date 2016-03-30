@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Reflection;
 
@@ -22,6 +23,21 @@ namespace Cocoon.ORM
         {
 
             ConnectionString = connectionString;
+
+        }
+
+        public PingReply Ping(int timeout = 5000)
+        {
+
+            Ping ping = new Ping();
+            string server = ConnectionStringParser.GetServerName(ConnectionString);
+
+            if (server.Contains(","))
+                server = server.Substring(0, server.LastIndexOf(","));
+            else if (server.Contains(":"))
+                server = server.Substring(0, server.LastIndexOf(":"));
+
+            return ping.Send(server, timeout);
 
         }
 
@@ -731,8 +747,7 @@ namespace Cocoon.ORM
             return objectToSet;
 
         }
-
-
+        
         #endregion
 
         #region Internal

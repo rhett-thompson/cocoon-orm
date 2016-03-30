@@ -145,18 +145,10 @@ namespace Cocoon.ORM.ModelGen
             try
             {
 
-                Ping ping = new Ping();
-                string server = ConnectionStringParser.GetServerName(ConnectionStringTextBox.Text);
-
-                if (server.Contains(","))
-                    server = server.Substring(0, server.LastIndexOf(","));
-                else if (server.Contains(":"))
-                    server = server.Substring(0, server.LastIndexOf(":"));
-
-                PingReply reply = ping.Send(server);
-
                 db = new CocoonORM(ConnectionStringTextBox.Text);
 
+                PingReply reply = db.Ping();
+                
                 tables = db.ExecuteSQLList<SysTable>("select name, object_id from sys.tables order by Name");
 
                 listTables();
