@@ -32,18 +32,22 @@ namespace Cocoon.ORM
 
         public readonly string KeyInThisTableModel;
         public readonly string KeyInOtherTableModel;
+        public readonly string FieldInOtherTableModel;
 
         internal Type otherTableModel;
         internal JoinType joinType;
 
-        public ForeignColumn(string KeyInThisTableModel, Type OtherTableModel, string KeyInOtherTableModel = null, JoinType JoinType = JoinType.INNER)
+        public ForeignColumn(string KeyInThisTableModel, Type OtherTableModel, string FieldInOtherTableModel = null, string KeyInOtherTableModel = null, JoinType JoinType = JoinType.INNER)
         {
 
             if (string.IsNullOrEmpty(KeyInThisTableModel))
                 throw new Exception("No foreign key provided.");
 
             this.KeyInThisTableModel = CocoonORM.getObjectName(KeyInThisTableModel);
-            this.KeyInOtherTableModel = CocoonORM.getObjectName(KeyInOtherTableModel == null ? KeyInThisTableModel : KeyInOtherTableModel);
+            this.KeyInOtherTableModel = CocoonORM.getObjectName(KeyInOtherTableModel ?? KeyInThisTableModel);
+
+            if(FieldInOtherTableModel != null)
+                this.FieldInOtherTableModel = CocoonORM.getObjectName(FieldInOtherTableModel);
 
             otherTableModel = OtherTableModel;
             joinType = JoinType;

@@ -37,6 +37,10 @@
             this.ConnectButton = new System.Windows.Forms.Button();
             this.ClassTextBox = new FastColoredTextBoxNS.FastColoredTextBox();
             this.label3 = new System.Windows.Forms.Label();
+            this.SelectAllButton = new System.Windows.Forms.Button();
+            this.ClearSelectionButton = new System.Windows.Forms.Button();
+            this.FilterTablesTextBox = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.ClassTextBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -144,11 +148,58 @@
             this.label3.TabIndex = 6;
             this.label3.Text = "Generated Class";
             // 
+            // SelectAllButton
+            // 
+            this.SelectAllButton.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.SelectAllButton.Location = new System.Drawing.Point(107, 68);
+            this.SelectAllButton.Name = "SelectAllButton";
+            this.SelectAllButton.Size = new System.Drawing.Size(75, 23);
+            this.SelectAllButton.TabIndex = 7;
+            this.SelectAllButton.Text = "Select All";
+            this.SelectAllButton.UseVisualStyleBackColor = true;
+            this.SelectAllButton.Click += new System.EventHandler(this.SelectAllButton_Click);
+            // 
+            // ClearSelectionButton
+            // 
+            this.ClearSelectionButton.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.ClearSelectionButton.Location = new System.Drawing.Point(188, 68);
+            this.ClearSelectionButton.Name = "ClearSelectionButton";
+            this.ClearSelectionButton.Size = new System.Drawing.Size(101, 23);
+            this.ClearSelectionButton.TabIndex = 8;
+            this.ClearSelectionButton.Text = "Clear Selection";
+            this.ClearSelectionButton.UseVisualStyleBackColor = true;
+            this.ClearSelectionButton.Click += new System.EventHandler(this.ClearSelectionButton_Click);
+            // 
+            // FilterTablesTextBox
+            // 
+            this.FilterTablesTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.FilterTablesTextBox.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.FilterTablesTextBox.Location = new System.Drawing.Point(609, 67);
+            this.FilterTablesTextBox.Name = "FilterTablesTextBox";
+            this.FilterTablesTextBox.Size = new System.Drawing.Size(163, 23);
+            this.FilterTablesTextBox.TabIndex = 9;
+            this.FilterTablesTextBox.TextChanged += new System.EventHandler(this.FilterTablesTextBox_TextChanged);
+            // 
+            // label4
+            // 
+            this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.label4.Location = new System.Drawing.Point(538, 70);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(69, 15);
+            this.label4.TabIndex = 10;
+            this.label4.Text = "Filter Tables";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 561);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.FilterTablesTextBox);
+            this.Controls.Add(this.ClearSelectionButton);
+            this.Controls.Add(this.SelectAllButton);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.ClassTextBox);
             this.Controls.Add(this.ConnectButton);
@@ -177,6 +228,10 @@
         private System.Windows.Forms.Button ConnectButton;
         private FastColoredTextBoxNS.FastColoredTextBox ClassTextBox;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Button SelectAllButton;
+        private System.Windows.Forms.Button ClearSelectionButton;
+        private System.Windows.Forms.TextBox FilterTablesTextBox;
+        private System.Windows.Forms.Label label4;
     }
 }
 

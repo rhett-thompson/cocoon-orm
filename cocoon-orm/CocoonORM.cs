@@ -44,6 +44,23 @@ namespace Cocoon.ORM
 
         }
 
+        public List<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0)
+        {
+
+            TableDefinition def = getTable(model);
+            List<object> list = new List<object>();
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                select(conn, cmd, def.objectName, def.columns, def.foreignColumns, top, where);
+                readList(cmd, model, list);
+            }
+
+            return list;
+
+        }
+
         public T GetSingle<T>(Expression<Func<T, bool>> where)
         {
 
@@ -114,38 +131,40 @@ namespace Cocoon.ORM
 
         public int Update<T>(T objectToUpdate, Expression<Func<T, bool>> where = null)
         {
-            return Update<T>(objectToUpdate, where);
+
+            if (objectToUpdate == null)
+                throw new NullReferenceException("objectToUpdate cannot be null.");
+
+            TableDefinition def = getTable(typeof(T));
+
+            return update(def, objectToUpdate, def.columns, where);
+
+
+        }
+
+        public int Update<T>(Type model, object objectToUpdate, Expression<Func<T, bool>> where = null)
+        {
+
+            if (objectToUpdate == null)
+                throw new NullReferenceException("objectToUpdate cannot be null.");
+
+            TableDefinition def = getTable(model);
+
+            return update(def, objectToUpdate, def.columns, where);
+
+
         }
 
         public int Update<T>(object fieldsToUpdate, Expression<Func<T, bool>> where = null)
         {
 
+            if (fieldsToUpdate == null)
+                throw new NullReferenceException("fieldsToUpdate cannot be null.");
+
             TableDefinition def = getTable(typeof(T));
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
-            {
+            return update(def, fieldsToUpdate, fieldsToUpdate.GetType().GetProperties(), where);
 
-                //columns to select
-                List<string> columnsToUpdate = new List<string>();
-                foreach (PropertyInfo prop in fieldsToUpdate.GetType().GetProperties())
-                    if (!HasAttribute<IgnoreOnUpdate>(prop))
-                    {
-                        SqlParameter param = addParam(cmd, "update_field_" + getGuid(), prop.GetValue(fieldsToUpdate));
-                        columnsToUpdate.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
-                    }
-
-                //generate where clause
-                string whereClause = generateWhereClause(cmd, def.objectName, where);
-
-                //generate sql
-                cmd.CommandText = string.Format("update {0} set {1} {2}", def.objectName, string.Join(", ", columnsToUpdate), whereClause);
-
-                //execute
-                conn.Open();
-                return cmd.ExecuteNonQuery();
-
-            }
         }
 
         public T Insert<T>(T objectToInsert)
@@ -222,7 +241,7 @@ namespace Cocoon.ORM
 
                 //generate where clause
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
-                
+
                 //generate sql
                 cmd.CommandText = string.Format("select count(*) from {0} {1}", def.objectName, whereClause);
 
@@ -231,7 +250,7 @@ namespace Cocoon.ORM
                 return readScalar<int>(cmd);
 
             }
-            
+
         }
 
         #endregion
@@ -396,6 +415,29 @@ namespace Cocoon.ORM
                 conn.Open();
 
                 return cmd.ExecuteNonQuery();
+
+            }
+
+        }
+
+        public DataSet ExecuteProcDataSet(string procedureName, object parameters = null)
+        {
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+
+                addProcParams(conn, cmd, parameters);
+
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandText = procedureName;
+
+                using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                {
+                    DataSet ds = new DataSet();
+                    adapter.Fill(ds);
+                    return ds;
+                }
 
             }
 
@@ -615,8 +657,7 @@ namespace Cocoon.ORM
 
             Type type = objectToSet.GetType();
 
-            PropertyInfo[] propertiesToSet = type.GetProperties();
-            foreach (PropertyInfo prop in propertiesToSet)
+            foreach (PropertyInfo prop in type.GetProperties().Where(p => p.CanWrite))
             {
 
                 string propName;
@@ -665,10 +706,9 @@ namespace Cocoon.ORM
 
             Type type = objectToSet.GetType();
 
-            PropertyInfo[] propertiesToSet = type.GetProperties();
             List<string> columns = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToList();
 
-            foreach (PropertyInfo prop in propertiesToSet)
+            foreach (PropertyInfo prop in type.GetProperties().Where(p => p.CanWrite))
             {
 
                 string propName;
@@ -676,7 +716,7 @@ namespace Cocoon.ORM
                 if (HasAttribute<ForeignColumn>(prop))
                     propName = prop.Name;
                 else
-                    propName = CocoonORM.getName(prop);
+                    propName = getName(prop);
 
                 if (!columns.Contains(propName))
                     continue;
@@ -767,6 +807,16 @@ namespace Cocoon.ORM
 
         }
 
+        internal void readList(SqlCommand cmd, Type type, List<object> list)
+        {
+
+            using (SqlDataReader reader = cmd.ExecuteReader())
+                if (reader.HasRows)
+                    while (reader.Read())
+                        list.Add(readObject(type, reader));
+
+        }
+
         internal T readSingle<T>(SqlCommand cmd)
         {
             using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
@@ -784,6 +834,15 @@ namespace Cocoon.ORM
         {
 
             T obj = (T)Activator.CreateInstance(typeof(T));
+            SetFromReader(obj, reader);
+            return obj;
+
+        }
+
+        internal object readObject(Type type, SqlDataReader reader)
+        {
+
+            object obj = Activator.CreateInstance(type);
             SetFromReader(obj, reader);
             return obj;
 
@@ -830,6 +889,48 @@ namespace Cocoon.ORM
 
             //execute sql
             conn.Open();
+
+        }
+
+        internal int update<T>(TableDefinition def, object values, IEnumerable<MemberInfo> properties, Expression<Func<T, bool>> where = null)
+        {
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+
+                //columns to select
+                List<string> columnsToUpdate = new List<string>();
+                List<string> primaryKeys = new List<string>();
+                string whereClause = generateWhereClause(cmd, def.objectName, where);
+                foreach (PropertyInfo prop in properties)
+                {
+
+                    if (!HasAttribute<IgnoreOnUpdate>(prop))
+                    {
+                        SqlParameter param = addParam(cmd, "update_field_" + getGuid(), prop.GetValue(values));
+                        columnsToUpdate.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
+                    }
+
+                    if (HasAttribute<PrimaryKey>(prop) && where == null)
+                    {
+                        SqlParameter param = addParam(cmd, "where_" + getGuid(), prop.GetValue(values));
+                        primaryKeys.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
+                    }
+
+                }
+
+                if (where == null)
+                    whereClause = "where " + string.Join(" and ", primaryKeys);
+
+                //generate sql
+                cmd.CommandText = string.Format("update {0} set {1} {2}", def.objectName, string.Join(", ", columnsToUpdate), whereClause);
+
+                //execute
+                conn.Open();
+                return cmd.ExecuteNonQuery();
+
+            }
 
         }
 
@@ -903,16 +1004,16 @@ namespace Cocoon.ORM
 
             SqlParameter param = cmd.CreateParameter();
             param.ParameterName = "@" + name;
-            param.Value = value == null ? DBNull.Value : value;
+            param.Value = value ?? Convert.DBNull;
 
             return cmd.Parameters.Add(param);
 
         }
 
-        internal static SqlParameter addWhereParam(SqlCommand cmd, object value)
+        internal static string addWhereParam(SqlCommand cmd, object value)
         {
 
-            return addParam(cmd, string.Format("where_{0}", getGuid()), value);
+            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", getGuid()), value).ParameterName;
 
         }
 
@@ -923,7 +1024,7 @@ namespace Cocoon.ORM
                 return null;
 
             SQLExpressionTranslator translater = new SQLExpressionTranslator();
-            return "where " + translater.GenerateSQLExpression(this, cmd, where);
+            return "where " + translater.GenerateSQLExpression(this, cmd, where, tableObjectName);
 
         }
 
@@ -941,6 +1042,7 @@ namespace Cocoon.ORM
 
                 string otherTableObjectName = getObjectName(attr.otherTableModel);
                 string alias = getObjectName(string.Format("join_table_{0}", getGuid()));
+                string foreignField = getObjectName(foreignColumn);
 
                 string joinPart = "join";
                 if (attr.joinType == JoinType.LEFT)
@@ -960,9 +1062,10 @@ namespace Cocoon.ORM
                     attr.KeyInOtherTableModel
                 ));
 
-                columnsToSelect.Add(string.Format("{0}.{1} as {1}",
+                columnsToSelect.Add(string.Format("{0}.{1} as {2}",
                     alias,
-                    getObjectName(foreignColumn)));
+                    attr.FieldInOtherTableModel ?? foreignField,
+                    foreignField));
 
             }
 

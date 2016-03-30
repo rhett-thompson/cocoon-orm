@@ -14,17 +14,19 @@ namespace Cocoon.ORM
         private StringBuilder whereBuilder;
         private SqlCommand cmd;
         private CocoonORM orm;
+        private string tableObjectName;
 
         public SQLExpressionTranslator()
         {
 
         }
 
-        public string GenerateSQLExpression(CocoonORM orm, SqlCommand cmd, Expression node)
+        public string GenerateSQLExpression(CocoonORM orm, SqlCommand cmd, Expression node, string tableObjectName)
         {
 
             this.cmd = cmd;
             this.orm = orm;
+            this.tableObjectName = tableObjectName;
 
             whereBuilder = new StringBuilder();
 
@@ -64,9 +66,7 @@ namespace Cocoon.ORM
                     whereBuilder.Append(" <> ");
             else
                 throw new NotSupportedException(string.Format("Binary operator '{0}' not supported", node.NodeType));
-
-            //var r = (MemberExpression)node.Right;
-            //whereBuilder.Append(CocoonORM.addWhereParam(cmd, getValue(r)).ParameterName);
+            
             Visit(node.Right);
 
             whereBuilder.Append(")");
@@ -77,9 +77,9 @@ namespace Cocoon.ORM
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
-                whereBuilder.Append(node.Member.Name);
+                whereBuilder.Append(string.Format("{0}.{1}", tableObjectName, CocoonORM.getObjectName(node.Member)));
             else
-                whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)).ParameterName);
+                whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)));
 
             return node;
             //throw new NotSupportedException(string.Format("The member '{0}' is not supported", node.Member.Name));
@@ -122,16 +122,11 @@ namespace Cocoon.ORM
         protected override Expression VisitConstant(ConstantExpression node)
         {
 
-            whereBuilder.Append(CocoonORM.addWhereParam(cmd, node.Value).ParameterName);
+            whereBuilder.Append(CocoonORM.addWhereParam(cmd, node.Value));
             return node;
 
         }
-
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            return base.VisitParameter(node);
-        }
-
+        
         private static bool isConstantNull(Expression exp)
         {
             return exp.NodeType == ExpressionType.Constant && ((ConstantExpression)exp).Value == null;
@@ -140,10 +135,9 @@ namespace Cocoon.ORM
         private void addLikeParam(MethodCallExpression node, string like)
         {
             MemberExpression member = (MemberExpression)node.Object;
-            TableDefinition def = orm.getTable(member.Member.DeclaringType);
 
             whereBuilder.Append(string.Format("{0}.{1} like {2}",
-                def.objectName,
+                tableObjectName,
                 CocoonORM.getObjectName(member.Member),
                 CocoonORM.addWhereParam(cmd, like)));
 

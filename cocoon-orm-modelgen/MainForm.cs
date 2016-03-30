@@ -1,15 +1,8 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
 using System.Net.NetworkInformation;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.CSharp;
 
 namespace Cocoon.ORM.ModelGen
 {
@@ -19,6 +12,7 @@ namespace Cocoon.ORM.ModelGen
         CocoonORM db;
         Dictionary<string, Type> sqlToCLRMappings;
         Dictionary<Type, string> CLRToPrimitiveMappings;
+        List<SysTable> tables = new List<SysTable>();
 
         public MainForm()
         {
@@ -67,49 +61,14 @@ namespace Cocoon.ORM.ModelGen
 
         }
 
-        private void ConnectButton_Click(object sender, EventArgs e)
-        {
-
-            Cursor = Cursors.WaitCursor;
-
-            try
-            {
-
-                Ping ping = new Ping();
-                string server = ConnectionStringParser.GetServerName(ConnectionStringTextBox.Text);
-
-                if (server.Contains(","))
-                    server = server.Substring(0, server.LastIndexOf(","));
-                else if (server.Contains(":"))
-                    server = server.Substring(0, server.LastIndexOf(":"));
-
-                PingReply reply = ping.Send(server);
-
-                db = new CocoonORM(ConnectionStringTextBox.Text);
-
-                var tables = db.ExecuteSQLList<SysTable>("select name, object_id from sys.tables order by Name");
-
-                TablesListBox.Items.Clear();
-                foreach (var table in tables)
-                    TablesListBox.Items.Add(table);
-
-
-            }
-            catch
-            {
-                MessageBox.Show("Failed to connect");
-            }
-
-            Cursor = Cursors.Default;
-
-
-        }
-
-        private void TablesListBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void generate()
         {
 
             if (TablesListBox.SelectedItems.Count == 0)
+            {
+                ClassTextBox.Text = "";
                 return;
+            }
 
             Cursor = Cursors.WaitCursor;
 
@@ -117,7 +76,7 @@ namespace Cocoon.ORM.ModelGen
             foreach (SysTable table in TablesListBox.SelectedItems)
             {
 
-                if(table.columns == null)
+                if (table.columns == null)
                     table.columns = db.ExecuteSQLList<SysColumn>(@"
                     select sys.columns.name, sys.columns.is_identity, sys.default_constraints.definition, sys.columns.is_nullable, sys.types.name as [type], cast(case when sys.indexes.is_primary_key is null then 0 else 1 end as bit) as is_primary_key from sys.columns 
                     join sys.types on sys.types.system_type_id = sys.columns.system_type_id
@@ -162,6 +121,87 @@ namespace Cocoon.ORM.ModelGen
 
             Cursor = Cursors.Default;
 
+        }
+
+        private void listTables()
+        {
+
+            var filtered = tables.ToList();
+
+            if (!string.IsNullOrEmpty(FilterTablesTextBox.Text))
+                filtered = tables.Where(t => t.name.ToLower().Contains(FilterTablesTextBox.Text.ToLower())).ToList();
+                    
+            TablesListBox.Items.Clear();
+            foreach (var table in filtered)
+                TablesListBox.Items.Add(table);
+
+        }
+
+        private void ConnectButton_Click(object sender, EventArgs e)
+        {
+
+            Cursor = Cursors.WaitCursor;
+
+            try
+            {
+
+                Ping ping = new Ping();
+                string server = ConnectionStringParser.GetServerName(ConnectionStringTextBox.Text);
+
+                if (server.Contains(","))
+                    server = server.Substring(0, server.LastIndexOf(","));
+                else if (server.Contains(":"))
+                    server = server.Substring(0, server.LastIndexOf(":"));
+
+                PingReply reply = ping.Send(server);
+
+                db = new CocoonORM(ConnectionStringTextBox.Text);
+
+                tables = db.ExecuteSQLList<SysTable>("select name, object_id from sys.tables order by Name");
+
+                listTables();
+
+            }
+            catch
+            {
+                MessageBox.Show("Failed to connect");
+            }
+
+            Cursor = Cursors.Default;
+
+
+        }
+
+        private void TablesListBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+            generate();
+
+        }
+
+        private void SelectAllButton_Click(object sender, EventArgs e)
+        {
+
+            TablesListBox.SelectedIndexChanged -= TablesListBox_SelectedIndexChanged;
+            
+            for (int i = 0; i < TablesListBox.Items.Count; i++)
+                TablesListBox.SetSelected(i, true);
+
+            generate();
+
+            TablesListBox.SelectedIndexChanged += TablesListBox_SelectedIndexChanged;
+
+        }
+
+        private void ClearSelectionButton_Click(object sender, EventArgs e)
+        {
+            TablesListBox.SelectedItems.Clear();
+            
+        }
+
+        private void FilterTablesTextBox_TextChanged(object sender, EventArgs e)
+        {
+            listTables();
         }
     }
 
