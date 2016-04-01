@@ -8,6 +8,8 @@ using System.Linq.Expressions;
 using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Cocoon.ORM
 {
@@ -17,7 +19,6 @@ namespace Cocoon.ORM
         public string ConnectionString;
 
         internal Dictionary<Type, TableDefinition> tables = new Dictionary<Type, TableDefinition>();
-
 
         public CocoonORM(string connectionString)
         {
@@ -43,24 +44,28 @@ namespace Cocoon.ORM
 
         #region Basic CRUD
 
-        public List<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0)
         {
 
-            TableDefinition def = getTable(typeof(T));
-            List<T> list = new List<T>();
+            //TableDefinition def = getTable(typeof(T));
+            //List<T> list = new List<T>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
-            {
-                select(conn, cmd, def.objectName, def.columns, def.foreignColumns, top, where);
-                readList<T>(cmd, list);
-            }
+            //using (SqlConnection conn = new SqlConnection(ConnectionString))
+            //using (SqlCommand cmd = conn.CreateCommand())
+            //{
 
-            return list;
+            //    select(conn, cmd, def.objectName, def.columns, def.foreignColumns, top, where);
+            //    readList(cmd, list);
+
+            //}
+
+            //return list;
+
+            return GetList(typeof(T), where, top).Cast<T>();
 
         }
 
-        public List<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0)
+        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0)
         {
 
             TableDefinition def = getTable(model);
@@ -69,6 +74,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
+
                 select(conn, cmd, def.objectName, def.columns, def.foreignColumns, top, where);
                 readList(cmd, model, list);
             }
@@ -102,12 +108,11 @@ namespace Cocoon.ORM
             {
                 select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, 1, where);
                 return readScalar<FieldT>(cmd);
-
             }
 
         }
 
-        public List<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0)
+        public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0)
         {
 
             MemberExpression expression = (MemberExpression)fieldToSelect.Body;
@@ -234,7 +239,7 @@ namespace Cocoon.ORM
 
         }
 
-        public List<T> Insert<T>(IEnumerable<T> objectsToInsert)
+        public IEnumerable<T> Insert<T>(IEnumerable<T> objectsToInsert)
         {
 
             List<T> list = new List<T>();
@@ -269,15 +274,45 @@ namespace Cocoon.ORM
 
         }
 
+        public int Checksum<T>(Expression<Func<T, bool>> where = null)
+        {
+
+            TableDefinition def = getTable(typeof(T));
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+
+                //generate where clause
+                string whereClause = generateWhereClause(cmd, def.objectName, where);
+
+                //generate sql
+                cmd.CommandText = string.Format("select checksum_agg(binary_checksum(*)) from {0} {1}", def.objectName, whereClause);
+
+                //execute sql
+                conn.Open();
+                return readScalar<int>(cmd);
+
+            }
+
+        }
+
+        public bool Exists<T>(Expression<Func<T, bool>> where = null)
+        {
+
+            return Count<T>(where) > 0;
+
+        }
+
         #endregion
 
         #region SQL
 
-        public List<T> ExecuteSQLList<T>(string sql, object parameters = null)
+        public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null)
         {
 
             bool isScalar = !HasAttribute<Table>(typeof(T));
-            List<T> list = new List<T>();
+            List<object> list = new List<object>();
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
@@ -291,11 +326,11 @@ namespace Cocoon.ORM
                 if (isScalar)
                     readScalarList(cmd, list);
                 else
-                    readList(cmd, list);
+                    readList(cmd, typeof(T), list);
 
             }
 
-            return list;
+            return list.Cast<T>();
 
         }
 
@@ -366,17 +401,17 @@ namespace Cocoon.ORM
 
         #region Stored Procedures
 
-        public List<T> ExecuteProcList<T>(string procedureName, object parameters = null)
+        public IEnumerable<T> ExecuteProcList<T>(string procedureName, object parameters = null)
         {
 
             bool isScalar = !HasAttribute<Table>(typeof(T));
-            List<T> list = new List<T>();
+            List<object> list = new List<object>();
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
 
-                addProcParams(conn, cmd, parameters);
+                addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
@@ -385,11 +420,11 @@ namespace Cocoon.ORM
                 if (isScalar)
                     readScalarList(cmd, list);
                 else
-                    readList(cmd, list);
+                    readList(cmd, typeof(T), list);
 
             }
 
-            return list;
+            return list.Cast<T>();
 
         }
 
@@ -402,7 +437,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
 
-                addProcParams(conn, cmd, parameters);
+                addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
@@ -424,7 +459,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
 
-                addProcParams(conn, cmd, parameters);
+                addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
@@ -443,7 +478,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
 
-                addProcParams(conn, cmd, parameters);
+                addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
@@ -466,12 +501,6 @@ namespace Cocoon.ORM
         internal const string base36Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
         internal static DateTime baseDate = new DateTime(1900, 1, 1);
 
-        /// <summary>
-        /// Changes the type of an object
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="conversionType"></param>
-        /// <returns></returns>
         public static object ChangeType(object value, Type conversionType)
         {
 
@@ -499,10 +528,6 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
         public static Guid GenerateSequentialGuid()
         {
 
@@ -526,10 +551,6 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
         public static string GenerateSequentialUID()
         {
 
@@ -537,11 +558,6 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
         public static long Base36Decode(string value)
         {
 
@@ -570,11 +586,6 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
         public static string Base36Encode(long value)
         {
             if (value == long.MinValue)
@@ -595,12 +606,6 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="member"></param>
-        /// <returns></returns>
         public static bool HasAttribute<T>(MemberInfo member)
         {
 
@@ -608,12 +613,6 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="property"></param>
-        /// <returns></returns>
         public static bool HasAttribute<T>(Type property)
         {
 
@@ -621,14 +620,7 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// Fills a list from a DataTable
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="table"></param>
-        /// <param name="fieldToMap"></param>
-        /// <returns></returns>
-        public static List<T> FillScalarList<T>(DataTable table, string fieldToMap = null)
+        public static IEnumerable<T> FillScalarList<T>(DataTable table, string fieldToMap = null)
         {
 
             List<T> list = new List<T>();
@@ -643,19 +635,13 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// Fills a list of objects from the rows of a DataTable
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="table"></param>
-        /// <returns></returns>
-        public static List<T> FillList<T>(DataTable table)
+        public static IEnumerable<object> FillList(Type type, DataTable table)
         {
 
-            List<T> list = new List<T>();
+            List<object> list = new List<object>();
             foreach (DataRow row in table.Rows)
             {
-                T obj = (T)Activator.CreateInstance(typeof(T));
+                object obj = Activator.CreateInstance(type);
                 SetFromRow(obj, row);
                 list.Add(obj);
             }
@@ -663,11 +649,13 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// Sets an objects properties from a DataRow
-        /// </summary>
-        /// <param name="objectToSet"></param>
-        /// <param name="row"></param>
+        public static IEnumerable<T> FillList<T>(DataTable table)
+        {
+
+            return FillList(typeof(T), table).Cast<T>().ToList();
+
+        }
+
         public static void SetFromRow(object objectToSet, DataRow row)
         {
 
@@ -676,12 +664,7 @@ namespace Cocoon.ORM
             foreach (PropertyInfo prop in type.GetProperties().Where(p => p.CanWrite))
             {
 
-                string propName;
-
-                if (HasAttribute<ForeignColumn>(prop))
-                    propName = prop.Name;
-                else
-                    propName = CocoonORM.getName(prop);
+                string propName = getName(prop);
 
                 if (!row.Table.Columns.Contains(propName))
                     continue;
@@ -711,12 +694,6 @@ namespace Cocoon.ORM
 
         }
 
-        /// <summary>
-        /// Sets an objects properties from a DataReader
-        /// </summary>
-        /// <param name="objectToSet"></param>
-        /// <param name="reader"></param>
-        /// <returns></returns>
         public static object SetFromReader(object objectToSet, IDataReader reader)
         {
 
@@ -747,78 +724,44 @@ namespace Cocoon.ORM
             return objectToSet;
 
         }
-        
+
+        public static string SHA256(string value)
+        {
+            using (SHA256 hash = System.Security.Cryptography.SHA256.Create())
+            {
+                return string.Join("", hash
+                  .ComputeHash(Encoding.UTF8.GetBytes(value))
+                  .Select(item => item.ToString("x2")));
+            }
+
+        }
+
+        public static string MD5(string value)
+        {
+
+            using (MD5 hash = System.Security.Cryptography.MD5.Create())
+            {
+                return string.Join("", hash
+                  .ComputeHash(Encoding.UTF8.GetBytes(value))
+                  .Select(item => item.ToString("x2")));
+            }
+
+        }
+
         #endregion
 
         #region Internal
-
-        internal Dictionary<string, SqlParameterCollection> paramCache = new Dictionary<string, SqlParameterCollection>();
-
-        internal void discoverParams(SqlConnection conn, SqlCommand cmd)
-        {
-
-            lock (cmd)
-            {
-
-                if (!paramCache.ContainsKey(cmd.CommandText))
-                {
-
-                    SqlCommandBuilder.DeriveParameters(cmd);
-                    paramCache.Add(cmd.CommandText, cmd.Parameters);
-
-                }
-                else
-                {
-                    //IDataParameter[] cachedParams = paramCache[cmd.CommandText].Cast<ICloneable>().Select(p => p.Clone() as IDataParameter).Where(p => p != null).ToArray();
-                    foreach (SqlParameter param in paramCache[cmd.CommandText])
-                        if (param != null)
-                            cmd.Parameters.Add(param);
-                }
-
-            }
-
-        }
-
-        internal void addProcParams(SqlConnection conn, SqlCommand cmd, object parameters)
-        {
-
-            if (parameters == null)
-                return;
-
-            discoverParams(conn, cmd);
-
-            PropertyInfo[] props = parameters.GetType().GetProperties();
-            foreach (PropertyInfo prop in props)
-            {
-
-                string propName = getObjectName(prop);
-                string paramName = "@" + propName;
-
-                if (cmd.Parameters.Contains(paramName))
-                    cmd.Parameters[paramName].Value = prop.GetValue(parameters);
-                else
-                    throw new Exception(string.Format("Invalid parameter ({0}) for stored procedure {1}", propName, cmd.CommandText));
-
-            }
-
-        }
 
         internal void addParamObject(SqlCommand cmd, object parameters)
         {
 
             if (parameters != null)
-                foreach (PropertyInfo prop in parameters.GetType().GetProperties())
-                    addParam(cmd, prop.Name, prop.GetValue(parameters));
-
-        }
-
-        internal void readList<T>(SqlCommand cmd, List<T> list)
-        {
-
-            using (SqlDataReader reader = cmd.ExecuteReader())
-                if (reader.HasRows)
-                    while (reader.Read())
-                        list.Add(readObject<T>(reader));
+                if (parameters is SqlParameterCollection)
+                    foreach (SqlParameter p in (SqlParameterCollection)parameters)
+                        cmd.Parameters.Add(new SqlParameter(p.ParameterName, p.Value));
+                else
+                    foreach (PropertyInfo prop in parameters.GetType().GetProperties())
+                        addParam(cmd, prop.Name, prop.GetValue(parameters));
 
         }
 
@@ -838,19 +781,10 @@ namespace Cocoon.ORM
                 if (reader.HasRows)
                 {
                     reader.Read();
-                    return readObject<T>(reader);
+                    return (T)readObject(typeof(T), reader);
                 }
 
             return default(T);
-
-        }
-
-        internal T readObject<T>(SqlDataReader reader)
-        {
-
-            T obj = (T)Activator.CreateInstance(typeof(T));
-            SetFromReader(obj, reader);
-            return obj;
 
         }
 
@@ -1028,7 +962,7 @@ namespace Cocoon.ORM
         internal static string addWhereParam(SqlCommand cmd, object value)
         {
 
-            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", getGuid()), value).ParameterName;
+            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", cmd.Parameters.Count), value).ParameterName;
 
         }
 

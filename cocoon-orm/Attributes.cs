@@ -37,7 +37,7 @@ namespace Cocoon.ORM
         internal Type otherTableModel;
         internal JoinType joinType;
 
-        public ForeignColumn(string KeyInThisTableModel, Type OtherTableModel, string FieldInOtherTableModel = null, string KeyInOtherTableModel = null, JoinType JoinType = JoinType.INNER)
+        public ForeignColumn(string KeyInThisTableModel, Type OtherTableModel, string FieldInOtherTableModel = null, string KeyInOtherTableModel = null, JoinType JoinType = JoinType.LEFT)
         {
 
             if (string.IsNullOrEmpty(KeyInThisTableModel))

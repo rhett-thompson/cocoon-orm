@@ -13,7 +13,7 @@ namespace Cocoon.ORM.ModelGen
         CocoonORM db;
         Dictionary<string, Type> sqlToCLRMappings;
         Dictionary<Type, string> CLRToPrimitiveMappings;
-        List<SysTable> tables = new List<SysTable>();
+        IEnumerable<SysTable> tables;
 
         public MainForm()
         {
@@ -233,7 +233,7 @@ namespace Cocoon.ORM.ModelGen
             return name;
         }
 
-        public List<SysColumn> columns;
+        public IEnumerable<SysColumn> columns;
 
     }
 
