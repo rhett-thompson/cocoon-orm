@@ -107,6 +107,7 @@ class Order
 | IgnoreOnInsert  | Tells Cocoon to ignore this column when inserting objects/records; usually used for columns with default fields or identity columns that are automatically incremented etc.  |
 | IgnoreOnUpdate  | Tells Cocoon to ignore this column in update.  |
 | IgnoreOnSelect  | Tells Cocoon to ignore this column on data retrieval operations.  |
+| OverrideName  | Overrides the name of this column.  |
 | ForeignColumn  | Signifies that this field should be set from a table/object other than this one; based on a foreign key in this class/table.  |
 
 ## Basic Example
