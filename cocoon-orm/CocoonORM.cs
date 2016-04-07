@@ -206,7 +206,7 @@ namespace Cocoon.ORM
 
                         columns.Add(string.Format("{0}.{1}", def.objectName, getObjectName(prop)));
 
-                        SqlParameter param = addParam(cmd, "insert_value_" + Guid.NewGuid().ToString("n"), prop.GetValue(objectToInsert));
+                        SqlParameter param = addParam(cmd, "insert_value_" + getGuid(), prop.GetValue(objectToInsert));
                         values.Add(param.ParameterName);
 
                     }
@@ -301,6 +301,68 @@ namespace Cocoon.ORM
         {
 
             return Count<T>(where) > 0;
+
+        }
+
+        public IEnumerable<T> Copy<T>(Expression<Func<T, bool>> where, object overrideValues = null)
+        {
+            TableDefinition def = getTable(typeof(T));
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+
+                string whereClause = generateWhereClause(cmd, def.objectName, where);
+
+                //get columns and values
+                List<string> columns = new List<string>();
+                List<string> values = new List<string>();
+                PropertyInfo[] overrideValueProps = overrideValues != null ? overrideValues.GetType().GetProperties() : new PropertyInfo[0];
+                foreach (PropertyInfo prop in def.columns)
+                    if (!HasAttribute<IgnoreOnInsert>(prop))
+                    {
+
+                        string column = string.Format("{0}.{1}", def.objectName, getObjectName(prop));
+                        columns.Add(column);
+
+                        PropertyInfo overrideProp = overrideValueProps.SingleOrDefault(p => p.Name == prop.Name);
+                        if (overrideProp != null)
+                            values.Add(addParam(cmd, "override_value_" + getGuid(), overrideProp.GetValue(overrideValues)).ParameterName);
+                        else
+                            values.Add(column);
+
+                    }
+
+                //get primary keys
+                List<string> outputTableKeys = new List<string>();
+                List<string> insertedPrimaryKeys = new List<string>();
+                List<string> wherePrimaryKeys = new List<string>();
+                foreach (PropertyInfo pk in def.primaryKeys)
+                {
+                    string primaryKeyName = getObjectName(pk);
+                    outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, dbTypeMap[pk.PropertyType]));
+                    insertedPrimaryKeys.Add("inserted." + primaryKeyName);
+                    wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", primaryKeyName, def.objectName));
+                }
+
+                //build command
+                cmd.CommandText = string.Format("{0};insert into {1} ({2}) output {3} into @ids select {4} from {1} {6};select {1}.* from {1} join @ids ids on {5}",
+                    string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
+                    def.objectName,
+                    string.Join(", ", columns),
+                    string.Join(", ", insertedPrimaryKeys),
+                    string.Join(", ", values),
+                    string.Join(" and ", wherePrimaryKeys),
+                    whereClause);
+
+                conn.Open();
+
+                List<object> list = new List<object>();
+                readList(cmd, def.type, list);
+
+                return list.Cast<T>();
+
+            }
 
         }
 
@@ -751,7 +813,7 @@ namespace Cocoon.ORM
         #endregion
 
         #region Internal
-
+        
         internal void addParamObject(SqlCommand cmd, object parameters)
         {
 
@@ -962,7 +1024,7 @@ namespace Cocoon.ORM
         internal static string addWhereParam(SqlCommand cmd, object value)
         {
 
-            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", cmd.Parameters.Count), value).ParameterName;
+            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", getGuid()), value).ParameterName;
 
         }
 
