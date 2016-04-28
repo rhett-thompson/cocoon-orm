@@ -360,7 +360,7 @@ namespace Cocoon.ORM
 
         #region SQL
 
-        public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null, int timeout = 15)
+        public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null, int timeout = -1)
         {
 
             bool isScalar = !HasAttribute<Table>(typeof(T));
@@ -386,7 +386,7 @@ namespace Cocoon.ORM
 
         }
 
-        public T ExecuteSQLSingle<T>(string sql, object parameters = null, int timeout = 15)
+        public T ExecuteSQLSingle<T>(string sql, object parameters = null, int timeout = -1)
         {
 
             bool isScalar = !HasAttribute<Table>(typeof(T));
@@ -409,7 +409,7 @@ namespace Cocoon.ORM
 
         }
 
-        public int ExecuteSQLVoid(string sql, object parameters = null, int timeout = 15)
+        public int ExecuteSQLVoid(string sql, object parameters = null, int timeout = -1)
         {
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
