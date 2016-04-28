@@ -17,6 +17,7 @@ namespace Cocoon.ORM
     {
 
         public string ConnectionString;
+        public int CommandTimeout = 15;
 
         internal Dictionary<Type, TableDefinition> tables = new Dictionary<Type, TableDefinition>();
 
@@ -41,26 +42,12 @@ namespace Cocoon.ORM
             return ping.Send(server, timeout);
 
         }
-
+        
         #region Basic CRUD
 
         public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0)
         {
-
-            //TableDefinition def = getTable(typeof(T));
-            //List<T> list = new List<T>();
-
-            //using (SqlConnection conn = new SqlConnection(ConnectionString))
-            //using (SqlCommand cmd = conn.CreateCommand())
-            //{
-
-            //    select(conn, cmd, def.objectName, def.columns, def.foreignColumns, top, where);
-            //    readList(cmd, list);
-
-            //}
-
-            //return list;
-
+            
             return GetList(typeof(T), where, top).Cast<T>();
 
         }
@@ -74,7 +61,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 select(conn, cmd, def.objectName, def.columns, def.foreignColumns, top, where);
                 readList(cmd, model, list);
             }
@@ -91,6 +78,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.CommandTimeout = CommandTimeout;
                 select(conn, cmd, def.objectName, def.columns, def.foreignColumns, 1, where);
                 return readSingle<T>(cmd);
             }
@@ -106,6 +94,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.CommandTimeout = CommandTimeout;
                 select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, 1, where);
                 return readScalar<FieldT>(cmd);
             }
@@ -123,6 +112,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.CommandTimeout = CommandTimeout;
                 select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, top, where);
                 readScalarList(cmd, list);
             }
@@ -139,7 +129,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
                 cmd.CommandText = string.Format("delete from {0} {1}", def.objectName, whereClause);
@@ -196,7 +186,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 //get columns and values
                 List<string> columns = new List<string>();
                 List<string> values = new List<string>();
@@ -259,7 +249,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 //generate where clause
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
@@ -282,7 +272,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 //generate where clause
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
@@ -311,7 +301,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
                 //get columns and values
@@ -370,7 +360,7 @@ namespace Cocoon.ORM
 
         #region SQL
 
-        public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null)
+        public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null, int timeout = 15)
         {
 
             bool isScalar = !HasAttribute<Table>(typeof(T));
@@ -379,7 +369,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 addParamObject(cmd, parameters);
 
                 cmd.CommandText = sql;
@@ -396,7 +386,7 @@ namespace Cocoon.ORM
 
         }
 
-        public T ExecuteSQLSingle<T>(string sql, object parameters = null)
+        public T ExecuteSQLSingle<T>(string sql, object parameters = null, int timeout = 15)
         {
 
             bool isScalar = !HasAttribute<Table>(typeof(T));
@@ -404,7 +394,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 addParamObject(cmd, parameters);
 
                 cmd.CommandText = sql;
@@ -419,13 +409,14 @@ namespace Cocoon.ORM
 
         }
 
-        public int ExecuteSQLVoid(string sql, object parameters = null)
+        public int ExecuteSQLVoid(string sql, object parameters = null, int timeout = 15)
         {
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
 
+                cmd.CommandTimeout = CommandTimeout;
                 addParamObject(cmd, parameters);
 
                 cmd.CommandText = sql;
@@ -443,6 +434,8 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
+
+                cmd.CommandTimeout = CommandTimeout;
 
                 addParamObject(cmd, parameters);
 
@@ -472,7 +465,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
@@ -498,7 +491,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
@@ -520,7 +513,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
@@ -539,7 +532,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
@@ -682,11 +675,11 @@ namespace Cocoon.ORM
 
         }
 
-        public static IEnumerable<T> FillScalarList<T>(DataTable table, string fieldToMap = null)
+        public static IEnumerable<T> FillScalarList<T>(IEnumerable<DataRow> rows, string fieldToMap = null)
         {
 
             List<T> list = new List<T>();
-            foreach (DataRow row in table.Rows)
+            foreach (DataRow row in rows)
             {
                 if (fieldToMap == null)
                     list.Add((T)ChangeType(row[0], typeof(T)));
@@ -697,11 +690,18 @@ namespace Cocoon.ORM
 
         }
 
-        public static IEnumerable<object> FillList(Type type, DataTable table)
+        public static IEnumerable<T> FillScalarList<T>(DataTable table, string fieldToMap = null)
+        {
+
+            return FillScalarList<T>(table.Select(), fieldToMap);
+
+        }
+
+        public static IEnumerable<object> FillList(Type type, IEnumerable<DataRow> rows)
         {
 
             List<object> list = new List<object>();
-            foreach (DataRow row in table.Rows)
+            foreach (DataRow row in rows)
             {
                 object obj = Activator.CreateInstance(type);
                 SetFromRow(obj, row);
@@ -711,10 +711,24 @@ namespace Cocoon.ORM
 
         }
 
+        public static IEnumerable<object> FillList(Type type, DataTable table)
+        {
+
+            return FillList(type, table.Select());
+
+        }
+
+        public static IEnumerable<T> FillList<T>(IEnumerable<DataRow> rows)
+        {
+
+            return FillList(typeof(T), rows).Cast<T>().ToList();
+
+        }
+
         public static IEnumerable<T> FillList<T>(DataTable table)
         {
 
-            return FillList(typeof(T), table).Cast<T>().ToList();
+            return FillList(typeof(T), table.Select()).Cast<T>().ToList();
 
         }
 
@@ -738,12 +752,10 @@ namespace Cocoon.ORM
 
                 try
                 {
-
-                    if (row[column] == DBNull.Value)
-                        prop.SetValue(objectToSet, null);
-                    else
-                        prop.SetValue(objectToSet, row[column]);
-
+                    
+                    object value = ChangeType(row[column], prop.PropertyType);
+                    prop.SetValue(objectToSet, value);
+                    
                 }
                 catch
                 {
@@ -775,11 +787,10 @@ namespace Cocoon.ORM
 
                 if (!columns.Contains(propName))
                     continue;
+                
+                object value = ChangeType(reader[propName], prop.PropertyType);
+                prop.SetValue(objectToSet, value);
 
-                if (reader[propName] == DBNull.Value)
-                    prop.SetValue(objectToSet, null);
-                else
-                    prop.SetValue(objectToSet, reader[propName]);
 
             }
 
@@ -909,7 +920,7 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
-
+                cmd.CommandTimeout = CommandTimeout;
                 //columns to select
                 List<string> columnsToUpdate = new List<string>();
                 List<string> primaryKeys = new List<string>();
