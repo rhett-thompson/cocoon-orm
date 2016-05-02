@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes.cs" />
+    <Compile Include="PredicateBuilder.cs" />
     <Compile Include="CocoonORM.cs" />
     <Compile Include="ConnectionStringParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
