@@ -97,9 +97,15 @@ class Order
 }
 ```
 
-## Annotations
-#### Annotations are used to specify columns in models, and define the properties and relationships of those columns
-| Annotation  | Description |
+## Database connection
+You only need to instantiante this one time, prefereably in a central/global area of your application.
+```cs
+CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid={user id};Pwd={password};");
+```
+
+## Attributes
+Attributes are used to specify columns in models, and define the properties and relationships of those columns
+| Attribute  | Description |
 | ------------- | ------------- |
 | Column  | Signifies that a property in this class is mirrored as a field in the database   |
 | Table  | Signifies that this class is mirrored in the database as a table  |
@@ -111,19 +117,15 @@ class Order
 | ForeignColumn  | Signifies that this field should be set from a table/object other than this one; based on a foreign key in this class/table.  |
 
 ## Basic Example
-#### This is a minimal example.
+This is a minimal example.
 ```cs
-CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid={user id};Pwd={password};");
-
 //Retrieves a single order
-db.GetList<Order>(where: o => 0.OrderID == 123);
+Order order = db.GetSingle<Order>(where: o => 0.OrderID == 123);
 ```
 
 ## CRUD Operations
-#### Basic CRUD operations
+Basic CRUD operations
 ```cs
-CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid={user id};Pwd={password};");
-
 //insert a new customer into the database
 Customer newCustomer = db.Insert(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
 
@@ -140,32 +142,26 @@ db.Delete<Customer>(where: c => c.CustomerID == someCustomer.CustomerID);
 
 ## Stored Procedures
 ```cs
-CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid={user id};Pwd={password};");
-
 //retrieve a single order from a stored procedure
 db.ExecuteProcSingle<Order>(procedure: "OrderGet", parameters: new { OrderID = 5 });
 
 //get a list of orders from a stored procedure that returns a list of orders
-List<Order> listOfOrders = db.ExecuteProcList<Order>(procedure: "OrderList");
+IEnumerable<Order> listOfOrders = db.ExecuteProcList<Order>(procedure: "OrderList");
 ```
 
 ## Parameterized SQL
 ```cs
-CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid={user id};Pwd={password};");
-
 //@OrderID is parameterized from the OrderID in the new { OrderID = 5 }
 db.ExecuteSQLSingle<Order>(sql: "select * from Orders where OrderID = @OrderID", parameters: new { OrderID = 5 });
 
 //a basic SQL list
-List<Order> listOfOrders = db.ExecuteSQLList<Order>(sql: "select * from Orders");
+IEnumerable<Order> listOfOrders = db.ExecuteSQLList<Order>(sql: "select * from Orders");
 ```
 
 ## Transactions
 Cocoon ORM supports ambient transactions.
 You can read more about them here: https://msdn.microsoft.com/en-us/library/System.Transactions(v=vs.110).aspx
 ```cs
-CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid={user id};Pwd={password};");
-
 using (TransactionScope tran = new TransactionScope())
 {
   db.Update<Order>(fieldsToUpdate: new { OrderID = 2 }, where: o => o.OrderTypeID == OrderType.ONSITE);
@@ -173,8 +169,30 @@ using (TransactionScope tran = new TransactionScope())
 }
 ```
 
+## Dynamic queries
+The **PredicateBuilder** extension class adds two methods **And** & **Or** to assist in building dynamic where expressions.
+```cs
+Expression<Func<Customer, bool>> predicates = c => c.FirstName == c.FirstName;//start with an always true/false predicate to get started
+
+if(!string.IsNullOrEmpty(FirstNameTextBox.Text))
+    predicates = predicates.And(c => c.FirstName == FirstNameTextBox.Text);
+
+if(!string.IsNullOrEmpty(LastNameTextBox.Text))
+    predicates = predicates.And(c => c.LastName == LastNameTextBox.Text);
+
+if(!string.IsNullOrEmpty(LoginEmailTextBox.Text))
+    predicates = predicates.And(c => c.LoginEmail == LoginEmailTextBox.Text);
+
+IEnumerable<Customer> list = db.GetList(predicates);
+```
+
 ## Utility Functions
 | Function  | Description |
 | ------------- | ------------- |
 | GenerateSequentialGuid  | Generates a sequential COMB GUID.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.   |
 | GenerateSequentialUID | Generates a sequential Base36 unique identifier.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.  |
+
+## Model Generator Tool
+The model generator is a simple application included with Cocoon ORM to generate C# model classes.  All you need is a connection string to your database
+
+![Model Gen Screenshot](https://raw.githubusercontent.com/Guidelinetech/cocoon-orm/master/modelgen.png)
