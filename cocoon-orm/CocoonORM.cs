@@ -177,55 +177,18 @@ namespace Cocoon.ORM
             return update(def, fieldsToUpdate, fieldsToUpdate.GetType().GetProperties(), timeout, where);
 
         }
+        
+        public T Insert<T>(Type model, object objectToInsert, int timeout = -1)
+        {
+            
+            return insert<T>(model, objectToInsert, timeout);
+
+        }
 
         public T Insert<T>(T objectToInsert, int timeout = -1)
         {
-
-            TableDefinition def = getTable(typeof(T));
-
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
-            {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                //get columns and values
-                List<string> columns = new List<string>();
-                List<string> values = new List<string>();
-                foreach (PropertyInfo prop in objectToInsert.GetType().GetProperties())
-                    if (def.columns.Contains(prop) && !HasAttribute<IgnoreOnInsert>(prop))
-                    {
-
-                        columns.Add(string.Format("{0}.{1}", def.objectName, getObjectName(prop)));
-
-                        SqlParameter param = addParam(cmd, "insert_value_" + getGuid(), prop.GetValue(objectToInsert));
-                        values.Add(param.ParameterName);
-
-                    }
-
-                //get primary keys
-                List<string> outputTableKeys = new List<string>();
-                List<string> insertedPrimaryKeys = new List<string>();
-                List<string> wherePrimaryKeys = new List<string>();
-                foreach (PropertyInfo pk in def.primaryKeys)
-                {
-                    string primaryKeyName = getObjectName(pk);
-                    outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, dbTypeMap[pk.PropertyType]));
-                    insertedPrimaryKeys.Add("inserted." + primaryKeyName);
-                    wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", primaryKeyName, def.objectName));
-                }
-
-                //generate query
-                cmd.CommandText = string.Format("{0};insert into {1} ({2}) output {3} into @ids values ({4});select {1}.* from {1} join @ids ids on {5}",
-                    string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
-                    def.objectName,
-                    string.Join(", ", columns),
-                    string.Join(", ", insertedPrimaryKeys),
-                    string.Join(", ", values),
-                    string.Join(" and ", wherePrimaryKeys));
-
-                conn.Open();
-                return readSingle<T>(cmd);
-
-            }
+            
+            return insert<T>(typeof(T), objectToInsert, timeout);
 
         }
 
@@ -951,6 +914,61 @@ namespace Cocoon.ORM
                 //execute
                 conn.Open();
                 return cmd.ExecuteNonQuery();
+
+            }
+
+        }
+
+        internal T insert<T>(Type model, object objectToInsert, int timeout)
+        {
+
+            TableDefinition def = getTable(model);
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
+                //get columns and values
+                List<string> columns = new List<string>();
+                List<string> values = new List<string>();
+                foreach (PropertyInfo prop in objectToInsert.GetType().GetProperties())
+                    if (def.columns.Contains(prop) && !HasAttribute<IgnoreOnInsert>(prop))
+                    {
+
+                        columns.Add(string.Format("{0}.{1}", def.objectName, getObjectName(prop)));
+
+                        SqlParameter param = addParam(cmd, "insert_value_" + getGuid(), prop.GetValue(objectToInsert));
+                        values.Add(param.ParameterName);
+
+                    }
+
+                //get primary keys
+                List<string> outputTableKeys = new List<string>();
+                List<string> insertedPrimaryKeys = new List<string>();
+                List<string> wherePrimaryKeys = new List<string>();
+                foreach (PropertyInfo pk in def.primaryKeys)
+                {
+                    string primaryKeyName = getObjectName(pk);
+                    outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, dbTypeMap[pk.PropertyType]));
+                    insertedPrimaryKeys.Add("inserted." + primaryKeyName);
+                    wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", primaryKeyName, def.objectName));
+                }
+
+                //generate query
+                cmd.CommandText = string.Format("{0};insert into {1} ({2}) output {3} into @ids values ({4});select {1}.* from {1} join @ids ids on {5}",
+                    string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
+                    def.objectName,
+                    string.Join(", ", columns),
+                    string.Join(", ", insertedPrimaryKeys),
+                    string.Join(", ", values),
+                    string.Join(" and ", wherePrimaryKeys));
+
+                conn.Open();
+
+                if (HasAttribute<Table>(typeof(T)))
+                    return readSingle<T>(cmd);
+                else
+                    return readScalar<T>(cmd);
 
             }
 
