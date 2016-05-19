@@ -11,3 +11,4 @@ C:\Users\Rhett\OneDrive\apps\cocoon-orm\cocoon-orm-modelgen\obj\Debug\Cocoon.ORM
 C:\Users\Rhett\OneDrive\apps\cocoon-orm\cocoon-orm-modelgen\obj\Debug\cocoon-orm-modelgen.csproj.GenerateResource.Cache
 C:\Users\Rhett\OneDrive\apps\cocoon-orm\cocoon-orm-modelgen\obj\Debug\cocoon-orm-modelgen.exe
 C:\Users\Rhett\OneDrive\apps\cocoon-orm\cocoon-orm-modelgen\obj\Debug\cocoon-orm-modelgen.pdb
+C:\Users\Rhett\OneDrive\apps\cocoon-orm\cocoon-orm-modelgen\bin\Debug\cocoon-orm.xml

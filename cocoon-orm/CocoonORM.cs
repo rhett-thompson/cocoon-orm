@@ -13,14 +13,29 @@ using System.Text;
 
 namespace Cocoon.ORM
 {
+
+    /// <summary>
+    /// Database connection
+    /// </summary>
     public class CocoonORM
     {
 
+        /// <summary>
+        /// The connection string in use by Cocoon
+        /// </summary>
         public string ConnectionString;
+
+        /// <summary>
+        /// The default timeout in miliseconds of queries
+        /// </summary>
         public int CommandTimeout = 15;
 
         internal Dictionary<Type, TableDefinition> tables = new Dictionary<Type, TableDefinition>();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectionString">The connection string of the database to connect to</param>
         public CocoonORM(string connectionString)
         {
 
@@ -28,6 +43,11 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Pings the database to determine connectivity
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
         public PingReply Ping(int timeout = 5000)
         {
 
@@ -42,16 +62,33 @@ namespace Cocoon.ORM
             return ping.Send(server, timeout);
 
         }
-        
+
         #region Basic CRUD
 
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0)
+        /// <summary>
+        /// Returns a list of objects
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="top">Maximum number of rows to return</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>A list of type T with the result</returns>
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, int timeout = -1)
         {
-            
-            return GetList(typeof(T), where, top).Cast<T>();
+
+            return GetList(typeof(T), where, top, timeout).Cast<T>();
 
         }
 
+        /// <summary>
+        /// Returns a list of objects
+        /// </summary>
+        /// <typeparam name="T">Table model to return and to use in the where clause</typeparam>
+        /// <param name="model">Table model type</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="top">Maximum number of rows to return</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>List of objects with the result</returns>
         public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, int timeout = -1)
         {
 
@@ -70,6 +107,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Returns a single row
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>An object of type T with the result</returns>
         public T GetSingle<T>(Expression<Func<T, bool>> where, int timeout = -1)
         {
 
@@ -85,6 +129,15 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="ModelT">Table model to return and to use in the where clause</typeparam>
+        /// <typeparam name="FieldT">Type of the field to select in the model</typeparam>
+        /// <param name="fieldToSelect">Expression pick the field in the model to select</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The value of the selected field</returns>
         public FieldT GetScalar<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
         {
 
@@ -101,6 +154,16 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Returns a list of scalars
+        /// </summary>
+        /// <typeparam name="ModelT">Table model to return and to use in the where clause</typeparam>
+        /// <typeparam name="FieldT">Type of the field to select in the model</typeparam>
+        /// <param name="fieldToSelect">Expression pick the field in the model to select</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="top">Maximum number of rows to return</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>List of values for the selected field</returns>
         public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0, int timeout = -1)
         {
 
@@ -122,6 +185,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Deletes records from a table
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of records that were affected</returns>
         public int Delete<T>(Expression<Func<T, bool>> where, int timeout = -1)
         {
             TableDefinition def = getTable(typeof(T));
@@ -140,6 +210,14 @@ namespace Cocoon.ORM
             }
         }
 
+        /// <summary>
+        /// Updates records in a table
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause</typeparam>
+        /// <param name="objectToUpdate">Object to update in the database. The table model is inferred from the Type of this object.</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of records that were affected</returns>
         public int Update<T>(T objectToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
@@ -153,20 +231,36 @@ namespace Cocoon.ORM
 
         }
 
-        public int Update<T>(Type model, object objectToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
+        /// <summary>
+        /// Updates records in a table
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause</typeparam>
+        /// <param name="objectToUpdate">Object to update in the table. The table model is inferred from the Type of this object.</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of records that were affected</returns>
+        public int Update<T>(object objectToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
             if (objectToUpdate == null)
                 throw new NullReferenceException("objectToUpdate cannot be null.");
 
-            TableDefinition def = getTable(model);
+            TableDefinition def = getTable(objectToUpdate.GetType());
 
             return update(def, objectToUpdate, def.columns, timeout, where);
 
 
         }
 
-        public int Update<T>(object fieldsToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
+        /// <summary>
+        /// Updates a subset of fields in a table
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause</typeparam>
+        /// <param name="fieldsToUpdate">An object containg the fields/values to update</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of records that were affected</returns>
+        public int UpdatePartial<T>(object fieldsToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
             if (fieldsToUpdate == null)
@@ -177,33 +271,61 @@ namespace Cocoon.ORM
             return update(def, fieldsToUpdate, fieldsToUpdate.GetType().GetProperties(), timeout, where);
 
         }
-        
-        public T Insert<T>(Type model, object objectToInsert, int timeout = -1)
+
+        /// <summary>
+        /// Inserts a single row into a table
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause and return</typeparam>
+        /// <param name="objectToInsert">Object to insert into the table The table model is inferred from the Type of this object.</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The newly inserted object of type T</returns>
+        public T Insert<T>(object objectToInsert, int timeout = -1)
         {
-            
-            return insert<T>(model, objectToInsert, timeout);
+
+            return insert<T>(objectToInsert.GetType(), objectToInsert, timeout);
 
         }
 
+        /// <summary>
+        /// Inserts a single object
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause and return</typeparam>
+        /// <param name="objectToInsert">Object to insert into the table The table model is inferred from the Type of this object.</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The newly inserted object of type T</returns>
         public T Insert<T>(T objectToInsert, int timeout = -1)
         {
-            
+
             return insert<T>(typeof(T), objectToInsert, timeout);
 
         }
 
-        public IEnumerable<T> Insert<T>(IEnumerable<T> objectsToInsert)
+        /// <summary>
+        /// Inserts a list of objects
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause and return</typeparam>
+        /// <param name="objectsToInsert">Objects to insert into the database</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The newly inserted objects of type T</returns>
+        public IEnumerable<T> Insert<T>(IEnumerable<T> objectsToInsert, int timeout = -1)
         {
 
             List<T> list = new List<T>();
 
             foreach (T obj in objectsToInsert)
-                list.Add(Insert(obj));
+                list.Add(Insert(obj, timeout));
 
             return list;
 
         }
 
+        /// <summary>
+        /// Returns the number of rows that exist for a query
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of rows</returns>
         public int Count<T>(Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
@@ -227,6 +349,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Returns a binary checksum on a query
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>An integer checksum hash</returns>
         public int Checksum<T>(Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
@@ -250,6 +379,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Determines of rows exist
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <returns>True if rows exists, False otherwise</returns>
         public bool Exists<T>(Expression<Func<T, bool>> where = null)
         {
 
@@ -257,6 +392,14 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Copies rows into the same table
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="overrideValues"></param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The newly inserted rows</returns>
         public IEnumerable<T> Copy<T>(Expression<Func<T, bool>> where, object overrideValues = null, int timeout = -1)
         {
             TableDefinition def = getTable(typeof(T));
@@ -323,6 +466,14 @@ namespace Cocoon.ORM
 
         #region SQL
 
+        /// <summary>
+        /// Executes a SQL statement for a list of rows
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="sql">SQL statement string</param>
+        /// <param name="parameters">Object containing the parameters of the query. Members of this object that match @Parameter variables in the SQL will be parameterized.</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>A list of type T with the result</returns>
         public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null, int timeout = -1)
         {
 
@@ -349,6 +500,14 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Executes a SQL statement for a single row
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="sql">SQL statement string</param>
+        /// <param name="parameters">Object containing the parameters of the query. Members of this object that match @Parameter variables in the SQL will be parameterized.</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>An object of type T with the result</returns>
         public T ExecuteSQLSingle<T>(string sql, object parameters = null, int timeout = -1)
         {
 
@@ -372,6 +531,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Executes a SQL statement with no sesult
+        /// </summary>
+        /// <param name="sql">SQL statement string</param>
+        /// <param name="parameters">Object containing the parameters of the query. Members of this object that match @Parameter variables in the SQL will be parameterized.</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of records affected by the query</returns>
         public int ExecuteSQLVoid(string sql, object parameters = null, int timeout = -1)
         {
 
@@ -391,6 +557,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Executes a SQL statement for DataSet
+        /// </summary>
+        /// <param name="sql">SQL statement string</param>
+        /// <param name="parameters">Object containing the parameters of the query. Members of this object that match @Parameter variables in the SQL will be parameterized.</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>A DataSet with the result of the query</returns>
         public DataSet ExecuteSQLDataSet(string sql, object parameters = null, int timeout = -1)
         {
 
@@ -419,6 +592,14 @@ namespace Cocoon.ORM
 
         #region Stored Procedures
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="procedureName">The name of the procedure to execute</param>
+        /// <param name="parameters">An object containing the parameters of the stored procedure</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>A list of type T with the result</returns>
         public IEnumerable<T> ExecuteProcList<T>(string procedureName, object parameters = null, int timeout = -1)
         {
 
@@ -446,6 +627,14 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="procedureName">The name of the procedure to execute</param>
+        /// <param name="parameters">An object containing the parameters of the stored procedure</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>An object of type T with the result</returns>
         public T ExecuteProcSingle<T>(string procedureName, object parameters = null, int timeout = -1)
         {
 
@@ -470,6 +659,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="procedureName">The name of the procedure to execute</param>
+        /// <param name="parameters">An object containing the parameters of the stored procedure</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of rows affected</returns>
         public int ExecuteProcVoid(string procedureName, object parameters = null, int timeout = -1)
         {
 
@@ -489,6 +685,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="procedureName">The name of the procedure to execute</param>
+        /// <param name="parameters">An object containing the parameters of the stored procedure</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>A DataSet with the result</returns>
         public DataSet ExecuteProcDataSet(string procedureName, object parameters = null, int timeout = -1)
         {
 
@@ -519,6 +722,12 @@ namespace Cocoon.ORM
         internal const string base36Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
         internal static DateTime baseDate = new DateTime(1900, 1, 1);
 
+        /// <summary>
+        /// Changes the type of an object
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="conversionType"></param>
+        /// <returns></returns>
         public static object ChangeType(object value, Type conversionType)
         {
 
@@ -546,6 +755,10 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Generates a sequential COMB GUID
+        /// </summary>
+        /// <returns></returns>
         public static Guid GenerateSequentialGuid()
         {
 
@@ -569,6 +782,10 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Generates a sequential Base36 unique identifier
+        /// </summary>
+        /// <returns></returns>
         public static string GenerateSequentialUID()
         {
 
@@ -576,6 +793,11 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Base36 decodes a string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static long Base36Decode(string value)
         {
 
@@ -604,6 +826,11 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Base36 encodes a string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string Base36Encode(long value)
         {
             if (value == long.MinValue)
@@ -624,6 +851,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Determines of the member has a custom attribute
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="member"></param>
+        /// <returns></returns>
         public static bool HasAttribute<T>(MemberInfo member)
         {
 
@@ -631,6 +864,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Determines of a class has a custom attribute
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="property"></param>
+        /// <returns></returns>
         public static bool HasAttribute<T>(Type property)
         {
 
@@ -638,6 +877,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Creates a list of scalars from a single field from a list of rows
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="rows"></param>
+        /// <param name="fieldToMap"></param>
+        /// <returns></returns>
         public static IEnumerable<T> FillScalarList<T>(IEnumerable<DataRow> rows, string fieldToMap = null)
         {
 
@@ -653,6 +899,13 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Creates a list of scalars from a single field from a DataTable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="table"></param>
+        /// <param name="fieldToMap"></param>
+        /// <returns></returns>
         public static IEnumerable<T> FillScalarList<T>(DataTable table, string fieldToMap = null)
         {
 
@@ -660,6 +913,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Fills a list from a list of rows
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="rows"></param>
+        /// <returns></returns>
         public static IEnumerable<object> FillList(Type type, IEnumerable<DataRow> rows)
         {
 
@@ -674,6 +933,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Fills a list from a DataTable
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="table"></param>
+        /// <returns></returns>
         public static IEnumerable<object> FillList(Type type, DataTable table)
         {
 
@@ -681,6 +946,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Fills a list from a list of rows
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="rows"></param>
+        /// <returns></returns>
         public static IEnumerable<T> FillList<T>(IEnumerable<DataRow> rows)
         {
 
@@ -688,6 +959,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Fills a list from a DataTable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="table"></param>
+        /// <returns></returns>
         public static IEnumerable<T> FillList<T>(DataTable table)
         {
 
@@ -695,6 +972,11 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Sets a properties of an object from a DataRow
+        /// </summary>
+        /// <param name="objectToSet"></param>
+        /// <param name="row"></param>
         public static void SetFromRow(object objectToSet, DataRow row)
         {
 
@@ -715,10 +997,10 @@ namespace Cocoon.ORM
 
                 try
                 {
-                    
+
                     object value = ChangeType(row[column], prop.PropertyType);
                     prop.SetValue(objectToSet, value);
-                    
+
                 }
                 catch
                 {
@@ -731,6 +1013,12 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Sets the properties of an object from a DataReader
+        /// </summary>
+        /// <param name="objectToSet"></param>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static object SetFromReader(object objectToSet, IDataReader reader)
         {
 
@@ -750,7 +1038,7 @@ namespace Cocoon.ORM
 
                 if (!columns.Contains(propName))
                     continue;
-                
+
                 object value = ChangeType(reader[propName], prop.PropertyType);
                 prop.SetValue(objectToSet, value);
 
@@ -761,6 +1049,11 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Creates an SHA256 hash of a string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string SHA256(string value)
         {
             using (SHA256 hash = System.Security.Cryptography.SHA256.Create())
@@ -772,6 +1065,11 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// Creates an MD5 hash of a string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string MD5(string value)
         {
 
@@ -787,7 +1085,7 @@ namespace Cocoon.ORM
         #endregion
 
         #region Internal
-        
+
         internal void addParamObject(SqlCommand cmd, object parameters)
         {
 
@@ -813,6 +1111,7 @@ namespace Cocoon.ORM
 
         internal T readSingle<T>(SqlCommand cmd)
         {
+
             using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                 if (reader.HasRows)
                 {
