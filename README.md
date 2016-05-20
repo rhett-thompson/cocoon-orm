@@ -1,7 +1,6 @@
-# Cocoon ORM
-Cocoon ORM is a simple to use .NET alternative to the Entity Framework and NHibernate created for SQL Server 2008/2012/20014/+, and SQL Azure (but workable in other T-SQL database environments)L.  It is an ORM toolset that performs automapping, CRUD operations (including joins), auto SQL, auto stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
 
-Cocoon ORM is for developers who are unwilling to trust the Entity Framework or NHibernate to create and manage their database and database code.  Cocoon ORM developers should be comfortable with SQL Server as well.  
+# <img src="https://raw.githubusercontent.com/Guidelinetech/cocoon-orm/master/cocoon.png" width="24">&nbsp;Cocoon ORM
+Cocoon ORM is a simple to use .NET alternative to the Entity Framework and NHibernate created for SQL Server 2008/2012/20014/+, and SQL Azure.  It is an ORM toolset that performs automapping, CRUD operations, SQL parameterization, stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
 
 - Nuget: https://www.nuget.org/packages/cocoon-orm/
 - Webpage: http://guidelinetech.github.io/cocoon-orm/
@@ -98,13 +97,13 @@ class Order
 ```
 
 ## Database connection
-You only need to instantiante this one time, prefereably in a central/global area of your application.
+You only need to instantiate this one time, prefereably in a central/global area of your application.
 ```cs
 CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid={user id};Pwd={password};");
 ```
 
 ## Attributes
-Attributes are used to specify columns in models, and define the properties and relationships of those columns
+### Attributes are used to specify columns in models, and define the properties and relationships of columns
 | Attribute  | Description |
 | ------------- | ------------- |
 | Column  | Signifies that a property in this class is mirrored as a field in the database   |
@@ -164,7 +163,7 @@ You can read more about them here: https://msdn.microsoft.com/en-us/library/Syst
 ```cs
 using (TransactionScope tran = new TransactionScope())
 {
-  db.Update<Order>(fieldsToUpdate: new { OrderID = 2 }, where: o => o.OrderTypeID == OrderType.ONSITE);
+  db.UpdatePartial<Order>(fieldsToUpdate: new { OrderID = 2 }, where: o => o.OrderTypeID == OrderType.ONSITE);
   tran.Complete();
 }
 ```
