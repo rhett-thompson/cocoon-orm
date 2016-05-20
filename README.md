@@ -1,23 +1,25 @@
 
 # <img src="https://raw.githubusercontent.com/Guidelinetech/cocoon-orm/master/cocoon.png" width="24">&nbsp;Cocoon ORM
-Cocoon ORM is a simple to use .NET alternative to the Entity Framework and NHibernate created for SQL Server 2008/2012/20014/+, and SQL Azure.  It is an ORM toolset that performs automapping, CRUD operations, SQL parameterization, stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
+Cocoon ORM is a simple to use .NET alternative to the Entity Framework and NHibernate created for SQL Server 2008/2012/20014/+, and SQL Azure.  It is an ORM toolset that performs auto mapping, CRUD operations, SQL parameterization, stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
 
 - Nuget: https://www.nuget.org/packages/cocoon-orm/
 - Webpage: http://guidelinetech.github.io/cocoon-orm/
 
 ### The goals of Cocoon ORM 
-- Leverage simplicity and elegance.
-- Save time
-- Reduce bugs
 - Massivly reduce the amount of code required for database access.  
+- Leverage simplicity and elegance.
+- Speed up development time.
+- Reduce bugs.
+- Replace complicated stored procedures with simpler in-code versions.
 
 ### Features of Cocoon ORM
-- Requires no special training; examples are plentiful and directly applicable to your code today.  
-- Includes regression and benchmarking tools for the truly performance paranoid.  
-- Directly compare performance between Cocoon dynamic parametrized SQL and that of traditional stored procedure.  
-- Leverages data annotations similar to that of the Entity Framework.  
-- Can be used in a simplified code first or a concise code second environment.
-- Rudementary table generation tools are provided primarily as a time saver; not to remove the need for the developer to understand the underlying database structure.
+- Includes most common database querying tasks in a simple API.
+- Very fast and reliable.
+- Stored procedures and inline SQL support.
+- Requires no special training; examples are plentiful and directly applicable to your code.  
+- Includes a model generator to speed up model creation.
+- Leverages data attributes similar to that of the Entity Framework and NHibernate in a simpler manner.
+- Many utility functions for common database development including: Unique Identifier generation, object mapping, object typing, hashing functions, data encoding and compression.
 
 ### Example Models
 ```cs
@@ -188,10 +190,18 @@ IEnumerable<Customer> list = db.GetList(predicates);
 ## Utility Functions
 | Function  | Description |
 | ------------- | ------------- |
-| GenerateSequentialGuid  | Generates a sequential COMB GUID.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.   |
-| GenerateSequentialUID | Generates a sequential Base36 unique identifier.  It's based on the number of 10 nanosecond intervals that have elapsed since 1/1/1990 UTC.  |
+| GenerateSequentialGuid  | Generates a sequential COMB GUID. |
+| GenerateSequentialUID | Generates a sequential Base36 unique identifier. |
+| SHA256 | Creates an SHA256 hash of a string. |
+| MD5 | Creates an MD5 hash of a string. |
+| CompressString | Compresses a string using GZip. |
+| DecompressString | Decompresses a string using GZip. |
+| Base36Decode | Decode Base36 string. |
+| Base36Encode | Base36 encode a value. |
+| Base64Decode | Decode Base64 string. |
+| Base64Encode | Base64 encode a string. |
 
 ## Model Generator Tool
 The model generator is a simple application included with Cocoon ORM to generate C# model classes.  All you need is a connection string to your database
 
-![Model Gen Screenshot](https://raw.githubusercontent.com/Guidelinetech/cocoon-orm/master/modelgen.png)
+<img src="https://raw.githubusercontent.com/Guidelinetech/cocoon-orm/master/modelgen.png" width="786" height="593">
