@@ -1,3 +1,4 @@
+<img src="https://raw.githubusercontent.com/Guidelinetech/cocoon-orm/master/cocoon.png" width="128">
 # Cocoon ORM
 Cocoon ORM is a simple to use .NET alternative to the Entity Framework and NHibernate created for SQL Server 2008/2012/20014/+, and SQL Azure.  It is an ORM toolset that performs automapping, CRUD operations, SQL parameterization, stored procedure parameter mapping, and more. It creates easy to inspect parametrized SQL that is execution plan and cache friendly.  The SQL that Cocoon ORM generates is the same SQL you yourself might write had you the time.  
 
