@@ -423,7 +423,7 @@ namespace Cocoon.ORM
 
                         PropertyInfo overrideProp = overrideValueProps.SingleOrDefault(p => p.Name == prop.Name);
                         if (overrideProp != null)
-                            values.Add(addParam(cmd, "override_value_" + getGuid(), overrideProp.GetValue(overrideValues)).ParameterName);
+                            values.Add(addParam(cmd, "override_value_" + getGuidString(), overrideProp.GetValue(overrideValues)).ParameterName);
                         else
                             values.Add(column);
 
@@ -1192,13 +1192,13 @@ namespace Cocoon.ORM
 
                     if (!HasAttribute<IgnoreOnUpdate>(prop))
                     {
-                        SqlParameter param = addParam(cmd, "update_field_" + getGuid(), prop.GetValue(values));
+                        SqlParameter param = addParam(cmd, "update_field_" + getGuidString(), prop.GetValue(values));
                         columnsToUpdate.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
                     }
 
                     if (HasAttribute<PrimaryKey>(prop) && where == null)
                     {
-                        SqlParameter param = addParam(cmd, "where_" + getGuid(), prop.GetValue(values));
+                        SqlParameter param = addParam(cmd, "where_" + getGuidString(), prop.GetValue(values));
                         primaryKeys.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
                     }
 
@@ -1236,7 +1236,7 @@ namespace Cocoon.ORM
 
                         columns.Add(string.Format("{0}.{1}", def.objectName, getObjectName(prop)));
 
-                        SqlParameter param = addParam(cmd, "insert_value_" + getGuid(), prop.GetValue(objectToInsert));
+                        SqlParameter param = addParam(cmd, "insert_value_" + getGuidString(), prop.GetValue(objectToInsert));
                         values.Add(param.ParameterName);
 
                     }
@@ -1331,7 +1331,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal static string getGuid()
+        internal static string getGuidString()
         {
 
             return Guid.NewGuid().ToString("n");
@@ -1352,7 +1352,7 @@ namespace Cocoon.ORM
         internal static string addWhereParam(SqlCommand cmd, object value)
         {
 
-            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", getGuid()), value).ParameterName;
+            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", getGuidString()), value).ParameterName;
 
         }
 
@@ -1380,7 +1380,7 @@ namespace Cocoon.ORM
                 ForeignColumn attr = foreignColumn.GetCustomAttribute<ForeignColumn>();
 
                 string otherTableObjectName = getObjectName(attr.otherTableModel);
-                string alias = getObjectName(string.Format("join_table_{0}", getGuid()));
+                string alias = getObjectName(string.Format("join_table_{0}", getGuidString()));
                 string foreignField = getObjectName(foreignColumn);
 
                 string joinPart = "join";
