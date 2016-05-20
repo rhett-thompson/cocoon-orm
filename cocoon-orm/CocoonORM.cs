@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net.NetworkInformation;
@@ -796,31 +798,31 @@ namespace Cocoon.ORM
         /// <summary>
         /// Base36 decodes a string
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="base36Encoded"></param>
         /// <returns></returns>
-        public static long Base36Decode(string value)
+        public static long Base36Decode(string base36Encoded)
         {
 
-            if (string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(base36Encoded))
                 throw new ArgumentException("Empty value.");
 
-            value = value.ToUpper();
+            base36Encoded = base36Encoded.ToUpper();
 
             bool negative = false;
 
-            if (value[0] == '-')
+            if (base36Encoded[0] == '-')
             {
                 negative = true;
-                value = value.Substring(1, value.Length - 1);
+                base36Encoded = base36Encoded.Substring(1, base36Encoded.Length - 1);
             }
 
-            if (value.Any(c => !base36Digits.Contains(c)))
-                throw new ArgumentException("Invalid value: \"" + value + "\".");
+            if (base36Encoded.Any(c => !base36Digits.Contains(c)))
+                throw new ArgumentException("Invalid value: \"" + base36Encoded + "\".");
 
             long decoded = 0L;
 
-            for (var i = 0; i < value.Length; ++i)
-                decoded += base36Digits.IndexOf(value[i]) * (long)BigInteger.Pow(base36Digits.Length, value.Length - i - 1);
+            for (var i = 0; i < base36Encoded.Length; ++i)
+                decoded += base36Digits.IndexOf(base36Encoded[i]) * (long)BigInteger.Pow(base36Digits.Length, base36Encoded.Length - i - 1);
 
             return negative ? decoded * -1 : decoded;
 
@@ -849,6 +851,26 @@ namespace Cocoon.ORM
 
             return negative ? "-" + encoded : encoded;
 
+        }
+
+        /// <summary>
+        /// Base64 decodes a string
+        /// </summary>
+        /// <param name="base64Encoded"></param>
+        /// <returns></returns>
+        public static string Base64Decode(string base64Encoded)
+        {
+            return Encoding.UTF8.GetString(Convert.FromBase64String(base64Encoded));
+        }
+
+        /// <summary>
+        /// Base64 encode a string
+        /// </summary>
+        /// <param name="plainText"></param>
+        /// <returns></returns>
+        public static string Base64Encode(string plainText)
+        {
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
         }
 
         /// <summary>
@@ -1080,6 +1102,54 @@ namespace Cocoon.ORM
                   .Select(item => item.ToString("x2")));
             }
 
+        }
+
+        /// <summary>
+        /// Compresses a string
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static string CompressString(string text)
+        {
+
+            byte[] buffer = Encoding.UTF8.GetBytes(text);
+            MemoryStream memoryStream = new MemoryStream();
+            using (GZipStream gZipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
+                gZipStream.Write(buffer, 0, buffer.Length);
+
+            memoryStream.Position = 0;
+
+            byte[] compressedData = new byte[memoryStream.Length];
+            memoryStream.Read(compressedData, 0, compressedData.Length);
+
+            byte[] gZipBuffer = new byte[compressedData.Length + 4];
+            Buffer.BlockCopy(compressedData, 0, gZipBuffer, 4, compressedData.Length);
+            Buffer.BlockCopy(BitConverter.GetBytes(buffer.Length), 0, gZipBuffer, 0, 4);
+            return Convert.ToBase64String(gZipBuffer);
+
+        }
+
+        /// <summary>
+        /// Decompresses a string
+        /// </summary>
+        /// <param name="compressedText"></param>
+        /// <returns></returns>
+        public static string DecompressString(string compressedText)
+        {
+            byte[] gZipBuffer = Convert.FromBase64String(compressedText);
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                int dataLength = BitConverter.ToInt32(gZipBuffer, 0);
+                memoryStream.Write(gZipBuffer, 4, gZipBuffer.Length - 4);
+
+                byte[] buffer = new byte[dataLength];
+
+                memoryStream.Position = 0;
+                using (GZipStream gZipStream = new GZipStream(memoryStream, CompressionMode.Decompress))
+                    gZipStream.Read(buffer, 0, buffer.Length);
+
+                return Encoding.UTF8.GetString(buffer);
+            }
         }
 
         #endregion
