@@ -796,7 +796,7 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// Base36 decodes a string
+        /// Decode Base36 string
         /// </summary>
         /// <param name="base36Encoded"></param>
         /// <returns></returns>
@@ -829,7 +829,7 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// Base36 encodes a string
+        /// Base36 encode a value
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -854,7 +854,7 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// Base64 decodes a string
+        /// Decode Base64 string
         /// </summary>
         /// <param name="base64Encoded"></param>
         /// <returns></returns>
@@ -1105,7 +1105,7 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// Compresses a string
+        /// Compresses a string using GZip
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
@@ -1130,7 +1130,7 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// Decompresses a string
+        /// Decompresses a string using GZip
         /// </summary>
         /// <param name="compressedText"></param>
         /// <returns></returns>
