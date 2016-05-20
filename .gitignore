@@ -1,3 +1,5 @@
 /cocoon-orm/obj
 /cocoon-orm/bin
 /cocoon-orm-test
+/cocoon-orm-modelgen/obj
+/cocoon-orm-modelgen/bin
