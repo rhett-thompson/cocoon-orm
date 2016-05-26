@@ -211,28 +211,7 @@ namespace Cocoon.ORM
 
             }
         }
-
-        /// <summary>
-        /// Updates records in a table
-        /// </summary>
-        /// <typeparam name="T">Table model to use in the where clause</typeparam>
-        /// <param name="objectToUpdate">Object to update in the database. The table model is inferred from the Type of this object.</param>
-        /// <param name="where">Where expression to use for the query</param>
-        /// <param name="timeout">Timeout in milliseconds of query</param>
-        /// <returns>The number of records that were affected</returns>
-        public int Update<T>(T objectToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
-        {
-
-            if (objectToUpdate == null)
-                throw new NullReferenceException("objectToUpdate cannot be null.");
-
-            TableDefinition def = getTable(typeof(T));
-
-            return update(def, objectToUpdate, def.columns, timeout, where);
-
-
-        }
-
+        
         /// <summary>
         /// Updates records in a table
         /// </summary>
@@ -309,7 +288,7 @@ namespace Cocoon.ORM
         /// <param name="objectsToInsert">Objects to insert into the database</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>The newly inserted objects of type T</returns>
-        public IEnumerable<T> Insert<T>(IEnumerable<T> objectsToInsert, int timeout = -1)
+        public IEnumerable<T> InsertList<T>(IEnumerable<T> objectsToInsert, int timeout = -1)
         {
 
             List<T> list = new List<T>();
