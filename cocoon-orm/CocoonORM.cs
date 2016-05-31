@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
+using System.Data.SqlTypes;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -1389,6 +1390,9 @@ namespace Cocoon.ORM
 
         internal static SqlParameter addParam(SqlCommand cmd, string name, object value)
         {
+
+            if (value is DateTime && (DateTime)value < SqlDateTime.MinValue.Value)
+                value = SqlDateTime.MinValue.Value;
 
             SqlParameter param = cmd.CreateParameter();
             param.ParameterName = "@" + name;

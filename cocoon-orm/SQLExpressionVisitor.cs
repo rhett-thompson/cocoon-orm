@@ -93,7 +93,8 @@ namespace Cocoon.ORM
             else if (node.Method.Name == "Contains")
                 addLikeParam(node, "%" + getExpressionValue(node.Arguments[0]) + "%");
             else
-                throw new NotSupportedException(string.Format("Method '{0}' not supported", node.Method.Name));
+                whereBuilder.Append(CocoonORM.addWhereParam(cmd, Expression.Lambda(node).Compile().DynamicInvoke()));
+            //throw new NotSupportedException(string.Format("Method '{0}' not supported", node.Method.Name));
 
             return node;
 
