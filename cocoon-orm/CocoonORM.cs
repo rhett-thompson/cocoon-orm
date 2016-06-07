@@ -1232,7 +1232,9 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
+
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
+                
                 //columns to select
                 List<string> columnsToUpdate = new List<string>();
                 List<string> primaryKeys = new List<string>();
@@ -1242,7 +1244,11 @@ namespace Cocoon.ORM
 
                     if (!HasAttribute<IgnoreOnUpdate>(prop))
                     {
-                        SqlParameter param = addParam(cmd, "update_field_" + getGuidString(), prop.GetValue(values));
+                        object v = prop.GetValue(values);
+                        if (v is string && string.IsNullOrEmpty((string)v))
+                            v = null;
+
+                        SqlParameter param = addParam(cmd, "update_field_" + getGuidString(), v);
                         columnsToUpdate.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
                     }
 
