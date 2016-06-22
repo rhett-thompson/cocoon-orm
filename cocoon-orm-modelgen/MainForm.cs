@@ -64,7 +64,9 @@ namespace Cocoon.ORM.ModelGen
                 Settings.Default.ConnectionStrings = new System.Collections.Specialized.StringCollection();
 
             listConnectionStrings();
-            ConnectionStringComboBox.SelectedIndex = 0;
+
+            if(ConnectionStringComboBox.Items.Count > 0)
+                ConnectionStringComboBox.SelectedIndex = 0;
 
         }
 
