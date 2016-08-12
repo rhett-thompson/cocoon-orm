@@ -13,6 +13,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using StringInject;
 
 namespace Cocoon.ORM
 {
@@ -111,6 +112,84 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="ModelT"></typeparam>
+        /// <typeparam name="InModelT"></typeparam>
+        /// <typeparam name="FieldT"></typeparam>
+        /// <param name="modelKey"></param>
+        /// <param name="inModelKey"></param>
+        /// <param name="inWhere"></param>
+        /// <param name="where"></param>
+        /// <param name="top"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public IEnumerable<ModelT> GetListIn<ModelT, InModelT, FieldT>(
+            Expression<Func<ModelT, FieldT>> modelKey, 
+            Expression<Func<ModelT, FieldT>> inModelKey, 
+            Expression<Func<InModelT, bool>> inWhere = null, 
+            Expression<Func<ModelT, bool>> where = null, 
+            int top = 0, 
+            int timeout = -1)
+        {
+
+            Type model = typeof(ModelT);
+            Type inModel = typeof(InModelT);
+
+            MemberExpression modelKeyExpression = (MemberExpression)modelKey.Body;
+            MemberExpression inModelKeyExpression = (MemberExpression)inModelKey.Body;
+
+            TableDefinition modelDef = getTable(model);
+            TableDefinition inModelDef = getTable(inModel);
+
+            List<object> list = new List<object>();
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
+
+                //get columns to select
+                List<string> columnsToSelect = modelDef.columns.Where(c => !HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", modelDef.objectName, getObjectName(c))).ToList();
+                if (columnsToSelect.Count == 0)
+                    throw new Exception("No columns to select");
+
+                //generate join clause
+                string joinClause = generateJoinClause(modelDef.objectName, columnsToSelect, modelDef.foreignColumns);
+
+                //generate where clauses
+                string modelWhereClause = generateWhereClause(cmd, modelDef.objectName, where, false);
+                string inModelWhereClause = generateWhereClause(cmd, inModelDef.objectName, inWhere);
+
+                //generate top clause
+                string topClause = "";
+                if (top > 0)
+                    topClause = string.Format("top {0}", top);
+
+                //build sql
+                cmd.CommandText = "select {top} {columns} from {model} {joins} where {model}.{modelKey} in (select {inModel}.{inModelKey} from {inModel} {inModelWhere}) {modelWhere}".Inject(new {
+                    top = topClause,
+                    model = modelDef.objectName,
+                    inModel = inModelDef.objectName,
+                    columns = string.Join(", ", columnsToSelect),
+                    joins = joinClause,
+                    modelKey = getObjectName(modelKeyExpression.Member),
+                    inModelKey = getObjectName(inModelKeyExpression.Member),
+                    inModelWhere = inModelWhereClause,
+                    modelWhere = modelWhereClause != null ? "and " + modelWhereClause : ""
+                });
+                
+                //execute sql
+                conn.Open();
+
+                readList(cmd, model, list);
+            }
+
+            return list.Cast<ModelT>();
+
+        }
+
+        /// <summary>
         /// Returns a single row
         /// </summary>
         /// <typeparam name="T">Table model</typeparam>
@@ -197,7 +276,22 @@ namespace Cocoon.ORM
         /// <returns>The number of records that were affected</returns>
         public int Delete<T>(Expression<Func<T, bool>> where, int timeout = -1)
         {
-            TableDefinition def = getTable(typeof(T));
+
+            return Delete(typeof(T), where, timeout);
+
+        }
+
+        /// <summary>
+        /// Deletes records from a table
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// /// <param name="model">Table model type</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of records that were affected</returns>
+        public int Delete<T>(Type model, Expression<Func<T, bool>> where, int timeout = -1)
+        {
+            TableDefinition def = getTable(model);
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
@@ -205,14 +299,14 @@ namespace Cocoon.ORM
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
-                cmd.CommandText = string.Format("delete from {0} {1}", def.objectName, whereClause);
+                cmd.CommandText = "delete from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
 
                 conn.Open();
                 return cmd.ExecuteNonQuery();
 
             }
         }
-        
+
         /// <summary>
         /// Updates records in a table
         /// </summary>
@@ -321,7 +415,7 @@ namespace Cocoon.ORM
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
                 //generate sql
-                cmd.CommandText = string.Format("select count(*) from {0} {1}", def.objectName, whereClause);
+                cmd.CommandText = "select count(*) from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
 
                 //execute sql
                 conn.Open();
@@ -347,11 +441,12 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
+                
                 //generate where clause
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
                 //generate sql
-                cmd.CommandText = string.Format("select checksum_agg(binary_checksum(*)) from {0} {1}", def.objectName, whereClause);
+                cmd.CommandText = "select checksum_agg(binary_checksum(*)) from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
 
                 //execute sql
                 conn.Open();
@@ -418,20 +513,21 @@ namespace Cocoon.ORM
                 foreach (PropertyInfo pk in def.primaryKeys)
                 {
                     string primaryKeyName = getObjectName(pk);
-                    outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, dbTypeMap[pk.PropertyType]));
+                    outputTableKeys.Add("{key} {type}".Inject(new { key = primaryKeyName, type = dbTypeMap[pk.PropertyType] }));
                     insertedPrimaryKeys.Add("inserted." + primaryKeyName);
-                    wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", primaryKeyName, def.objectName));
+                    wherePrimaryKeys.Add("ids.{primaryKey} = {model}.{primaryKey}".Inject(new { primaryKey = primaryKeyName, model = def.objectName }));
                 }
 
-                //build command
-                cmd.CommandText = string.Format("{0};insert into {1} ({2}) output {3} into @ids select {4} from {1} {6};select {1}.* from {1} join @ids ids on {5}",
-                    string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
-                    def.objectName,
-                    string.Join(", ", columns),
-                    string.Join(", ", insertedPrimaryKeys),
-                    string.Join(", ", values),
-                    string.Join(" and ", wherePrimaryKeys),
-                    whereClause);
+                //build sql
+                cmd.CommandText = "{insertedTable};insert into {model} ({columns}) output {insertedPrimaryKeys} into @ids select {values} from {model} {where};select {model}.* from {model} join @ids ids on {wherePrimaryKeys}".Inject(new {
+                    insertedTable = string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
+                    model = def.objectName,
+                    columns = string.Join(", ", columns),
+                    insertedPrimaryKeys = string.Join(", ", insertedPrimaryKeys),
+                    values = string.Join(", ", values),
+                    wherePrimaryKeys = string.Join(" and ", wherePrimaryKeys),
+                    where = whereClause
+                });
 
                 conn.Open();
 
@@ -1219,13 +1315,20 @@ namespace Cocoon.ORM
                 topClause = string.Format("top {0}", top);
 
             //generate sql
-            cmd.CommandText = string.Format("select {0} {1} from {2} {3} {4}", topClause, string.Join(", ", columnsToSelect), tableObjectName, joinClause, whereClause);
+            cmd.CommandText = "select {top} {columns} from {model} {joins} {where}".Inject(new
+            {
+                top = topClause,
+                model = tableObjectName,
+                columns = string.Join(", ", columnsToSelect),
+                joins = joinClause,
+                where = whereClause
+            });
 
             //execute sql
             conn.Open();
 
         }
-
+        
         internal int update<T>(TableDefinition def, object values, IEnumerable<MemberInfo> properties, int timeout, Expression<Func<T, bool>> where = null)
         {
 
@@ -1306,17 +1409,19 @@ namespace Cocoon.ORM
                     string primaryKeyName = getObjectName(pk);
                     outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, dbTypeMap[pk.PropertyType]));
                     insertedPrimaryKeys.Add("inserted." + primaryKeyName);
-                    wherePrimaryKeys.Add(string.Format("ids.{0} = {1}.{0}", primaryKeyName, def.objectName));
+                    wherePrimaryKeys.Add("ids.{primaryKey} = {model}.{primaryKey}".Inject(new { primaryKey = primaryKeyName, model = def.objectName }));
                 }
 
                 //generate query
-                cmd.CommandText = string.Format("{0};insert into {1} ({2}) output {3} into @ids values ({4});select {1}.* from {1} join @ids ids on {5}",
-                    string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
-                    def.objectName,
-                    string.Join(", ", columns),
-                    string.Join(", ", insertedPrimaryKeys),
-                    string.Join(", ", values),
-                    string.Join(" and ", wherePrimaryKeys));
+                cmd.CommandText = "{insertedTable};insert into {model} ({columns}) output {insertedPrimaryKeys} into @ids values ({values});select {model}.* from {model} join @ids ids on {wherePrimaryKeys}".Inject(new
+                {
+                    insertedTable = string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
+                    model = def.objectName,
+                    columns = string.Join(", ", columns),
+                    insertedPrimaryKeys = string.Join(", ", insertedPrimaryKeys),
+                    values = string.Join(", ", values),
+                    wherePrimaryKeys = string.Join(" and ", wherePrimaryKeys)
+                });
 
                 conn.Open();
 
@@ -1415,14 +1520,14 @@ namespace Cocoon.ORM
 
         }
 
-        internal string generateWhereClause(SqlCommand cmd, string tableObjectName, Expression where)
+        internal string generateWhereClause(SqlCommand cmd, string tableObjectName, Expression where, bool addWhere = true)
         {
 
             if (where == null)
                 return null;
 
             SQLExpressionTranslator translater = new SQLExpressionTranslator();
-            return "where " + translater.GenerateSQLExpression(this, cmd, where, tableObjectName);
+            return (addWhere ? "where " : "") + translater.GenerateSQLExpression(this, cmd, where, tableObjectName);
 
         }
 
@@ -1450,21 +1555,21 @@ namespace Cocoon.ORM
                 else if (attr.joinType == JoinType.FULL_OUTER)
                     joinPart = "full outer join";
 
-                joinClauseList.Add(string.Format("{0} {1} as {2} on {3}.{4} = {5}.{6}",
-                    joinPart,
-                    otherTableObjectName,
-                    alias,
-                    tableObjectName,
-                    attr.KeyInThisTableModel,
-                    alias,
-                    attr.KeyInOtherTableModel
-                ));
+                joinClauseList.Add("{joinPart} {otherModel} as {alias} on {model}.{key} = {alias}.{otherKey}".Inject(new {
+
+                    joinPart = joinPart,
+                    model = tableObjectName,
+                    otherModel = otherTableObjectName,
+                    alias = alias,
+                    key = attr.KeyInThisTableModel,
+                    otherKey = attr.KeyInOtherTableModel
+                }));
 
                 columnsToSelect.Add(string.Format("{0}.{1} as {2}",
                     alias,
                     attr.FieldInOtherTableModel ?? foreignField,
                     foreignField));
-
+                
             }
 
             return string.Join("\r\n", joinClauseList);

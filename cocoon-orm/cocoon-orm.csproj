@@ -45,6 +45,7 @@
     <Compile Include="ConnectionStringParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SQLExpressionVisitor.cs" />
+    <Compile Include="StringInjectExtension.cs" />
     <Compile Include="TableDefinition.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
