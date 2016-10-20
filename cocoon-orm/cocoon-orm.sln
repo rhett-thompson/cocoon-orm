@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm-modelgen", "..\c
 		{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7} = {9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{A1B31D1F-A356-4423-8523-F8DE1DA16875}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +26,10 @@ Global
 		{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B31D1F-A356-4423-8523-F8DE1DA16875}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B31D1F-A356-4423-8523-F8DE1DA16875}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B31D1F-A356-4423-8523-F8DE1DA16875}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B31D1F-A356-4423-8523-F8DE1DA16875}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

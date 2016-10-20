@@ -67,7 +67,7 @@ namespace Cocoon.ORM
 
         }
 
-        #region Basic CRUD
+        #region Database Methods
 
         /// <summary>
         /// Returns a list of objects
@@ -125,11 +125,11 @@ namespace Cocoon.ORM
         /// <param name="timeout"></param>
         /// <returns></returns>
         public IEnumerable<ModelT> GetListIn<ModelT, InModelT, FieldT>(
-            Expression<Func<ModelT, FieldT>> modelKey, 
-            Expression<Func<ModelT, FieldT>> inModelKey, 
-            Expression<Func<InModelT, bool>> inWhere = null, 
-            Expression<Func<ModelT, bool>> where = null, 
-            int top = 0, 
+            Expression<Func<ModelT, FieldT>> modelKey,
+            Expression<Func<ModelT, FieldT>> inModelKey,
+            Expression<Func<InModelT, bool>> inWhere = null,
+            Expression<Func<ModelT, bool>> where = null,
+            int top = 0,
             int timeout = -1)
         {
 
@@ -167,7 +167,8 @@ namespace Cocoon.ORM
                     topClause = string.Format("top {0}", top);
 
                 //build sql
-                cmd.CommandText = "select {top} {columns} from {model} {joins} where {model}.{modelKey} in (select {inModel}.{inModelKey} from {inModel} {inModelWhere}) {modelWhere}".Inject(new {
+                cmd.CommandText = "select {top} {columns} from {model} {joins} where {model}.{modelKey} in (select {inModel}.{inModelKey} from {inModel} {inModelWhere}) {modelWhere}".Inject(new
+                {
                     top = topClause,
                     model = modelDef.objectName,
                     inModel = inModelDef.objectName,
@@ -178,7 +179,7 @@ namespace Cocoon.ORM
                     inModelWhere = inModelWhereClause,
                     modelWhere = modelWhereClause != null ? "and " + modelWhereClause : ""
                 });
-                
+
                 //execute sql
                 conn.Open();
 
@@ -410,7 +411,9 @@ namespace Cocoon.ORM
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
+
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
+
                 //generate where clause
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
@@ -441,7 +444,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                
+
                 //generate where clause
                 string whereClause = generateWhereClause(cmd, def.objectName, where);
 
@@ -465,7 +468,7 @@ namespace Cocoon.ORM
         public bool Exists<T>(Expression<Func<T, bool>> where = null)
         {
 
-            return Count<T>(where) > 0;
+            return Count(where) > 0;
 
         }
 
@@ -519,7 +522,8 @@ namespace Cocoon.ORM
                 }
 
                 //build sql
-                cmd.CommandText = "{insertedTable};insert into {model} ({columns}) output {insertedPrimaryKeys} into @ids select {values} from {model} {where};select {model}.* from {model} join @ids ids on {wherePrimaryKeys}".Inject(new {
+                cmd.CommandText = "{insertedTable};insert into {model} ({columns}) output {insertedPrimaryKeys} into @ids select {values} from {model} {where};select {model}.* from {model} join @ids ids on {wherePrimaryKeys}".Inject(new
+                {
                     insertedTable = string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
                     model = def.objectName,
                     columns = string.Join(", ", columns),
@@ -535,6 +539,62 @@ namespace Cocoon.ORM
                 readList(cmd, def.type, list);
 
                 return list.Cast<T>();
+
+            }
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="where"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public string MD5HashInDB<T>(Expression<Func<T, bool>> where = null, int top = 0, int timeout = -1)
+        {
+
+            TableDefinition def = getTable(typeof(T));
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
+
+                //generate where clause
+                string whereClause = generateWhereClause(cmd, def.objectName, where);
+
+                //generate columns
+                List<string> columns = new List<string>();
+                foreach (MemberInfo member in def.columns)
+                    if (((PropertyInfo)member).PropertyType == typeof(DateTime) || ((PropertyInfo)member).PropertyType == typeof(DateTime?))
+                        columns.Add("format({column}, 'MM/dd/yyyy H:mm:ss')".InjectSingleValue("column", getObjectName(member)));
+                    else
+                        columns.Add(getObjectName(member));
+
+                //generate top clause
+                string topClause = "";
+                if (top > 0)
+                    topClause = string.Format("top {0}", top);
+
+                //generate sql
+                cmd.CommandText = @"
+                    declare @hashes table (md5 varchar(32))
+                    declare @list varchar(max)
+                    insert into @hashes select {top} convert(varchar(32), hashbytes('MD5', convert(varchar(1000), concat({columns}))), 2) as md5 from {model} {where}
+                    select @list = coalesce(@list + ',', '') + md5 from @hashes
+                    select convert(varchar(32), hashbytes('MD5', @list), 2)
+                ".Inject(new
+                {
+                    top = topClause,
+                    columns = string.Join(", ',', ", columns),
+                    model = def.objectName,
+                    where = whereClause
+                });
+
+                //execute sql
+                conn.Open();
+                return readScalar<string>(cmd);
 
             }
 
@@ -1174,9 +1234,43 @@ namespace Cocoon.ORM
             using (MD5 hash = System.Security.Cryptography.MD5.Create())
             {
                 return string.Join("", hash
-                  .ComputeHash(Encoding.UTF8.GetBytes(value))
+                  .ComputeHash(Encoding.GetEncoding(1252).GetBytes(value))
                   .Select(item => item.ToString("x2")));
             }
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        public static string MD5ListHash<T>(IEnumerable<T> list)
+        {
+
+            Type type = typeof(T);
+            IEnumerable<PropertyInfo> props = type.GetProperties().Where(p => HasAttribute<Column>(p));
+
+            List<string> rows = new List<string>();
+            foreach (T item in list)
+            {
+
+                List<object> values = new List<object>();
+                foreach (PropertyInfo prop in props)
+                {
+                    object v = prop.GetValue(item);
+                    if (v != null && (prop.PropertyType == typeof(DateTime) || prop.PropertyType == typeof(DateTime?)))
+                        values.Add(((DateTime)v).ToString("MM/dd/yyyy H:mm:ss"));
+                    else
+                        values.Add(v);
+                }
+                rows.Add(MD5(string.Join(",", values)).ToUpper());
+
+            }
+
+            string joined = string.Join(",", rows);
+            return MD5(joined).ToUpper();
 
         }
 
@@ -1328,7 +1422,7 @@ namespace Cocoon.ORM
             conn.Open();
 
         }
-        
+
         internal int update<T>(TableDefinition def, object values, IEnumerable<MemberInfo> properties, int timeout, Expression<Func<T, bool>> where = null)
         {
 
@@ -1337,7 +1431,7 @@ namespace Cocoon.ORM
             {
 
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                
+
                 //columns to select
                 List<string> columnsToUpdate = new List<string>();
                 List<string> primaryKeys = new List<string>();
@@ -1467,7 +1561,12 @@ namespace Cocoon.ORM
 
         }
 
-        internal static string getName(MemberInfo member)
+        /// <summary>
+        /// Retrieves the name of member
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        public static string getName(MemberInfo member)
         {
 
             string name = member.Name;
@@ -1478,7 +1577,12 @@ namespace Cocoon.ORM
 
         }
 
-        internal static string getObjectName(MemberInfo member)
+        /// <summary>
+        /// Retrieves object name of member
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        public static string getObjectName(MemberInfo member)
         {
 
             return getObjectName(getName(member));
@@ -1555,7 +1659,8 @@ namespace Cocoon.ORM
                 else if (attr.joinType == JoinType.FULL_OUTER)
                     joinPart = "full outer join";
 
-                joinClauseList.Add("{joinPart} {otherModel} as {alias} on {model}.{key} = {alias}.{otherKey}".Inject(new {
+                joinClauseList.Add("{joinPart} {otherModel} as {alias} on {model}.{key} = {alias}.{otherKey}".Inject(new
+                {
 
                     joinPart = joinPart,
                     model = tableObjectName,
@@ -1569,7 +1674,7 @@ namespace Cocoon.ORM
                     alias,
                     attr.FieldInOtherTableModel ?? foreignField,
                     foreignField));
-                
+
             }
 
             return string.Join("\r\n", joinClauseList);
