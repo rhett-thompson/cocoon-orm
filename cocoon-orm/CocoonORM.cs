@@ -309,6 +309,35 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="objectToDelete"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public int Delete(object objectToDelete, int timeout = -1)
+        {
+
+            TableDefinition def = getTable(objectToDelete.GetType());
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
+
+                List<string> primaryKeys = new List<string>();
+                foreach(PropertyInfo key in def.primaryKeys)
+                    primaryKeys.Add("{key} = {value}".Inject(new { key = getObjectName(key), value = addWhereParam(cmd, key.GetValue(objectToDelete)) }));
+                
+                cmd.CommandText = "delete from {model} where {where}".Inject(new { model = def.objectName, where = string.Join(" and ", primaryKeys) });
+
+                conn.Open();
+                return cmd.ExecuteNonQuery();
+
+            }
+
+        }
+
+        /// <summary>
         /// Updates records in a table
         /// </summary>
         /// <typeparam name="T">Table model to use in the where clause</typeparam>
@@ -549,6 +578,7 @@ namespace Cocoon.ORM
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="where"></param>
+        /// <param name="top"></param>
         /// <param name="timeout"></param>
         /// <returns></returns>
         public string MD5HashInDB<T>(Expression<Func<T, bool>> where = null, int top = 0, int timeout = -1)
