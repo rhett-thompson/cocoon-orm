@@ -904,12 +904,12 @@ namespace Cocoon.ORM
                     return Activator.CreateInstance(conversionType);
                 else
                     return null;
+            
+            if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+                conversionType = Nullable.GetUnderlyingType(conversionType);
 
             if (value.GetType() == conversionType)
                 return value;
-
-            if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
-                conversionType = Nullable.GetUnderlyingType(conversionType);
 
             try
             {
@@ -918,7 +918,6 @@ namespace Cocoon.ORM
             catch
             {
                 return Convert.ChangeType(value, conversionType);
-
             }
 
         }

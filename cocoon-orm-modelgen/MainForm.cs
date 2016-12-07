@@ -163,9 +163,9 @@ namespace Cocoon.ORM.ModelGen
 
                 db = new CocoonORM(ConnectionStringComboBox.Text);
 
-                PingReply reply = db.Ping();
+                //PingReply reply = db.Ping();
                 
-                tables = db.ExecuteSQLList<SysTable>("select name, object_id from sys.tables order by Name");
+                tables = db.ExecuteSQLList<SysTable>("select name, object_id from sys.tables order by Name", null, 5);
 
                 if(!Settings.Default.ConnectionStrings.Contains(ConnectionStringComboBox.Text))
                 {
@@ -177,9 +177,9 @@ namespace Cocoon.ORM.ModelGen
                 listTables();
 
             }
-            catch
+            catch(Exception ex)
             {
-                MessageBox.Show("Failed to connect");
+                MessageBox.Show("Failed to connect: " + ex);
             }
 
             Cursor = Cursors.Default;
