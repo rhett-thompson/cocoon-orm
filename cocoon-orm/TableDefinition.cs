@@ -8,7 +8,6 @@ namespace Cocoon.ORM
     {
 
         internal List<MemberInfo> columns = new List<MemberInfo>();
-        internal List<MemberInfo> foreignColumns = new List<MemberInfo>();
         internal List<MemberInfo> primaryKeys = new List<MemberInfo>();
 
         internal string objectName;

@@ -17,7 +17,7 @@ using StringInject;
 
 namespace Cocoon.ORM
 {
-
+    
     /// <summary>
     /// Database connection
     /// </summary>
@@ -67,6 +67,41 @@ namespace Cocoon.ORM
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="LeftTableModelT"></typeparam>
+        /// <typeparam name="RightTableModelT"></typeparam>
+        /// <typeparam name="KeyT"></typeparam>
+        /// <typeparam name="RightTableModelFieldT"></typeparam>
+        /// <param name="foreignKey"></param>
+        /// <param name="primaryKey"></param>
+        /// <param name="rightField"></param>
+        /// <param name="thisField"></param>
+        /// <param name="joinType"></param>
+        /// <returns></returns>
+        public static JoinDef Join<LeftTableModelT, RightTableModelT, KeyT, RightTableModelFieldT>(
+            Expression<Func<LeftTableModelT, KeyT>> foreignKey,
+            Expression<Func<RightTableModelT, KeyT>> primaryKey,
+            Expression<Func<RightTableModelT, RightTableModelFieldT>> rightField,
+            Expression<Func<LeftTableModelT, RightTableModelFieldT>> thisField,
+            JoinType joinType = JoinType.LEFT)
+        {
+
+            return new JoinDef()
+            {
+
+                RightTable = getObjectName(typeof(RightTableModelT)),
+                LeftKey = getObjectName(((MemberExpression)foreignKey.Body).Member),
+                RightKey = getObjectName(((MemberExpression)primaryKey.Body).Member),
+                RightField = getObjectName(((MemberExpression)rightField.Body).Member),
+                ThisField = ((MemberExpression)thisField.Body).Member,
+                JoinType = joinType
+
+            };
+
+        }
+
         #region Database Methods
 
         /// <summary>
@@ -75,12 +110,13 @@ namespace Cocoon.ORM
         /// <typeparam name="T">Table model</typeparam>
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
+        /// <param name="joins">The joins to apply</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, int timeout = -1)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, int timeout = -1)
         {
 
-            return GetList(typeof(T), where, top, timeout).Cast<T>();
+            return GetList(typeof(T), where, top, joins, timeout).Cast<T>();
 
         }
 
@@ -91,9 +127,10 @@ namespace Cocoon.ORM
         /// <param name="model">Table model type</param>
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
+        /// <param name="joins">The joins to apply</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, int timeout = -1)
+        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, int timeout = -1)
         {
 
             TableDefinition def = getTable(model);
@@ -103,8 +140,8 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, def.foreignColumns, top, where);
-                readList(cmd, model, list);
+                select(conn, cmd, def.objectName, def.columns, joins, top, where);
+                readList(cmd, model, list, joins);
             }
 
             return list;
@@ -122,6 +159,7 @@ namespace Cocoon.ORM
         /// <param name="inWhere"></param>
         /// <param name="where"></param>
         /// <param name="top"></param>
+        /// <param name="joins">The joins to apply</param>
         /// <param name="timeout"></param>
         /// <returns></returns>
         public IEnumerable<ModelT> GetListIn<ModelT, InModelT, FieldT>(
@@ -130,6 +168,7 @@ namespace Cocoon.ORM
             Expression<Func<InModelT, bool>> inWhere = null,
             Expression<Func<ModelT, bool>> where = null,
             int top = 0,
+            JoinDef[] joins = null,
             int timeout = -1)
         {
 
@@ -155,7 +194,7 @@ namespace Cocoon.ORM
                     throw new Exception("No columns to select");
 
                 //generate join clause
-                string joinClause = generateJoinClause(modelDef.objectName, columnsToSelect, modelDef.foreignColumns);
+                string joinClause = generateJoinClause(modelDef.objectName, columnsToSelect, joins);
 
                 //generate where clauses
                 string modelWhereClause = generateWhereClause(cmd, modelDef.objectName, where, false);
@@ -183,7 +222,7 @@ namespace Cocoon.ORM
                 //execute sql
                 conn.Open();
 
-                readList(cmd, model, list);
+                readList(cmd, model, list, joins);
             }
 
             return list.Cast<ModelT>();
@@ -195,9 +234,10 @@ namespace Cocoon.ORM
         /// </summary>
         /// <typeparam name="T">Table model</typeparam>
         /// <param name="where">Where expression to use for the query</param>
+        /// <param name="joins">The joins to apply</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>An object of type T with the result</returns>
-        public T GetSingle<T>(Expression<Func<T, bool>> where, int timeout = -1)
+        public T GetSingle<T>(Expression<Func<T, bool>> where, JoinDef[] joins = null, int timeout = -1)
         {
 
             TableDefinition def = getTable(typeof(T));
@@ -206,8 +246,8 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, def.foreignColumns, 1, where);
-                return readSingle<T>(cmd);
+                select(conn, cmd, def.objectName, def.columns, joins, 1, where);
+                return readSingle<T>(cmd, joins);
             }
 
         }
@@ -325,9 +365,9 @@ namespace Cocoon.ORM
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
 
                 List<string> primaryKeys = new List<string>();
-                foreach(PropertyInfo key in def.primaryKeys)
+                foreach (PropertyInfo key in def.primaryKeys)
                     primaryKeys.Add("{key} = {value}".Inject(new { key = getObjectName(key), value = addWhereParam(cmd, key.GetValue(objectToDelete)) }));
-                
+
                 cmd.CommandText = "delete from {model} where {where}".Inject(new { model = def.objectName, where = string.Join(" and ", primaryKeys) });
 
                 conn.Open();
@@ -565,7 +605,7 @@ namespace Cocoon.ORM
                 conn.Open();
 
                 List<object> list = new List<object>();
-                readList(cmd, def.type, list);
+                readList(cmd, def.type, list, null);
 
                 return list.Cast<T>();
 
@@ -660,7 +700,7 @@ namespace Cocoon.ORM
                 if (isScalar)
                     readScalarList(cmd, list);
                 else
-                    readList(cmd, typeof(T), list);
+                    readList(cmd, typeof(T), list, null);
 
             }
 
@@ -693,7 +733,7 @@ namespace Cocoon.ORM
                 if (isScalar)
                     return readScalar<T>(cmd);
                 else
-                    return readSingle<T>(cmd);
+                    return readSingle<T>(cmd, null);
 
             }
 
@@ -787,7 +827,7 @@ namespace Cocoon.ORM
                 if (isScalar)
                     readScalarList(cmd, list);
                 else
-                    readList(cmd, typeof(T), list);
+                    readList(cmd, typeof(T), list, null);
 
             }
 
@@ -821,7 +861,7 @@ namespace Cocoon.ORM
                 if (isScalar)
                     return readScalar<T>(cmd);
                 else
-                    return readSingle<T>(cmd);
+                    return readSingle<T>(cmd, null);
 
             }
 
@@ -884,7 +924,7 @@ namespace Cocoon.ORM
         }
 
         #endregion
-         
+
         #region Utilities
 
         internal const string base36Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -904,7 +944,7 @@ namespace Cocoon.ORM
                     return Activator.CreateInstance(conversionType);
                 else
                     return null;
-            
+
             if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
                 conversionType = Nullable.GetUnderlyingType(conversionType);
 
@@ -1205,8 +1245,9 @@ namespace Cocoon.ORM
         /// </summary>
         /// <param name="objectToSet"></param>
         /// <param name="reader"></param>
+        /// <param name="joins"></param>
         /// <returns></returns>
-        public static object SetFromReader(object objectToSet, IDataReader reader)
+        public static object SetFromReader(object objectToSet, IDataReader reader, JoinDef[] joins)
         {
 
             Type type = objectToSet.GetType();
@@ -1217,8 +1258,8 @@ namespace Cocoon.ORM
             {
 
                 string propName;
-
-                if (HasAttribute<ForeignColumn>(prop))
+                
+                if (joins != null && joins.Any(j => j.ThisField == prop))
                     propName = prop.Name;
                 else
                     propName = getName(prop);
@@ -1368,35 +1409,35 @@ namespace Cocoon.ORM
 
         }
 
-        internal void readList(SqlCommand cmd, Type type, List<object> list)
+        internal void readList(SqlCommand cmd, Type type, List<object> list, JoinDef[] joins)
         {
 
             using (SqlDataReader reader = cmd.ExecuteReader())
                 if (reader.HasRows)
                     while (reader.Read())
-                        list.Add(readObject(type, reader));
+                        list.Add(readObject(type, reader, joins));
 
         }
 
-        internal T readSingle<T>(SqlCommand cmd)
+        internal T readSingle<T>(SqlCommand cmd, JoinDef[] joins)
         {
 
             using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                 if (reader.HasRows)
                 {
                     reader.Read();
-                    return (T)readObject(typeof(T), reader);
+                    return (T)readObject(typeof(T), reader, joins);
                 }
 
             return default(T);
 
         }
 
-        internal object readObject(Type type, SqlDataReader reader)
+        internal object readObject(Type type, SqlDataReader reader, JoinDef[] joins)
         {
 
             object obj = Activator.CreateInstance(type);
-            SetFromReader(obj, reader);
+            SetFromReader(obj, reader, joins);
             return obj;
 
         }
@@ -1418,7 +1459,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal void select(SqlConnection conn, SqlCommand cmd, string tableObjectName, List<MemberInfo> columns, List<MemberInfo> foreignColumns, int top, Expression where)
+        internal void select(SqlConnection conn, SqlCommand cmd, string tableObjectName, List<MemberInfo> columns, JoinDef[] joins, int top, Expression where)
         {
 
             //get columns to select
@@ -1427,7 +1468,7 @@ namespace Cocoon.ORM
                 throw new Exception("No columns to select");
 
             //generate join clause
-            string joinClause = generateJoinClause(tableObjectName, columnsToSelect, foreignColumns);
+            string joinClause = generateJoinClause(tableObjectName, columnsToSelect, joins);
 
             //generate where clause
             string whereClause = generateWhereClause(cmd, tableObjectName, where);
@@ -1549,7 +1590,7 @@ namespace Cocoon.ORM
                 conn.Open();
 
                 if (HasAttribute<Table>(typeof(T)))
-                    return readSingle<T>(cmd);
+                    return readSingle<T>(cmd, null);
                 else
                     return readScalar<T>(cmd);
 
@@ -1572,10 +1613,7 @@ namespace Cocoon.ORM
 
                 if (HasAttribute<Column>(prop))
                     table.columns.Add(prop);
-
-                if (HasAttribute<ForeignColumn>(prop))
-                    table.foreignColumns.Add(prop);
-
+                
                 if (HasAttribute<PrimaryKey>(prop))
                     table.primaryKeys.Add(prop);
 
@@ -1664,28 +1702,24 @@ namespace Cocoon.ORM
 
         }
 
-        internal string generateJoinClause(string tableObjectName, List<string> columnsToSelect, List<MemberInfo> foreignColumns)
+        internal string generateJoinClause(string tableObjectName, List<string> columnsToSelect, JoinDef[] joins)
         {
 
-            if (foreignColumns == null || foreignColumns.Count == 0)
+            if (joins == null || joins.Length == 0)
                 return null;
 
             List<string> joinClauseList = new List<string>();
-            foreach (PropertyInfo foreignColumn in foreignColumns)
+            foreach (JoinDef join in joins)
             {
 
-                ForeignColumn attr = foreignColumn.GetCustomAttribute<ForeignColumn>();
-
-                string otherTableObjectName = getObjectName(attr.otherTableModel);
                 string alias = getObjectName(string.Format("join_table_{0}", getGuidString()));
-                string foreignField = getObjectName(foreignColumn);
 
                 string joinPart = "join";
-                if (attr.joinType == JoinType.LEFT)
+                if (join.JoinType == JoinType.LEFT)
                     joinPart = "left join";
-                else if (attr.joinType == JoinType.RIGHT)
+                else if (join.JoinType == JoinType.RIGHT)
                     joinPart = "right join";
-                else if (attr.joinType == JoinType.FULL_OUTER)
+                else if (join.JoinType == JoinType.FULL_OUTER)
                     joinPart = "full outer join";
 
                 joinClauseList.Add("{joinPart} {otherModel} as {alias} on {model}.{key} = {alias}.{otherKey}".Inject(new
@@ -1693,25 +1727,22 @@ namespace Cocoon.ORM
 
                     joinPart = joinPart,
                     model = tableObjectName,
-                    otherModel = otherTableObjectName,
+                    otherModel = join.RightTable,
                     alias = alias,
-                    key = attr.KeyInThisTableModel,
-                    otherKey = attr.KeyInOtherTableModel
+                    key = join.LeftKey,
+                    otherKey = join.RightKey
                 }));
 
                 columnsToSelect.Add(string.Format("{0}.{1} as {2}",
                     alias,
-                    attr.FieldInOtherTableModel ?? foreignField,
-                    foreignField));
+                    join.RightField,
+                    getObjectName(join.ThisField)));
 
             }
 
             return string.Join("\r\n", joinClauseList);
-
-
-
         }
-
+        
         internal static readonly Dictionary<Type, string> dbTypeMap = new Dictionary<Type, string>
         {
             {typeof(Int64), "bigint"},
@@ -1755,4 +1786,71 @@ namespace Cocoon.ORM
         #endregion
 
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class JoinDef
+    {
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string RightTable;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string LeftKey;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string RightKey;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string RightField;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public MemberInfo ThisField;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public JoinType JoinType;
+
+    }
+
+    /// <summary>
+    /// Defines a type of join
+    /// </summary>
+    public enum JoinType
+    {
+
+        /// <summary>
+        /// Left join
+        /// </summary>
+        LEFT,
+
+        /// <summary>
+        /// Inner join
+        /// </summary>
+        INNER,
+
+        /// <summary>
+        /// Right join
+        /// </summary>
+        RIGHT,
+
+        /// <summary>
+        /// Full outer join
+        /// </summary>
+        FULL_OUTER
+
+    }
+
 }
