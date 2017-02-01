@@ -17,7 +17,7 @@ using StringInject;
 
 namespace Cocoon.ORM
 {
-    
+
     /// <summary>
     /// Database connection
     /// </summary>
@@ -68,7 +68,7 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// 
+        /// Defines a JOIN operation.
         /// </summary>
         /// <typeparam name="LeftTableModelT"></typeparam>
         /// <typeparam name="RightTableModelT"></typeparam>
@@ -76,15 +76,15 @@ namespace Cocoon.ORM
         /// <typeparam name="RightTableModelFieldT"></typeparam>
         /// <param name="foreignKey"></param>
         /// <param name="primaryKey"></param>
-        /// <param name="rightField"></param>
-        /// <param name="thisField"></param>
+        /// <param name="fieldToSelect"></param>
+        /// <param name="fieldToRecieve"></param>
         /// <param name="joinType"></param>
         /// <returns></returns>
         public static JoinDef Join<LeftTableModelT, RightTableModelT, KeyT, RightTableModelFieldT>(
             Expression<Func<LeftTableModelT, KeyT>> foreignKey,
             Expression<Func<RightTableModelT, KeyT>> primaryKey,
-            Expression<Func<RightTableModelT, RightTableModelFieldT>> rightField,
-            Expression<Func<LeftTableModelT, RightTableModelFieldT>> thisField,
+            Expression<Func<RightTableModelT, RightTableModelFieldT>> fieldToSelect,
+            Expression<Func<LeftTableModelT, RightTableModelFieldT>> fieldToRecieve,
             JoinType joinType = JoinType.LEFT)
         {
 
@@ -94,8 +94,50 @@ namespace Cocoon.ORM
                 RightTable = getObjectName(typeof(RightTableModelT)),
                 LeftKey = getObjectName(((MemberExpression)foreignKey.Body).Member),
                 RightKey = getObjectName(((MemberExpression)primaryKey.Body).Member),
-                RightField = getObjectName(((MemberExpression)rightField.Body).Member),
-                ThisField = ((MemberExpression)thisField.Body).Member,
+                FieldToSelect = getObjectName(((MemberExpression)fieldToSelect.Body).Member),
+                FieldToRecieve = ((MemberExpression)fieldToRecieve.Body).Member,
+                JoinType = joinType
+
+            };
+
+        }
+
+        /// <summary>
+        /// Defines a JOIN operation.
+        /// </summary>
+        /// <typeparam name="LeftTableModelT"></typeparam>
+        /// <typeparam name="RightTableModelT"></typeparam>
+        /// <typeparam name="RightTableModelFieldT"></typeparam>
+        /// <param name="fieldToSelect"></param>
+        /// <param name="fieldToRecieve"></param>
+        /// <param name="joinType"></param>
+        /// <returns></returns>
+        public static JoinDef Join<LeftTableModelT, RightTableModelT, RightTableModelFieldT>(
+            Expression<Func<RightTableModelT, RightTableModelFieldT>> fieldToSelect,
+            Expression<Func<LeftTableModelT, RightTableModelFieldT>> fieldToRecieve,
+            JoinType joinType = JoinType.LEFT)
+        {
+
+            Type leftType = typeof(LeftTableModelT);
+            Type rightType = typeof(RightTableModelT);
+
+            PropertyInfo leftPrimaryKey = leftType.GetProperties().Where(p => HasAttribute<PrimaryKey>(p)).FirstOrDefault();
+            PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => HasAttribute<PrimaryKey>(p)).FirstOrDefault();
+
+            if (leftPrimaryKey == null)
+                throw new Exception("Left table missing primary key attribute.");
+
+            if (rightPrimaryKey == null)
+                throw new Exception("Right table missing primary key attribute.");
+
+            return new JoinDef()
+            {
+
+                RightTable = getObjectName(typeof(RightTableModelT)),
+                LeftKey = getObjectName(leftPrimaryKey),
+                RightKey = getObjectName(rightPrimaryKey),
+                FieldToSelect = getObjectName(((MemberExpression)fieldToSelect.Body).Member),
+                FieldToRecieve = ((MemberExpression)fieldToRecieve.Body).Member,
                 JoinType = joinType
 
             };
@@ -1258,8 +1300,8 @@ namespace Cocoon.ORM
             {
 
                 string propName;
-                
-                if (joins != null && joins.Any(j => j.ThisField == prop))
+
+                if (joins != null && joins.Any(j => j.FieldToRecieve == prop))
                     propName = prop.Name;
                 else
                     propName = getName(prop);
@@ -1613,7 +1655,7 @@ namespace Cocoon.ORM
 
                 if (HasAttribute<Column>(prop))
                     table.columns.Add(prop);
-                
+
                 if (HasAttribute<PrimaryKey>(prop))
                     table.primaryKeys.Add(prop);
 
@@ -1735,14 +1777,14 @@ namespace Cocoon.ORM
 
                 columnsToSelect.Add(string.Format("{0}.{1} as {2}",
                     alias,
-                    join.RightField,
-                    getObjectName(join.ThisField)));
+                    join.FieldToSelect,
+                    getObjectName(join.FieldToRecieve)));
 
             }
 
             return string.Join("\r\n", joinClauseList);
         }
-        
+
         internal static readonly Dictionary<Type, string> dbTypeMap = new Dictionary<Type, string>
         {
             {typeof(Int64), "bigint"},
@@ -1811,12 +1853,12 @@ namespace Cocoon.ORM
         /// <summary>
         /// 
         /// </summary>
-        public string RightField;
+        public string FieldToSelect;
 
         /// <summary>
         /// 
         /// </summary>
-        public MemberInfo ThisField;
+        public MemberInfo FieldToRecieve;
 
         /// <summary>
         /// 
