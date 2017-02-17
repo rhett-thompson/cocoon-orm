@@ -39,6 +39,27 @@ namespace Cocoon.ORM
     {
 
     }
+
+    /// <summary>
+    /// Defines a custom column
+    /// </summary>
+    public class CustomColumn : Attribute
+    {
+
+        internal string sql;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="SQL"></param>
+        public CustomColumn(string SQL)
+        {
+
+            sql = SQL;
+
+        }
+
+    }
     
     /// <summary>
     /// Defines a column to be a primary key

@@ -13,7 +13,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using StringInject;
 
 namespace Cocoon.ORM
 {
@@ -42,6 +41,9 @@ namespace Cocoon.ORM
         /// <param name="connectionString">The connection string of the database to connect to</param>
         public CocoonORM(string connectionString)
         {
+
+            if (string.IsNullOrEmpty(connectionString))
+                throw new Exception("Invalid connection string.");
 
             ConnectionString = connectionString;
 
@@ -143,6 +145,32 @@ namespace Cocoon.ORM
             };
 
         }
+        
+        /// <summary>
+        /// Returns the absolute name of a field in a table model; for use with custom columns.
+        /// </summary>
+        /// <typeparam name="ModelT"></typeparam>
+        /// <typeparam name="FieldT"></typeparam>
+        /// <param name="field"></param>
+        /// <returns></returns>
+        public static string GetObject<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> field)
+        {
+
+            return string.Format("{0}.{1}", getObjectName(typeof(ModelT)), getObjectName(((MemberExpression)field.Body).Member));
+
+        }
+
+        /// <summary>
+        /// Returns the name of a table model; for use with custom columns.
+        /// </summary>
+        /// <typeparam name="ModelT"></typeparam>
+        /// <returns></returns>
+        public static string GetObject<ModelT>()
+        {
+
+            return getObjectName(typeof(ModelT));
+
+        }
 
         #region Database Methods
 
@@ -153,12 +181,13 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
         /// <param name="joins">The joins to apply</param>
+        /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, int timeout = -1)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, object customParams = null, int timeout = -1)
         {
 
-            return GetList(typeof(T), where, top, joins, timeout).Cast<T>();
+            return GetList(typeof(T), where, top, joins, customParams, timeout).Cast<T>();
 
         }
 
@@ -170,9 +199,10 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
         /// <param name="joins">The joins to apply</param>
+        /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, int timeout = -1)
+        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, object customParams = null, int timeout = -1)
         {
 
             TableDefinition def = getTable(model);
@@ -182,7 +212,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, joins, top, where);
+                select(conn, cmd, def.objectName, def.columns, joins, def.customColumns, customParams, top, where);
                 readList(cmd, model, list, joins);
             }
 
@@ -277,9 +307,10 @@ namespace Cocoon.ORM
         /// <typeparam name="T">Table model</typeparam>
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="joins">The joins to apply</param>
+        /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>An object of type T with the result</returns>
-        public T GetSingle<T>(Expression<Func<T, bool>> where, JoinDef[] joins = null, int timeout = -1)
+        public T GetSingle<T>(Expression<Func<T, bool>> where, JoinDef[] joins = null, object customParams = null, int timeout = -1)
         {
 
             TableDefinition def = getTable(typeof(T));
@@ -288,7 +319,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, joins, 1, where);
+                select(conn, cmd, def.objectName, def.columns, joins, def.customColumns, customParams, 1, where);
                 return readSingle<T>(cmd, joins);
             }
 
@@ -313,7 +344,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, 1, where);
+                select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, null, null, 1, where);
                 return readScalar<FieldT>(cmd);
             }
 
@@ -341,7 +372,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, top, where);
+                select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, null, null, top, where);
                 readScalarList(cmd, list);
             }
 
@@ -437,6 +468,21 @@ namespace Cocoon.ORM
 
             return update(def, objectToUpdate, def.columns, timeout, where);
 
+
+        }
+
+        /// <summary>
+        /// Updates records in a table
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause</typeparam>
+        /// <param name="objectToUpdate">Object to update in the table. The table model is inferred from T.</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The number of records that were affected</returns>
+        public int Update<T>(T objectToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
+        {
+
+            return Update<T>((object)objectToUpdate, where, timeout);
 
         }
 
@@ -735,6 +781,7 @@ namespace Cocoon.ORM
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
                 addParamObject(cmd, parameters);
+                addParam(cmd, "table", getObjectName(typeof(T)));
 
                 cmd.CommandText = sql;
                 conn.Open();
@@ -768,6 +815,7 @@ namespace Cocoon.ORM
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
                 addParamObject(cmd, parameters);
+                addParam(cmd, "table", getObjectName(typeof(T)));
 
                 cmd.CommandText = sql;
                 conn.Open();
@@ -797,7 +845,6 @@ namespace Cocoon.ORM
 
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
                 addParamObject(cmd, parameters);
-
                 cmd.CommandText = sql;
                 conn.Open();
 
@@ -824,7 +871,6 @@ namespace Cocoon.ORM
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
 
                 addParamObject(cmd, parameters);
-
                 cmd.CommandText = sql;
 
                 using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
@@ -1501,13 +1547,33 @@ namespace Cocoon.ORM
 
         }
 
-        internal void select(SqlConnection conn, SqlCommand cmd, string tableObjectName, List<MemberInfo> columns, JoinDef[] joins, int top, Expression where)
+        internal void select(SqlConnection conn, SqlCommand cmd, string tableObjectName, List<MemberInfo> columns, JoinDef[] joins, List<MemberInfo> customColumns, object customParams, int top, Expression where)
         {
 
             //get columns to select
             List<string> columnsToSelect = columns.Where(c => !HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", tableObjectName, getObjectName(c))).ToList();
             if (columnsToSelect.Count == 0)
                 throw new Exception("No columns to select");
+
+            //handle custom columns
+            if (customColumns != null && customColumns.Count > 0)
+            {
+
+                addParam(cmd, "table", tableObjectName);
+
+                if (customParams != null)
+                    addParamObject(cmd, customParams);
+
+                foreach (MemberInfo customColumn in customColumns)
+                {
+
+                    CustomColumn attr = customColumn.GetCustomAttribute<CustomColumn>();
+                    
+                    columnsToSelect.Add(string.Format("({0}) as {1}", attr.sql, getObjectName(customColumn)));
+
+                }
+
+            }
 
             //generate join clause
             string joinClause = generateJoinClause(tableObjectName, columnsToSelect, joins);
@@ -1653,12 +1719,18 @@ namespace Cocoon.ORM
             foreach (var prop in type.GetProperties())
             {
 
+                if (HasAttribute<CustomColumn>(prop))
+                {
+                    table.customColumns.Add(prop);
+                    continue;
+                }
+
                 if (HasAttribute<Column>(prop))
                     table.columns.Add(prop);
 
                 if (HasAttribute<PrimaryKey>(prop))
                     table.primaryKeys.Add(prop);
-
+                
             }
 
             if (table.columns.Count == 0 && table.primaryKeys.Count == 0)
