@@ -212,7 +212,7 @@ IEnumerable<Customer> list = db.GetList(predicates);
 | GenerateSequentialUID | Generates a sequential Base36 unique identifier. |
 | SHA256 | Creates an SHA256 hash of a string. |
 | MD5 | Creates an MD5 hash of a string. |
-| MD5 | Creates an MD5 hash of a list of objects. |
+| MD5ListHash | Creates an MD5 hash of a list of objects. |
 | CompressString | Compresses a string using GZip. |
 | DecompressString | Decompresses a string using GZip. |
 | Base36Decode | Decode Base36 string. |
