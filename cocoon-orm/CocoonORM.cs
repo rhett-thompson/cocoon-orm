@@ -1567,7 +1567,7 @@ namespace Cocoon.ORM
                 foreach (MemberInfo customColumn in customColumns)
                 {
 
-                    CustomColumn attr = customColumn.GetCustomAttribute<CustomColumn>();
+                    AggSQLColumn attr = customColumn.GetCustomAttribute<AggSQLColumn>();
                     
                     columnsToSelect.Add(string.Format("({0}) as {1}", attr.sql, getObjectName(customColumn)));
 
@@ -1719,7 +1719,7 @@ namespace Cocoon.ORM
             foreach (var prop in type.GetProperties())
             {
 
-                if (HasAttribute<CustomColumn>(prop))
+                if (HasAttribute<AggSQLColumn>(prop))
                 {
                     table.customColumns.Add(prop);
                     continue;
