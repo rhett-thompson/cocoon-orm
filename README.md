@@ -92,8 +92,13 @@ class Order
     [Column, IgnoreOnInsert, IgnoreOnUpdate]
     public DateTime CreateDate { get; set; }
     
-    [ForeignColumn(KeyInThisTableModel: "CustomerID", OtherTableModel:typeof(Customer), FieldInOtherTableModel:"FirstName")]
     public string CustomerFirstName { get; set; }
+    
+    public static JoinDef[] joins = new JoinDef[] {
+
+        CocoonORM.Join<Order, Customer, string>(customer => customer.FirstName, order => order.CustomerFirstName)
+        
+    };
     
 }
 ```
@@ -115,7 +120,20 @@ CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid=
 | IgnoreOnUpdate  | Tells Cocoon to ignore this column in update.  |
 | IgnoreOnSelect  | Tells Cocoon to ignore this column on data retrieval operations.  |
 | OverrideName  | Overrides the name of this column.  |
-| ForeignColumn  | Signifies that this field should be set from a table/object other than this one; based on a foreign key in this class/table.  |
+| AggSQLField  | Signifies that this field should include aggregation SQL (```sql select count(*) from ForeignTable where ForeignTable.Key = ThisTable.ForeignKey```). |
+
+## Foreign Joins
+Columns from foreign table can be joined into a table model on select operations.  The preferred way to do this is to add a static JoinDef member to your table model class that you can pass to select queries.  You can also use an array if you have multiple joins that you pass each query.
+```cs
+
+public static JoinDef[] joins = new JoinDef[] {
+
+    CocoonORM.Join<ThisTable, ForeignTable, KeyType, FieldType>(foreignTable => foreignTable.PrimaryKey, thisTable => thisTable.ForeignKey, foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField),
+    CocoonORM.Join<ThisTable, ForeignTable, FieldType>(foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField)
+
+};
+
+```
 
 ## Basic Example
 This is a minimal example.
@@ -131,7 +149,7 @@ Basic CRUD operations
 Customer newCustomer = db.Insert(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
 
 //retrieve a single customer from the database
-Customer someCustomer = db.GetSingle<Customer>(where: c => c.CustomerID == newCustomer.CustomerID });
+Customer someCustomer = db.GetSingle<Customer>(where: c => c.CustomerID == newCustomer.CustomerID, joins: Customer.joins);
 
 //change the customers last name
 someCustomer.LastName = "barker";
@@ -194,6 +212,7 @@ IEnumerable<Customer> list = db.GetList(predicates);
 | GenerateSequentialUID | Generates a sequential Base36 unique identifier. |
 | SHA256 | Creates an SHA256 hash of a string. |
 | MD5 | Creates an MD5 hash of a string. |
+| MD5 | Creates an MD5 hash of a list of objects. |
 | CompressString | Compresses a string using GZip. |
 | DecompressString | Decompresses a string using GZip. |
 | Base36Decode | Decode Base36 string. |
