@@ -74,19 +74,17 @@ namespace Cocoon.ORM
         /// </summary>
         /// <typeparam name="LeftTableModelT"></typeparam>
         /// <typeparam name="RightTableModelT"></typeparam>
-        /// <typeparam name="KeyT"></typeparam>
-        /// <typeparam name="RightTableModelFieldT"></typeparam>
         /// <param name="foreignKey"></param>
         /// <param name="primaryKey"></param>
         /// <param name="fieldToSelect"></param>
         /// <param name="fieldToRecieve"></param>
         /// <param name="joinType"></param>
         /// <returns></returns>
-        public static JoinDef Join<LeftTableModelT, RightTableModelT, KeyT, RightTableModelFieldT>(
-            Expression<Func<LeftTableModelT, KeyT>> foreignKey,
-            Expression<Func<RightTableModelT, KeyT>> primaryKey,
-            Expression<Func<RightTableModelT, RightTableModelFieldT>> fieldToSelect,
-            Expression<Func<LeftTableModelT, RightTableModelFieldT>> fieldToRecieve,
+        public static JoinDef Join<LeftTableModelT, RightTableModelT>(
+            Expression<Func<LeftTableModelT, object>> foreignKey,
+            Expression<Func<RightTableModelT, object>> primaryKey,
+            Expression<Func<RightTableModelT, object>> fieldToSelect,
+            Expression<Func<LeftTableModelT, object>> fieldToRecieve,
             JoinType joinType = JoinType.LEFT)
         {
 
@@ -94,10 +92,10 @@ namespace Cocoon.ORM
             {
 
                 RightTable = getObjectName(typeof(RightTableModelT)),
-                LeftKey = getObjectName(((MemberExpression)foreignKey.Body).Member),
-                RightKey = getObjectName(((MemberExpression)primaryKey.Body).Member),
-                FieldToSelect = getObjectName(((MemberExpression)fieldToSelect.Body).Member),
-                FieldToRecieve = ((MemberExpression)fieldToRecieve.Body).Member,
+                LeftKey = getObjectName(getExpressionProp(foreignKey)),
+                RightKey = getObjectName(getExpressionProp(primaryKey)),
+                FieldToSelect = getObjectName(getExpressionProp(fieldToSelect)),
+                FieldToRecieve = getExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
@@ -109,14 +107,13 @@ namespace Cocoon.ORM
         /// </summary>
         /// <typeparam name="LeftTableModelT"></typeparam>
         /// <typeparam name="RightTableModelT"></typeparam>
-        /// <typeparam name="RightTableModelFieldT"></typeparam>
         /// <param name="fieldToSelect"></param>
         /// <param name="fieldToRecieve"></param>
         /// <param name="joinType"></param>
         /// <returns></returns>
-        public static JoinDef Join<LeftTableModelT, RightTableModelT, RightTableModelFieldT>(
-            Expression<Func<RightTableModelT, RightTableModelFieldT>> fieldToSelect,
-            Expression<Func<LeftTableModelT, RightTableModelFieldT>> fieldToRecieve,
+        public static JoinDef Join<LeftTableModelT, RightTableModelT>(
+            Expression<Func<RightTableModelT, object>> fieldToSelect,
+            Expression<Func<LeftTableModelT, object>> fieldToRecieve,
             JoinType joinType = JoinType.LEFT)
         {
 
@@ -138,25 +135,24 @@ namespace Cocoon.ORM
                 RightTable = getObjectName(typeof(RightTableModelT)),
                 LeftKey = getObjectName(leftPrimaryKey),
                 RightKey = getObjectName(rightPrimaryKey),
-                FieldToSelect = getObjectName(((MemberExpression)fieldToSelect.Body).Member),
-                FieldToRecieve = ((MemberExpression)fieldToRecieve.Body).Member,
+                FieldToSelect = getObjectName(getExpressionProp(fieldToSelect)),
+                FieldToRecieve = getExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
 
         }
-        
+
         /// <summary>
         /// Returns the absolute name of a field in a table model; for use with custom columns.
         /// </summary>
         /// <typeparam name="ModelT"></typeparam>
-        /// <typeparam name="FieldT"></typeparam>
         /// <param name="field"></param>
         /// <returns></returns>
-        public static string GetObject<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> field)
+        public static string GetObject<ModelT>(Expression<Func<ModelT, object>> field)
         {
 
-            return string.Format("{0}.{1}", getObjectName(typeof(ModelT)), getObjectName(((MemberExpression)field.Body).Member));
+            return string.Format("{0}.{1}", getObjectName(typeof(ModelT)), getObjectName(getExpressionProp(field)));
 
         }
 
@@ -225,7 +221,6 @@ namespace Cocoon.ORM
         /// </summary>
         /// <typeparam name="ModelT"></typeparam>
         /// <typeparam name="InModelT"></typeparam>
-        /// <typeparam name="FieldT"></typeparam>
         /// <param name="modelKey"></param>
         /// <param name="inModelKey"></param>
         /// <param name="inWhere"></param>
@@ -234,9 +229,9 @@ namespace Cocoon.ORM
         /// <param name="joins">The joins to apply</param>
         /// <param name="timeout"></param>
         /// <returns></returns>
-        public IEnumerable<ModelT> GetListIn<ModelT, InModelT, FieldT>(
-            Expression<Func<ModelT, FieldT>> modelKey,
-            Expression<Func<ModelT, FieldT>> inModelKey,
+        public IEnumerable<ModelT> GetListIn<ModelT, InModelT>(
+            Expression<Func<ModelT, object>> modelKey,
+            Expression<Func<ModelT, object>> inModelKey,
             Expression<Func<InModelT, bool>> inWhere = null,
             Expression<Func<ModelT, bool>> where = null,
             int top = 0,
@@ -246,9 +241,6 @@ namespace Cocoon.ORM
 
             Type model = typeof(ModelT);
             Type inModel = typeof(InModelT);
-
-            MemberExpression modelKeyExpression = (MemberExpression)modelKey.Body;
-            MemberExpression inModelKeyExpression = (MemberExpression)inModelKey.Body;
 
             TableDefinition modelDef = getTable(model);
             TableDefinition inModelDef = getTable(inModel);
@@ -285,8 +277,8 @@ namespace Cocoon.ORM
                     inModel = inModelDef.objectName,
                     columns = string.Join(", ", columnsToSelect),
                     joins = joinClause,
-                    modelKey = getObjectName(modelKeyExpression.Member),
-                    inModelKey = getObjectName(inModelKeyExpression.Member),
+                    modelKey = getObjectName(getExpressionProp(modelKey)),
+                    inModelKey = getObjectName(getExpressionProp(inModelKey)),
                     inModelWhere = inModelWhereClause,
                     modelWhere = modelWhereClause != null ? "and " + modelWhereClause : ""
                 });
@@ -334,17 +326,17 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>The value of the selected field</returns>
-        public FieldT GetScalar<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
+        public FieldT GetScalar<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
         {
 
-            MemberExpression expression = (MemberExpression)fieldToSelect.Body;
-            TableDefinition def = getTable(expression.Member.DeclaringType);
+            TableDefinition def = getTable(typeof(ModelT));
+            PropertyInfo prop = getExpressionProp(fieldToSelect);
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, null, null, 1, where);
+                select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, 1, where);
                 return readScalar<FieldT>(cmd);
             }
 
@@ -360,11 +352,11 @@ namespace Cocoon.ORM
         /// <param name="top">Maximum number of rows to return</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of values for the selected field</returns>
-        public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, FieldT>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0, int timeout = -1)
+        public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0, int timeout = -1)
         {
 
-            MemberExpression expression = (MemberExpression)fieldToSelect.Body;
-            TableDefinition def = getTable(expression.Member.DeclaringType);
+            TableDefinition def = getTable(typeof(ModelT));
+            PropertyInfo prop = getExpressionProp(fieldToSelect);
 
             List<FieldT> list = new List<FieldT>();
 
@@ -372,7 +364,7 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, new List<MemberInfo>() { expression.Member }, null, null, null, top, where);
+                select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, top, where);
                 readScalarList(cmd, list);
             }
 
@@ -503,6 +495,28 @@ namespace Cocoon.ORM
             TableDefinition def = getTable(typeof(T));
 
             return update(def, fieldsToUpdate, fieldsToUpdate.GetType().GetProperties(), timeout, where);
+
+        }
+
+        /// <summary>
+        /// Update a single field in a table
+        /// </summary>
+        /// <typeparam name="ModelT">Table model to use</typeparam>
+        /// <param name="fieldToUpdate">Expression pick the field in the model to update</param>
+        /// <param name="value">The new value of the field</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns></returns>
+        public int UpdateField<ModelT>(Expression<Func<ModelT, object>> fieldToUpdate, object value, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
+        {
+
+            TableDefinition def = getTable(typeof(ModelT));
+            PropertyInfo prop = getExpressionProp(fieldToUpdate);
+
+            ModelT obj = Activator.CreateInstance<ModelT>();
+            prop.SetValue(obj, value);
+
+            return update(def, obj, new List<MemberInfo>() { prop }, timeout, where);
 
         }
 
@@ -1484,6 +1498,23 @@ namespace Cocoon.ORM
 
         #region Internal
 
+        internal static PropertyInfo getExpressionProp<ModelT>(Expression<Func<ModelT, object>> field)
+        {
+
+            MemberExpression member;
+
+            if (field.Body.GetType() == typeof(UnaryExpression))
+            {
+                UnaryExpression unary = (UnaryExpression)field.Body;
+                member = (MemberExpression)unary.Operand;
+            }
+            else
+                member = (MemberExpression)field.Body;
+
+            return (PropertyInfo)member.Member;
+
+        }
+
         internal void addParamObject(SqlCommand cmd, object parameters)
         {
 
@@ -1568,7 +1599,7 @@ namespace Cocoon.ORM
                 {
 
                     AggSQLColumn attr = customColumn.GetCustomAttribute<AggSQLColumn>();
-                    
+
                     columnsToSelect.Add(string.Format("({0}) as {1}", attr.sql, getObjectName(customColumn)));
 
                 }
@@ -1601,7 +1632,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal int update<T>(TableDefinition def, object values, IEnumerable<MemberInfo> properties, int timeout, Expression<Func<T, bool>> where = null)
+        internal int update<T>(TableDefinition def, object valueObject, IEnumerable<MemberInfo> properties, int timeout, Expression<Func<T, bool>> where = null)
         {
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
@@ -1619,7 +1650,7 @@ namespace Cocoon.ORM
 
                     if (!HasAttribute<IgnoreOnUpdate>(prop))
                     {
-                        object v = prop.GetValue(values);
+                        object v = prop.GetValue(valueObject);
                         if (v is string && string.IsNullOrEmpty((string)v))
                             v = null;
 
@@ -1629,7 +1660,7 @@ namespace Cocoon.ORM
 
                     if (HasAttribute<PrimaryKey>(prop) && where == null)
                     {
-                        SqlParameter param = addParam(cmd, "where_" + getGuidString(), prop.GetValue(values));
+                        SqlParameter param = addParam(cmd, "where_" + getGuidString(), prop.GetValue(valueObject));
                         primaryKeys.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
                     }
 
@@ -1730,7 +1761,7 @@ namespace Cocoon.ORM
 
                 if (HasAttribute<PrimaryKey>(prop))
                     table.primaryKeys.Add(prop);
-                
+
             }
 
             if (table.columns.Count == 0 && table.primaryKeys.Count == 0)
