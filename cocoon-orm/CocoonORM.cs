@@ -34,7 +34,7 @@ namespace Cocoon.ORM
         public int CommandTimeout = 15;
 
         internal Dictionary<Type, TableDefinition> tables = new Dictionary<Type, TableDefinition>();
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -477,27 +477,7 @@ namespace Cocoon.ORM
             return Update<T>((object)objectToUpdate, where, timeout);
 
         }
-
-        /// <summary>
-        /// Updates a subset of fields in a table
-        /// </summary>
-        /// <typeparam name="T">Table model to use in the where clause</typeparam>
-        /// <param name="fieldsToUpdate">An object containg the fields/values to update</param>
-        /// <param name="where">Where expression to use for the query</param>
-        /// <param name="timeout">Timeout in milliseconds of query</param>
-        /// <returns>The number of records that were affected</returns>
-        public int UpdatePartial<T>(object fieldsToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
-        {
-
-            if (fieldsToUpdate == null)
-                throw new NullReferenceException("fieldsToUpdate cannot be null.");
-
-            TableDefinition def = getTable(typeof(T));
-
-            return update(def, fieldsToUpdate, fieldsToUpdate.GetType().GetProperties(), timeout, where);
-
-        }
-
+        
         /// <summary>
         /// Update a single field in a table
         /// </summary>
@@ -507,7 +487,7 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns></returns>
-        public int UpdateField<ModelT>(Expression<Func<ModelT, object>> fieldToUpdate, object value, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
+        public int Update<ModelT>(Expression<Func<ModelT, object>> fieldToUpdate, object value, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
         {
 
             TableDefinition def = getTable(typeof(ModelT));
@@ -519,7 +499,7 @@ namespace Cocoon.ORM
             return update(def, obj, new List<MemberInfo>() { prop }, timeout, where);
 
         }
-
+        
         /// <summary>
         /// Inserts a single row into a table
         /// </summary>
