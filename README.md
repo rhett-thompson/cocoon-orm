@@ -123,13 +123,13 @@ CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid=
 | AggSQLField  | Signifies that this field should include aggregation SQL (```sql select count(*) from ForeignTable where ForeignTable.Key = ThisTable.ForeignKey```). |
 
 ## Foreign Joins
-Columns from foreign table can be joined into a table model on select operations.  The preferred way to do this is to add a static JoinDef member to your table model class that you can pass to select queries.  You can also use an array if you have multiple joins that you pass each query.
+Columns from foreign tables can be joined into a table model on select operations.  The preferred way to do this is to add a static JoinDef member to your table model class that you can pass to select queries.  You can also use an array if you have multiple joins that you pass each query.
 ```cs
 
 public static JoinDef[] joins = new JoinDef[] {
 
-    CocoonORM.Join<ThisTable, ForeignTable, KeyType, FieldType>(foreignTable => foreignTable.PrimaryKey, thisTable => thisTable.ForeignKey, foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField),
-    CocoonORM.Join<ThisTable, ForeignTable, FieldType>(foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField)
+    CocoonORM.Join<ThisTable, ForeignTable>(foreignTable => foreignTable.PrimaryKey, thisTable => thisTable.ForeignKey, foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField),
+    CocoonORM.Join<ThisTable, ForeignTable>(foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField)
 
 };
 
