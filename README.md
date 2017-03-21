@@ -23,7 +23,6 @@ Cocoon ORM is a simple .NET object-relational mapper alternative to Entity Frame
 
 ### Example Models
 ```cs
-[Table]
 class Customer
 {
     [Column, PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate]
@@ -77,7 +76,6 @@ class Customer
     
 }
 
-[Table]
 class Order
 {
     [Column, PrimaryKey, IgnoreOnInsert, IgnoreOnUpdate]
@@ -94,6 +92,7 @@ class Order
     
     public string CustomerFirstName { get; set; }
     
+    [Join]
     public static JoinDef[] joins = new JoinDef[] {
 
         CocoonORM.Join<Order, Customer, string>(customer => customer.FirstName, order => order.CustomerFirstName)
@@ -114,7 +113,7 @@ CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid=
 | Attribute  | Description |
 | ------------- | ------------- |
 | Column  | Signifies that a property in this class is mirrored as a field in the database   |
-| Table  | Signifies that this class is mirrored in the database as a table  |
+| Join  | This field contains a Join definition; must be a static JoinDef, or IEnumberable<JoinDef>.  |
 | PrimaryKey  | Signifies that this column/property is a primary key  |
 | IgnoreOnInsert  | Tells Cocoon to ignore this column when inserting objects/records; usually used for columns with default fields or identity columns that are automatically incremented etc.  |
 | IgnoreOnUpdate  | Tells Cocoon to ignore this column in update.  |
@@ -123,12 +122,13 @@ CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid=
 | AggSQLField  | Signifies that this field should include aggregation SQL (```sql select count(*) from ForeignTable where ForeignTable.Key = ThisTable.ForeignKey```). |
 
 ## Foreign Joins
-Columns from foreign tables can be joined into a table model on select operations.  The preferred way to do this is to add a static JoinDef member to your table model class that you can pass to select queries.  You can also use an array if you have multiple joins that you pass each query.
+Columns from foreign tables can be joined into a table model on select operations.  Just add a static array/IEnumerable of JoinDef instances and decorate the field with the [Join] attribute.
 ```cs
 
+[Join]
 public static JoinDef[] joins = new JoinDef[] {
 
-    CocoonORM.Join<ThisTable, ForeignTable>(foreignTable => foreignTable.PrimaryKey, thisTable => thisTable.ForeignKey, foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField),
+    CocoonORM.Join<ThisTable, ForeignTable>(thisTable => thisTable.ForeignKey, foreignTable => foreignTable.PrimaryKey, foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField),
     CocoonORM.Join<ThisTable, ForeignTable>(foreignTable => foreignTable.SourceField, thisTable => thisTable.DestinationField)
 
 };
@@ -149,7 +149,7 @@ Basic CRUD operations
 Customer newCustomer = db.Insert(new Customer() { LoginEmail = "customer@email.com", FirstName = "bob" });
 
 //retrieve a single customer from the database
-Customer someCustomer = db.GetSingle<Customer>(where: c => c.CustomerID == newCustomer.CustomerID, joins: Customer.joins);
+Customer someCustomer = db.GetSingle<Customer>(where: c => c.CustomerID == newCustomer.CustomerID);
 
 //change the customers last name
 someCustomer.LastName = "barker";
