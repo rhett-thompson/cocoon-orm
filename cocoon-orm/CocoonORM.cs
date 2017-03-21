@@ -34,7 +34,7 @@ namespace Cocoon.ORM
         public int CommandTimeout = 15;
 
         internal Dictionary<Type, TableDefinition> tables = new Dictionary<Type, TableDefinition>();
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -134,6 +134,46 @@ namespace Cocoon.ORM
 
                 RightTable = getObjectName(typeof(RightTableModelT)),
                 LeftKey = getObjectName(leftPrimaryKey),
+                RightKey = getObjectName(rightPrimaryKey),
+                FieldToSelect = getObjectName(getExpressionProp(fieldToSelect)),
+                FieldToRecieve = getExpressionProp(fieldToRecieve),
+                JoinType = joinType
+
+            };
+
+        }
+
+        /// <summary>
+        /// Defines a JOIN operation.
+        /// </summary>
+        /// <typeparam name="LeftTableModelT"></typeparam>
+        /// <typeparam name="RightTableModelT"></typeparam>
+        /// <param name="foreignKey"></param>
+        /// <param name="fieldToSelect"></param>
+        /// <param name="fieldToRecieve"></param>
+        /// <param name="joinType"></param>
+        /// <returns></returns>
+        public static JoinDef Join<LeftTableModelT, RightTableModelT>(
+            Expression<Func<LeftTableModelT, object>> foreignKey,
+            Expression<Func<RightTableModelT, object>> fieldToSelect,
+            Expression<Func<LeftTableModelT, object>> fieldToRecieve,
+            JoinType joinType = JoinType.LEFT
+            )
+        {
+
+            Type leftType = typeof(LeftTableModelT);
+            Type rightType = typeof(RightTableModelT);
+
+            PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => HasAttribute<PrimaryKey>(p)).FirstOrDefault();
+
+            if (rightPrimaryKey == null)
+                throw new Exception("Right table missing primary key attribute.");
+
+            return new JoinDef()
+            {
+
+                RightTable = getObjectName(typeof(RightTableModelT)),
+                LeftKey = getObjectName(getExpressionProp(foreignKey)),
                 RightKey = getObjectName(rightPrimaryKey),
                 FieldToSelect = getObjectName(getExpressionProp(fieldToSelect)),
                 FieldToRecieve = getExpressionProp(fieldToRecieve),
@@ -477,7 +517,7 @@ namespace Cocoon.ORM
             return Update<T>((object)objectToUpdate, where, timeout);
 
         }
-        
+
         /// <summary>
         /// Update a single field in a table
         /// </summary>
@@ -499,7 +539,7 @@ namespace Cocoon.ORM
             return update(def, obj, new List<MemberInfo>() { prop }, timeout, where);
 
         }
-        
+
         /// <summary>
         /// Inserts a single row into a table
         /// </summary>
