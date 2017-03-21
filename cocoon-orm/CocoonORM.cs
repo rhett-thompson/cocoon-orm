@@ -216,14 +216,13 @@ namespace Cocoon.ORM
         /// <typeparam name="T">Table model</typeparam>
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
-        /// <param name="joins">The joins to apply</param>
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, object customParams = null, int timeout = -1)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, int timeout = -1)
         {
 
-            return GetList(typeof(T), where, top, joins, customParams, timeout).Cast<T>();
+            return GetList(typeof(T), where, top, customParams, timeout).Cast<T>();
 
         }
 
@@ -234,11 +233,10 @@ namespace Cocoon.ORM
         /// <param name="model">Table model type</param>
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
-        /// <param name="joins">The joins to apply</param>
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, JoinDef[] joins = null, object customParams = null, int timeout = -1)
+        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, int timeout = -1)
         {
 
             TableDefinition def = getTable(model);
@@ -248,8 +246,8 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, joins, def.customColumns, customParams, top, where);
-                readList(cmd, model, list, joins);
+                select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, top, where);
+                readList(cmd, model, list, def.joins);
             }
 
             return list;
@@ -266,7 +264,6 @@ namespace Cocoon.ORM
         /// <param name="inWhere"></param>
         /// <param name="where"></param>
         /// <param name="top"></param>
-        /// <param name="joins">The joins to apply</param>
         /// <param name="timeout"></param>
         /// <returns></returns>
         public IEnumerable<ModelT> GetListIn<ModelT, InModelT>(
@@ -275,7 +272,6 @@ namespace Cocoon.ORM
             Expression<Func<InModelT, bool>> inWhere = null,
             Expression<Func<ModelT, bool>> where = null,
             int top = 0,
-            JoinDef[] joins = null,
             int timeout = -1)
         {
 
@@ -298,7 +294,7 @@ namespace Cocoon.ORM
                     throw new Exception("No columns to select");
 
                 //generate join clause
-                string joinClause = generateJoinClause(modelDef.objectName, columnsToSelect, joins);
+                string joinClause = generateJoinClause(modelDef.objectName, columnsToSelect, modelDef.joins);
 
                 //generate where clauses
                 string modelWhereClause = generateWhereClause(cmd, modelDef.objectName, where, false);
@@ -326,7 +322,7 @@ namespace Cocoon.ORM
                 //execute sql
                 conn.Open();
 
-                readList(cmd, model, list, joins);
+                readList(cmd, model, list, modelDef.joins);
             }
 
             return list.Cast<ModelT>();
@@ -338,11 +334,10 @@ namespace Cocoon.ORM
         /// </summary>
         /// <typeparam name="T">Table model</typeparam>
         /// <param name="where">Where expression to use for the query</param>
-        /// <param name="joins">The joins to apply</param>
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>An object of type T with the result</returns>
-        public T GetSingle<T>(Expression<Func<T, bool>> where, JoinDef[] joins = null, object customParams = null, int timeout = -1)
+        public T GetSingle<T>(Expression<Func<T, bool>> where, object customParams = null, int timeout = -1)
         {
 
             TableDefinition def = getTable(typeof(T));
@@ -351,8 +346,8 @@ namespace Cocoon.ORM
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, joins, def.customColumns, customParams, 1, where);
-                return readSingle<T>(cmd, joins);
+                select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, 1, where);
+                return readSingle<T>(cmd, def.joins);
             }
 
         }
@@ -807,7 +802,7 @@ namespace Cocoon.ORM
         public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null, int timeout = -1)
         {
 
-            bool isScalar = !HasAttribute<Table>(typeof(T));
+            bool isScalar = !typeof(T).IsClass;
             List<object> list = new List<object>();
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
@@ -842,7 +837,7 @@ namespace Cocoon.ORM
         public T ExecuteSQLSingle<T>(string sql, object parameters = null, int timeout = -1)
         {
 
-            bool isScalar = !HasAttribute<Table>(typeof(T));
+            bool isScalar = !typeof(T).IsClass;
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
@@ -933,7 +928,7 @@ namespace Cocoon.ORM
         public IEnumerable<T> ExecuteProcList<T>(string procedureName, object parameters = null, int timeout = -1)
         {
 
-            bool isScalar = !HasAttribute<Table>(typeof(T));
+            bool isScalar = !typeof(T).IsClass;
             List<object> list = new List<object>();
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
@@ -968,7 +963,7 @@ namespace Cocoon.ORM
         public T ExecuteProcSingle<T>(string procedureName, object parameters = null, int timeout = -1)
         {
 
-            bool isScalar = !HasAttribute<Table>(typeof(T));
+            bool isScalar = !typeof(T).IsClass;
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
             using (SqlCommand cmd = conn.CreateCommand())
@@ -1369,7 +1364,7 @@ namespace Cocoon.ORM
         /// <param name="reader"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public static object SetFromReader(object objectToSet, IDataReader reader, JoinDef[] joins)
+        public static object SetFromReader(object objectToSet, IDataReader reader, IEnumerable<JoinDef> joins)
         {
 
             Type type = objectToSet.GetType();
@@ -1548,7 +1543,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal void readList(SqlCommand cmd, Type type, List<object> list, JoinDef[] joins)
+        internal void readList(SqlCommand cmd, Type type, List<object> list, IEnumerable<JoinDef> joins)
         {
 
             using (SqlDataReader reader = cmd.ExecuteReader())
@@ -1558,7 +1553,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal T readSingle<T>(SqlCommand cmd, JoinDef[] joins)
+        internal T readSingle<T>(SqlCommand cmd, IEnumerable<JoinDef> joins)
         {
 
             using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
@@ -1572,7 +1567,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal object readObject(Type type, SqlDataReader reader, JoinDef[] joins)
+        internal object readObject(Type type, SqlDataReader reader, IEnumerable<JoinDef> joins)
         {
 
             object obj = Activator.CreateInstance(type);
@@ -1598,7 +1593,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal void select(SqlConnection conn, SqlCommand cmd, string tableObjectName, List<MemberInfo> columns, JoinDef[] joins, List<MemberInfo> customColumns, object customParams, int top, Expression where)
+        internal void select(SqlConnection conn, SqlCommand cmd, string tableObjectName, List<MemberInfo> columns, IEnumerable<JoinDef> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, Expression where)
         {
 
             //get columns to select
@@ -1607,7 +1602,7 @@ namespace Cocoon.ORM
                 throw new Exception("No columns to select");
 
             //handle custom columns
-            if (customColumns != null && customColumns.Count > 0)
+            if (customColumns != null && customColumns.Count() > 0)
             {
 
                 addParam(cmd, "table", tableObjectName);
@@ -1748,7 +1743,7 @@ namespace Cocoon.ORM
 
                 conn.Open();
 
-                if (HasAttribute<Table>(typeof(T)))
+                if (typeof(T).IsClass)
                     return readSingle<T>(cmd, null);
                 else
                     return readScalar<T>(cmd);
@@ -1767,6 +1762,7 @@ namespace Cocoon.ORM
             table.objectName = getObjectName(type);
             table.type = type;
 
+            //get columns
             foreach (var prop in type.GetProperties())
             {
 
@@ -1781,6 +1777,22 @@ namespace Cocoon.ORM
 
                 if (HasAttribute<PrimaryKey>(prop))
                     table.primaryKeys.Add(prop);
+
+            }
+
+            //get joins
+            foreach (FieldInfo field in type.GetFields().Where(w => HasAttribute<Join>(w)))
+            {
+
+                if (!field.IsStatic)
+                    throw new Exception(string.Format("Join attribute must decorate static fields only => '{0}' in '{1}'", field, field.DeclaringType));
+
+                if (field.FieldType.GetInterfaces().Contains(typeof(IEnumerable<JoinDef>)))
+                    table.joins.AddRange((IEnumerable<JoinDef>)field.GetValue(null));
+                else if (field.FieldType == typeof(JoinDef))
+                    table.joins.Add((JoinDef)field.GetValue(null));
+                else
+                    throw new Exception(string.Format("Join attribute must decorate JoinDef field => '{0}' in '{1}'", field, field.DeclaringType));
 
             }
 
@@ -1867,10 +1879,10 @@ namespace Cocoon.ORM
 
         }
 
-        internal string generateJoinClause(string tableObjectName, List<string> columnsToSelect, JoinDef[] joins)
+        internal string generateJoinClause(string tableObjectName, List<string> columnsToSelect, IEnumerable<JoinDef> joins)
         {
 
-            if (joins == null || joins.Length == 0)
+            if (joins == null || joins.Count() == 0)
                 return null;
 
             List<string> joinClauseList = new List<string>();

@@ -219,8 +219,7 @@ namespace Cocoon.ORM.ModelGen
             listTables();
         }
     }
-
-    [Table]
+    
     class SysTable
     {
 
@@ -238,8 +237,7 @@ namespace Cocoon.ORM.ModelGen
         public IEnumerable<SysColumn> columns;
 
     }
-
-    [Table]
+    
     class SysColumn
     {
 

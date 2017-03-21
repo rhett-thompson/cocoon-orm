@@ -6,6 +6,7 @@ namespace Cocoon.ORM
     /// <summary>
     /// Overwrites the name of an object
     /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property)]
     public class OverrideName : Attribute
     {
 
@@ -23,18 +24,11 @@ namespace Cocoon.ORM
         }
 
     }
-
-    /// <summary>
-    /// Defines a table model
-    /// </summary>
-    public class Table : Attribute
-    {
-
-    }
-
+    
     /// <summary>
     /// Defines a column in a table model
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class Column : Attribute
     {
 
@@ -43,6 +37,7 @@ namespace Cocoon.ORM
     /// <summary>
     /// Defines an aggregator column
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class AggSQLColumn : Attribute
     {
 
@@ -60,10 +55,11 @@ namespace Cocoon.ORM
         }
 
     }
-    
+
     /// <summary>
     /// Defines a column to be a primary key
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class PrimaryKey : Attribute
     {
 
@@ -73,6 +69,7 @@ namespace Cocoon.ORM
     /// <summary>
     /// Tells Cocoon to ignore this column during updates
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnUpdate : Attribute
     {
 
@@ -82,6 +79,7 @@ namespace Cocoon.ORM
     /// <summary>
     /// Tells Cocoon to ignore this column during inserts
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnInsert : Attribute
     {
 
@@ -91,10 +89,17 @@ namespace Cocoon.ORM
     /// <summary>
     /// Tells to ignore this column on selects
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnSelect : Attribute
     {
 
 
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public class Join : Attribute { }
     
 }
