@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -124,10 +125,10 @@ namespace Cocoon.ORM
             PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => HasAttribute<PrimaryKey>(p)).FirstOrDefault();
 
             if (leftPrimaryKey == null)
-                throw new Exception("Left table missing primary key attribute.");
+                throw new InvalidMemberException("Left table missing primary key attribute", leftPrimaryKey);
 
             if (rightPrimaryKey == null)
-                throw new Exception("Right table missing primary key attribute.");
+                throw new InvalidMemberException("Right table missing primary key attribute", rightPrimaryKey);
 
             return new JoinDef()
             {
@@ -167,7 +168,7 @@ namespace Cocoon.ORM
             PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => HasAttribute<PrimaryKey>(p)).FirstOrDefault();
 
             if (rightPrimaryKey == null)
-                throw new Exception("Right table missing primary key attribute.");
+                throw new InvalidMemberException("Right table missing primary key attribute.", rightPrimaryKey);
 
             return new JoinDef()
             {
@@ -491,10 +492,9 @@ namespace Cocoon.ORM
             if (objectToUpdate == null)
                 throw new NullReferenceException("objectToUpdate cannot be null.");
 
-            TableDefinition def = getTable(objectToUpdate.GetType());
+            IEnumerable<PropertyInfo> props = objectToUpdate.GetType().GetProperties().Where(p => HasAttribute<Column>(p));
 
-            return update(def, objectToUpdate, def.columns, timeout, where);
-
+            return update(getObjectName(typeof(T)), props.Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
 
         }
 
@@ -509,7 +509,7 @@ namespace Cocoon.ORM
         public int Update<T>(T objectToUpdate, Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
-            return Update<T>((object)objectToUpdate, where, timeout);
+            return Update((object)objectToUpdate, where, timeout);
 
         }
 
@@ -525,13 +525,27 @@ namespace Cocoon.ORM
         public int Update<ModelT>(Expression<Func<ModelT, object>> fieldToUpdate, object value, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
         {
 
-            TableDefinition def = getTable(typeof(ModelT));
             PropertyInfo prop = getExpressionProp(fieldToUpdate);
 
-            ModelT obj = Activator.CreateInstance<ModelT>();
-            prop.SetValue(obj, value);
+            if (!HasAttribute<Column>(prop))
+                throw new InvalidMemberException("Update field requires property to be decorated with [Column] attribute", prop);
 
-            return update(def, obj, new List<MemberInfo>() { prop }, timeout, where);
+            return update(getObjectName(typeof(ModelT)), new List<Tuple<PropertyInfo, object>>() { new Tuple<PropertyInfo, object>(prop, value) }, timeout, where);
+
+        }
+
+        /// <summary>
+        /// Updates multiple fields in a table
+        /// </summary>
+        /// <typeparam name="ModelT">Table model to use</typeparam>
+        /// <param name="fieldsToUpdate">A collection of fields to update with values</param>
+        /// <param name="where">Where expression to use for the query</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns></returns>
+        public int Update<ModelT>(UpdateFields<ModelT> fieldsToUpdate, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
+        {
+
+            return update(getObjectName(typeof(ModelT)), fieldsToUpdate, timeout, where);
 
         }
 
@@ -1349,7 +1363,7 @@ namespace Cocoon.ORM
                 catch
                 {
 
-                    throw new Exception(string.Format("Could not assign value to '{0}'.", propName));
+                    throw new InvalidMemberException("Could not assign value", prop);
 
                 }
 
@@ -1647,7 +1661,7 @@ namespace Cocoon.ORM
 
         }
 
-        internal int update<T>(TableDefinition def, object valueObject, IEnumerable<MemberInfo> properties, int timeout, Expression<Func<T, bool>> where = null)
+        internal int update<T>(string tableObjectName, IEnumerable<Tuple<PropertyInfo, object>> updateFields, int timeout, Expression<Func<T, bool>> where = null)
         {
 
             using (SqlConnection conn = new SqlConnection(ConnectionString))
@@ -1656,27 +1670,38 @@ namespace Cocoon.ORM
 
                 cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
 
-                //columns to select
+                //columns to update
                 List<string> columnsToUpdate = new List<string>();
                 List<string> primaryKeys = new List<string>();
-                string whereClause = generateWhereClause(cmd, def.objectName, where);
-                foreach (PropertyInfo prop in properties)
+                string whereClause = generateWhereClause(cmd, tableObjectName, where);
+                foreach (Tuple<PropertyInfo, object> field in updateFields)
                 {
+
+                    PropertyInfo prop = field.Item1;
+                    object value = field.Item2;
 
                     if (!HasAttribute<IgnoreOnUpdate>(prop))
                     {
-                        object v = prop.GetValue(valueObject);
-                        if (v is string && string.IsNullOrEmpty((string)v))
-                            v = null;
 
-                        SqlParameter param = addParam(cmd, "update_field_" + getGuidString(), v);
-                        columnsToUpdate.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
+                        if (value is SQLValue)
+                            columnsToUpdate.Add(string.Format("{0}.{1} = ({2})", tableObjectName, getObjectName(prop), ((SQLValue)value).sql));
+                        else
+                        {
+
+                            if (value is string && string.IsNullOrEmpty((string)value))
+                                value = null;
+
+                            SqlParameter param = addParam(cmd, "update_field_" + getGuidString(), value);
+                            columnsToUpdate.Add(string.Format("{0}.{1} = {2}", tableObjectName, getObjectName(prop), param.ParameterName));
+
+                        }
+
                     }
 
                     if (HasAttribute<PrimaryKey>(prop) && where == null)
                     {
-                        SqlParameter param = addParam(cmd, "where_" + getGuidString(), prop.GetValue(valueObject));
-                        primaryKeys.Add(string.Format("{0}.{1} = {2}", def.objectName, getObjectName(prop), param.ParameterName));
+                        SqlParameter param = addParam(cmd, "where_" + getGuidString(), value);
+                        primaryKeys.Add(string.Format("{0}.{1} = {2}", tableObjectName, getObjectName(prop), param.ParameterName));
                     }
 
                 }
@@ -1685,7 +1710,7 @@ namespace Cocoon.ORM
                     whereClause = "where " + string.Join(" and ", primaryKeys);
 
                 //generate sql
-                cmd.CommandText = string.Format("update {0} set {1} {2}", def.objectName, string.Join(", ", columnsToUpdate), whereClause);
+                cmd.CommandText = string.Format("update {0} set {1} {2}", tableObjectName, string.Join(", ", columnsToUpdate), whereClause);
 
                 //execute
                 conn.Open();
@@ -1713,7 +1738,9 @@ namespace Cocoon.ORM
 
                         columns.Add(string.Format("{0}.{1}", def.objectName, getObjectName(prop)));
 
-                        SqlParameter param = addParam(cmd, "insert_value_" + getGuidString(), prop.GetValue(objectToInsert));
+                        object value = prop.GetValue(objectToInsert);
+
+                        SqlParameter param = addParam(cmd, "insert_value_" + getGuidString(), value);
                         values.Add(param.ParameterName);
 
                     }
@@ -1785,14 +1812,14 @@ namespace Cocoon.ORM
             {
 
                 if (!field.IsStatic)
-                    throw new Exception(string.Format("Join attribute must decorate static fields only => '{0}' in '{1}'", field, field.DeclaringType));
+                    throw new InvalidMemberException("Join attribute must decorate static fields only", field);
 
                 if (field.FieldType.GetInterfaces().Contains(typeof(IEnumerable<JoinDef>)))
                     table.joins.AddRange((IEnumerable<JoinDef>)field.GetValue(null));
                 else if (field.FieldType == typeof(JoinDef))
                     table.joins.Add((JoinDef)field.GetValue(null));
                 else
-                    throw new Exception(string.Format("Join attribute must decorate JoinDef field => '{0}' in '{1}'", field, field.DeclaringType));
+                    throw new InvalidMemberException("Join attribute must decorate JoinDef field", field);
 
             }
 
@@ -2003,6 +2030,65 @@ namespace Cocoon.ORM
     }
 
     /// <summary>
+    /// 
+    /// </summary>
+    public class SQLValue
+    {
+
+        internal string sql;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sql"></param>
+        public SQLValue(string sql)
+        {
+            this.sql = sql;
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="ModelT"></typeparam>
+    public class UpdateFields<ModelT> : IEnumerable<Tuple<PropertyInfo, object>>
+    {
+
+        internal List<Tuple<PropertyInfo, object>> fields = new List<Tuple<PropertyInfo, object>>();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fieldToUpdate"></param>
+        /// <param name="value"></param>
+        public void Add(Expression<Func<ModelT, object>> fieldToUpdate, object value)
+        {
+
+            PropertyInfo prop = CocoonORM.getExpressionProp(fieldToUpdate);
+
+            if (!CocoonORM.HasAttribute<Column>(prop))
+                throw new InvalidMemberException("Update field requires property to be decorated with [Column] attribute", prop);
+
+            fields.Add(new Tuple<PropertyInfo, object>(prop, value));
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator<Tuple<PropertyInfo, object>> GetEnumerator()
+        {
+            return ((IEnumerable<Tuple<PropertyInfo, object>>)fields).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable<Tuple<PropertyInfo, object>>)fields).GetEnumerator();
+        }
+    }
+
+    /// <summary>
     /// Defines a type of join
     /// </summary>
     public enum JoinType
@@ -2027,6 +2113,13 @@ namespace Cocoon.ORM
         /// Full outer join
         /// </summary>
         FULL_OUTER
+
+    }
+
+    internal class InvalidMemberException : Exception
+    {
+
+        public InvalidMemberException(string message, MemberInfo member) : base(string.Format("{0} => '{1}' in '{2}'", message, member, member.DeclaringType)) { }
 
     }
 
