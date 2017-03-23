@@ -31,11 +31,11 @@ namespace Cocoon.ORM
             return new JoinDef()
             {
 
-                RightTable = CocoonORM.getObjectName(typeof(RightTableModelT)),
-                LeftKey = CocoonORM.getObjectName(CocoonORM.getExpressionProp(foreignKey)),
-                RightKey = CocoonORM.getObjectName(CocoonORM.getExpressionProp(primaryKey)),
-                FieldToSelect = CocoonORM.getObjectName(CocoonORM.getExpressionProp(fieldToSelect)),
-                FieldToRecieve = CocoonORM.getExpressionProp(fieldToRecieve),
+                RightTable = typeof(RightTableModelT),
+                LeftKey = GetExpressionProp(foreignKey),
+                RightKey = GetExpressionProp(primaryKey),
+                FieldToSelect = GetExpressionProp(fieldToSelect),
+                FieldToRecieve = GetExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
@@ -72,11 +72,11 @@ namespace Cocoon.ORM
             return new JoinDef()
             {
 
-                RightTable = CocoonORM.getObjectName(typeof(RightTableModelT)),
-                LeftKey = CocoonORM.getObjectName(leftPrimaryKey),
-                RightKey = CocoonORM.getObjectName(rightPrimaryKey),
-                FieldToSelect = CocoonORM.getObjectName(CocoonORM.getExpressionProp(fieldToSelect)),
-                FieldToRecieve = CocoonORM.getExpressionProp(fieldToRecieve),
+                RightTable = typeof(RightTableModelT),
+                LeftKey = leftPrimaryKey,
+                RightKey = rightPrimaryKey,
+                FieldToSelect = GetExpressionProp(fieldToSelect),
+                FieldToRecieve = GetExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
@@ -112,11 +112,11 @@ namespace Cocoon.ORM
             return new JoinDef()
             {
 
-                RightTable = CocoonORM.getObjectName(typeof(RightTableModelT)),
-                LeftKey = CocoonORM.getObjectName(CocoonORM.getExpressionProp(foreignKey)),
-                RightKey = CocoonORM.getObjectName(rightPrimaryKey),
-                FieldToSelect = CocoonORM.getObjectName(CocoonORM.getExpressionProp(fieldToSelect)),
-                FieldToRecieve = CocoonORM.getExpressionProp(fieldToRecieve),
+                RightTable = typeof(RightTableModelT),
+                LeftKey = GetExpressionProp(foreignKey),
+                RightKey = rightPrimaryKey,
+                FieldToSelect = GetExpressionProp(fieldToSelect),
+                FieldToRecieve = GetExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
@@ -134,22 +134,22 @@ namespace Cocoon.ORM
         /// <summary>
         /// 
         /// </summary>
-        public string RightTable;
+        public Type RightTable;
 
         /// <summary>
         /// 
         /// </summary>
-        public string LeftKey;
+        public PropertyInfo LeftKey;
 
         /// <summary>
         /// 
         /// </summary>
-        public string RightKey;
+        public PropertyInfo RightKey;
 
         /// <summary>
         /// 
         /// </summary>
-        public string FieldToSelect;
+        public PropertyInfo FieldToSelect;
 
         /// <summary>
         /// 

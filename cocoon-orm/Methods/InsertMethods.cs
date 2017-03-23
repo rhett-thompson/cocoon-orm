@@ -15,7 +15,7 @@ namespace Cocoon.ORM
         public T Insert<T>(object objectToInsert, int timeout = -1)
         {
 
-            return insert<T>(objectToInsert.GetType(), objectToInsert, timeout);
+            return Platform.insert<T>(objectToInsert.GetType(), objectToInsert, timeout);
 
         }
 
@@ -29,7 +29,7 @@ namespace Cocoon.ORM
         public T Insert<T>(T objectToInsert, int timeout = -1)
         {
 
-            return insert<T>(typeof(T), objectToInsert, timeout);
+            return Platform.insert<T>(typeof(T), objectToInsert, timeout);
 
         }
 

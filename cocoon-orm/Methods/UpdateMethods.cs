@@ -26,7 +26,7 @@ namespace Cocoon.ORM
 
             IEnumerable<PropertyInfo> props = objectToUpdate.GetType().GetProperties().Where(p => Utilities.HasAttribute<Column>(p));
 
-            return update(getObjectName(typeof(T)), props.Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
+            return Platform.update(Platform.getObjectName(typeof(T)), props.Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
 
         }
 
@@ -57,12 +57,12 @@ namespace Cocoon.ORM
         public int Update<ModelT>(Expression<Func<ModelT, object>> fieldToUpdate, object value, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
         {
 
-            PropertyInfo prop = getExpressionProp(fieldToUpdate);
+            PropertyInfo prop = GetExpressionProp(fieldToUpdate);
 
             if (!Utilities.HasAttribute<Column>(prop))
                 throw new InvalidMemberException("Update field requires property to be decorated with [Column] attribute", prop);
 
-            return update(getObjectName(typeof(ModelT)), new List<Tuple<PropertyInfo, object>>() { new Tuple<PropertyInfo, object>(prop, value) }, timeout, where);
+            return Platform.update(Platform.getObjectName(typeof(ModelT)), new List<Tuple<PropertyInfo, object>>() { new Tuple<PropertyInfo, object>(prop, value) }, timeout, where);
 
         }
 
@@ -77,7 +77,7 @@ namespace Cocoon.ORM
         public int Update<ModelT>(UpdateFields<ModelT> fieldsToUpdate, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
         {
 
-            return update(getObjectName(typeof(ModelT)), fieldsToUpdate, timeout, where);
+            return Platform.update(Platform.getObjectName(typeof(ModelT)), fieldsToUpdate, timeout, where);
 
         }
 
@@ -100,7 +100,7 @@ namespace Cocoon.ORM
         public void Add(Expression<Func<ModelT, object>> fieldToUpdate, object value)
         {
 
-            PropertyInfo prop = CocoonORM.getExpressionProp(fieldToUpdate);
+            PropertyInfo prop = CocoonORM.GetExpressionProp(fieldToUpdate);
 
             if (!Utilities.HasAttribute<Column>(prop))
                 throw new InvalidMemberException("Update field requires property to be decorated with [Column] attribute", prop);

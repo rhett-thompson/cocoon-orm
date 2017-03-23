@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
@@ -20,23 +21,21 @@ namespace Cocoon.ORM
         public int Count<T>(Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
-            TableDefinition def = getTable(typeof(T));
+            TableDefinition def = GetTable(typeof(T));
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
 
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-
                 //generate where clause
-                string whereClause = generateWhereClause(cmd, def.objectName, where);
+                string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
                 //generate sql
                 cmd.CommandText = "select count(*) from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
 
                 //execute sql
                 conn.Open();
-                return readScalar<int>(cmd);
+                return Platform.readScalar<int>(cmd);
 
             }
 
@@ -52,22 +51,21 @@ namespace Cocoon.ORM
         public int Checksum<T>(Expression<Func<T, bool>> where = null, int timeout = -1)
         {
 
-            TableDefinition def = getTable(typeof(T));
+            TableDefinition def = GetTable(typeof(T));
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
 
                 //generate where clause
-                string whereClause = generateWhereClause(cmd, def.objectName, where);
+                string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
                 //generate sql
                 cmd.CommandText = "select checksum_agg(binary_checksum(*)) from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
 
                 //execute sql
                 conn.Open();
-                return readScalar<int>(cmd);
+                return Platform.readScalar<int>(cmd);
 
             }
 
@@ -96,13 +94,13 @@ namespace Cocoon.ORM
         /// <returns>The newly inserted rows</returns>
         public IEnumerable<T> Copy<T>(Expression<Func<T, bool>> where, object overrideValues = null, int timeout = -1)
         {
-            TableDefinition def = getTable(typeof(T));
+            TableDefinition def = GetTable(typeof(T));
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                string whereClause = generateWhereClause(cmd, def.objectName, where);
+
+                string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
                 //get columns and values
                 List<string> columns = new List<string>();
@@ -112,12 +110,12 @@ namespace Cocoon.ORM
                     if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
                     {
 
-                        string column = string.Format("{0}.{1}", def.objectName, getObjectName(prop));
+                        string column = string.Format("{0}.{1}", def.objectName, Platform.getObjectName(prop));
                         columns.Add(column);
 
                         PropertyInfo overrideProp = overrideValueProps.SingleOrDefault(p => p.Name == prop.Name);
                         if (overrideProp != null)
-                            values.Add(addParam(cmd, "override_value_" + getGuidString(), overrideProp.GetValue(overrideValues)).ParameterName);
+                            values.Add(Platform.addParam(cmd, "override_value_" + Platform.getGuidString(), overrideProp.GetValue(overrideValues)).ParameterName);
                         else
                             values.Add(column);
 
@@ -129,8 +127,8 @@ namespace Cocoon.ORM
                 List<string> wherePrimaryKeys = new List<string>();
                 foreach (PropertyInfo pk in def.primaryKeys)
                 {
-                    string primaryKeyName = getObjectName(pk);
-                    outputTableKeys.Add("{key} {type}".Inject(new { key = primaryKeyName, type = dbTypeMap[pk.PropertyType] }));
+                    string primaryKeyName = Platform.getObjectName(pk);
+                    outputTableKeys.Add("{key} {type}".Inject(new { key = primaryKeyName, type = Platform.getDbType(pk.PropertyType) }));
                     insertedPrimaryKeys.Add("inserted." + primaryKeyName);
                     wherePrimaryKeys.Add("ids.{primaryKey} = {model}.{primaryKey}".Inject(new { primaryKey = primaryKeyName, model = def.objectName }));
                 }
@@ -150,7 +148,7 @@ namespace Cocoon.ORM
                 conn.Open();
 
                 List<object> list = new List<object>();
-                readList(cmd, def.type, list, null);
+                Platform.readList(cmd, def.type, list, null);
 
                 return list.Cast<T>();
 
@@ -169,23 +167,22 @@ namespace Cocoon.ORM
         public string MD5HashInDB<T>(Expression<Func<T, bool>> where = null, int top = 0, int timeout = -1)
         {
 
-            TableDefinition def = getTable(typeof(T));
+            TableDefinition def = GetTable(typeof(T));
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
 
                 //generate where clause
-                string whereClause = generateWhereClause(cmd, def.objectName, where);
+                string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
                 //generate columns
                 List<string> columns = new List<string>();
                 foreach (MemberInfo member in def.columns)
                     if (((PropertyInfo)member).PropertyType == typeof(DateTime) || ((PropertyInfo)member).PropertyType == typeof(DateTime?))
-                        columns.Add("format({column}, 'MM/dd/yyyy H:mm:ss')".InjectSingleValue("column", getObjectName(member)));
+                        columns.Add("format({column}, 'MM/dd/yyyy H:mm:ss')".InjectSingleValue("column", Platform.getObjectName(member)));
                     else
-                        columns.Add(getObjectName(member));
+                        columns.Add(Platform.getObjectName(member));
 
                 //generate top clause
                 string topClause = "";
@@ -209,7 +206,7 @@ namespace Cocoon.ORM
 
                 //execute sql
                 conn.Open();
-                return readScalar<string>(cmd);
+                return Platform.readScalar<string>(cmd);
 
             }
 

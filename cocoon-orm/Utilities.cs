@@ -18,7 +18,7 @@ namespace Cocoon.ORM
     /// </summary>
     public class Utilities
     {
-        
+
         internal const string base36Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
         internal static DateTime baseDate = new DateTime(1900, 1, 1);
 
@@ -304,7 +304,7 @@ namespace Cocoon.ORM
             foreach (PropertyInfo prop in type.GetProperties().Where(p => p.CanWrite))
             {
 
-                string propName = CocoonORM.getName(prop);
+                string propName = CocoonORM.GetName(prop);
 
                 if (!row.Table.Columns.Contains(propName))
                     continue;
@@ -354,7 +354,7 @@ namespace Cocoon.ORM
                 if (joins != null && joins.Any(j => j.FieldToRecieve == prop))
                     propName = prop.Name;
                 else
-                    propName = CocoonORM.getName(prop);
+                    propName = CocoonORM.GetName(prop);
 
                 if (!columns.Contains(propName))
                     continue;
@@ -370,19 +370,38 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
+        /// Creates an SHA256 hash
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static byte[] SHA256(byte[] bytes)
+        {
+            using (SHA256 hash = System.Security.Cryptography.SHA256.Create())
+                return hash.ComputeHash(bytes);
+
+        }
+
+        /// <summary>
         /// Creates an SHA256 hash of a string
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
         public static string SHA256(string value)
         {
-            using (SHA256 hash = System.Security.Cryptography.SHA256.Create())
-            {
-                return string.Join("", hash
-                  .ComputeHash(Encoding.UTF8.GetBytes(value))
-                  .Select(item => item.ToString("x2")));
-            }
 
+            return string.Join("", SHA256(Encoding.UTF8.GetBytes(value)).Select(item => item.ToString("x2")));
+
+        }
+
+        /// <summary>
+        /// Creates an MD5 hash
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static byte[] MD5(byte[] bytes)
+        {
+            using (MD5 hash = System.Security.Cryptography.MD5.Create())
+                return hash.ComputeHash(bytes);
         }
 
         /// <summary>
@@ -393,12 +412,7 @@ namespace Cocoon.ORM
         public static string MD5(string value)
         {
 
-            using (MD5 hash = System.Security.Cryptography.MD5.Create())
-            {
-                return string.Join("", hash
-                  .ComputeHash(Encoding.GetEncoding(1252).GetBytes(value))
-                  .Select(item => item.ToString("x2")));
-            }
+            return string.Join("", MD5(Encoding.GetEncoding(1252).GetBytes(value)).Select(item => item.ToString("x2")));
 
         }
 
@@ -437,17 +451,16 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// Compresses a string using GZip
+        /// Compress using GZip
         /// </summary>
-        /// <param name="text"></param>
+        /// <param name="bytes"></param>
         /// <returns></returns>
-        public static string CompressString(string text)
+        public static byte[] GZipCompress(byte[] bytes)
         {
 
-            byte[] buffer = Encoding.UTF8.GetBytes(text);
             MemoryStream memoryStream = new MemoryStream();
             using (GZipStream gZipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
-                gZipStream.Write(buffer, 0, buffer.Length);
+                gZipStream.Write(bytes, 0, bytes.Length);
 
             memoryStream.Position = 0;
 
@@ -456,19 +469,32 @@ namespace Cocoon.ORM
 
             byte[] gZipBuffer = new byte[compressedData.Length + 4];
             Buffer.BlockCopy(compressedData, 0, gZipBuffer, 4, compressedData.Length);
-            Buffer.BlockCopy(BitConverter.GetBytes(buffer.Length), 0, gZipBuffer, 0, 4);
-            return Convert.ToBase64String(gZipBuffer);
+            Buffer.BlockCopy(BitConverter.GetBytes(bytes.Length), 0, gZipBuffer, 0, 4);
+
+            return gZipBuffer;
 
         }
 
         /// <summary>
-        /// Decompresses a string using GZip
+        /// Compresses a string using GZip
         /// </summary>
-        /// <param name="compressedText"></param>
+        /// <param name="text"></param>
         /// <returns></returns>
-        public static string DecompressString(string compressedText)
+        public static string GZipCompressString(string text)
         {
-            byte[] gZipBuffer = Convert.FromBase64String(compressedText);
+
+            return Convert.ToBase64String(GZipCompress(Encoding.UTF8.GetBytes(text)));
+
+        }
+
+        /// <summary>
+        /// Decompresses using GZip
+        /// </summary>
+        /// <param name="gZipBuffer"></param>
+        /// <returns></returns>
+        public static byte[] GZipDecompress(byte[] gZipBuffer)
+        {
+
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 int dataLength = BitConverter.ToInt32(gZipBuffer, 0);
@@ -480,9 +506,22 @@ namespace Cocoon.ORM
                 using (GZipStream gZipStream = new GZipStream(memoryStream, CompressionMode.Decompress))
                     gZipStream.Read(buffer, 0, buffer.Length);
 
-                return Encoding.UTF8.GetString(buffer);
+                return buffer;
+
             }
         }
-        
+
+        /// <summary>
+        /// Decompresses a string using GZip
+        /// </summary>
+        /// <param name="compressedText"></param>
+        /// <returns></returns>
+        public static string GZipDecompressString(string compressedText)
+        {
+
+            return Encoding.UTF8.GetString(GZipDecompress(Convert.FromBase64String(compressedText)));
+            
+        }
+
     }
 }

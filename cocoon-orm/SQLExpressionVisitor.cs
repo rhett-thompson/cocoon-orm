@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq.Expressions;
 using System.Text;
@@ -9,7 +10,7 @@ namespace Cocoon.ORM
     {
 
         private StringBuilder whereBuilder;
-        private SqlCommand cmd;
+        private DbCommand cmd;
         private CocoonORM orm;
         private string tableObjectName;
 
@@ -18,7 +19,7 @@ namespace Cocoon.ORM
 
         }
 
-        public string GenerateSQLExpression(CocoonORM orm, SqlCommand cmd, Expression node, string tableObjectName)
+        public string GenerateSQLExpression(CocoonORM orm, DbCommand cmd, Expression node, string tableObjectName)
         {
 
             this.cmd = cmd;
@@ -74,9 +75,9 @@ namespace Cocoon.ORM
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
-                whereBuilder.Append(string.Format("{0}.{1}", tableObjectName, CocoonORM.getObjectName(node.Member)));
+                whereBuilder.Append(string.Format("{0}.{1}", tableObjectName, orm.Platform.getObjectName(node.Member)));
             else
-                whereBuilder.Append(CocoonORM.addWhereParam(cmd, getExpressionValue(node)));
+                whereBuilder.Append(orm.Platform.addWhereParam(cmd, getExpressionValue(node)));
 
             return node;
             //throw new NotSupportedException(string.Format("The member '{0}' is not supported", node.Member.Name));
@@ -93,7 +94,7 @@ namespace Cocoon.ORM
             else if (node.Method.Name == "Contains")
                 addLikeParam(node, "%" + getExpressionValue(node.Arguments[0]) + "%");
             else
-                whereBuilder.Append(CocoonORM.addWhereParam(cmd, Expression.Lambda(node).Compile().DynamicInvoke()));
+                whereBuilder.Append(orm.Platform.addWhereParam(cmd, Expression.Lambda(node).Compile().DynamicInvoke()));
             //throw new NotSupportedException(string.Format("Method '{0}' not supported", node.Method.Name));
 
             return node;
@@ -120,7 +121,7 @@ namespace Cocoon.ORM
         protected override Expression VisitConstant(ConstantExpression node)
         {
 
-            whereBuilder.Append(CocoonORM.addWhereParam(cmd, node.Value));
+            whereBuilder.Append(orm.Platform.addWhereParam(cmd, node.Value));
             return node;
 
         }
@@ -136,8 +137,8 @@ namespace Cocoon.ORM
 
             whereBuilder.Append(string.Format("{0}.{1} like {2}",
                 tableObjectName,
-                CocoonORM.getObjectName(member.Member),
-                CocoonORM.addWhereParam(cmd, like)));
+                orm.Platform.getObjectName(member.Member),
+                orm.Platform.addWhereParam(cmd, like)));
 
         }
 

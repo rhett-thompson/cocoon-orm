@@ -4,7 +4,11 @@ using System.Reflection;
 
 namespace Cocoon.ORM
 {
-    class TableDefinition
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class TableDefinition
     {
 
         internal List<MemberInfo> columns = new List<MemberInfo>();

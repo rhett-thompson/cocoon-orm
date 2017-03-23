@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 
@@ -22,20 +23,20 @@ namespace Cocoon.ORM
             bool isScalar = !typeof(T).IsClass;
             List<object> list = new List<object>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                addParamObject(cmd, parameters);
+
+                Platform.addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
                 conn.Open();
 
                 if (isScalar)
-                    readScalarList(cmd, list);
+                    Platform.readScalarList(cmd, list);
                 else
-                    readList(cmd, typeof(T), list, null);
+                    Platform.readList(cmd, typeof(T), list, null);
 
             }
 
@@ -56,20 +57,20 @@ namespace Cocoon.ORM
 
             bool isScalar = !typeof(T).IsClass;
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                addParamObject(cmd, parameters);
+
+                Platform.addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
                 conn.Open();
 
                 if (isScalar)
-                    return readScalar<T>(cmd);
+                    return Platform.readScalar<T>(cmd);
                 else
-                    return readSingle<T>(cmd, null);
+                    return Platform.readSingle<T>(cmd, null);
 
             }
 
@@ -85,11 +86,11 @@ namespace Cocoon.ORM
         public int ExecuteProcVoid(string procedureName, object parameters = null, int timeout = -1)
         {
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                addParamObject(cmd, parameters);
+
+                Platform.addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
@@ -111,16 +112,16 @@ namespace Cocoon.ORM
         public DataSet ExecuteProcDataSet(string procedureName, object parameters = null, int timeout = -1)
         {
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                addParamObject(cmd, parameters);
+
+                Platform.addParamObject(cmd, parameters);
 
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandText = procedureName;
 
-                using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                using (DbDataAdapter adapter = Platform.getDataAdapter(cmd))
                 {
                     DataSet ds = new DataSet();
                     adapter.Fill(ds);

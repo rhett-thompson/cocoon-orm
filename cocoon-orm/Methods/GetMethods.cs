@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
@@ -39,15 +40,14 @@ namespace Cocoon.ORM
         public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, int timeout = -1)
         {
 
-            TableDefinition def = getTable(model);
+            TableDefinition def = GetTable(model);
             List<object> list = new List<object>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, top, where);
-                readList(cmd, model, list, def.joins);
+                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, top, where);
+                Platform.readList(cmd, model, list, def.joins);
             }
 
             return list;
@@ -78,27 +78,26 @@ namespace Cocoon.ORM
             Type model = typeof(ModelT);
             Type inModel = typeof(InModelT);
 
-            TableDefinition modelDef = getTable(model);
-            TableDefinition inModelDef = getTable(inModel);
+            TableDefinition modelDef = GetTable(model);
+            TableDefinition inModelDef = GetTable(inModel);
 
             List<object> list = new List<object>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
 
                 //get columns to select
-                List<string> columnsToSelect = modelDef.columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", modelDef.objectName, getObjectName(c))).ToList();
+                List<string> columnsToSelect = modelDef.columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", modelDef.objectName, Platform.getObjectName(c))).ToList();
                 if (columnsToSelect.Count == 0)
                     throw new Exception("No columns to select");
 
                 //generate join clause
-                string joinClause = generateJoinClause(modelDef.objectName, columnsToSelect, modelDef.joins);
+                string joinClause = Platform.generateJoinClause(modelDef.objectName, columnsToSelect, modelDef.joins);
 
                 //generate where clauses
-                string modelWhereClause = generateWhereClause(cmd, modelDef.objectName, where, false);
-                string inModelWhereClause = generateWhereClause(cmd, inModelDef.objectName, inWhere);
+                string modelWhereClause = Platform.generateWhereClause(cmd, modelDef.objectName, where, false);
+                string inModelWhereClause = Platform.generateWhereClause(cmd, inModelDef.objectName, inWhere);
 
                 //generate top clause
                 string topClause = "";
@@ -113,8 +112,8 @@ namespace Cocoon.ORM
                     inModel = inModelDef.objectName,
                     columns = string.Join(", ", columnsToSelect),
                     joins = joinClause,
-                    modelKey = getObjectName(getExpressionProp(modelKey)),
-                    inModelKey = getObjectName(getExpressionProp(inModelKey)),
+                    modelKey = GetExpressionPropName(modelKey),
+                    inModelKey = GetExpressionPropName(inModelKey),
                     inModelWhere = inModelWhereClause,
                     modelWhere = modelWhereClause != null ? "and " + modelWhereClause : ""
                 });
@@ -122,7 +121,7 @@ namespace Cocoon.ORM
                 //execute sql
                 conn.Open();
 
-                readList(cmd, model, list, modelDef.joins);
+                Platform.readList(cmd, model, list, modelDef.joins);
             }
 
             return list.Cast<ModelT>();
@@ -140,14 +139,14 @@ namespace Cocoon.ORM
         public T GetSingle<T>(Expression<Func<T, bool>> where, object customParams = null, int timeout = -1)
         {
 
-            TableDefinition def = getTable(typeof(T));
+            TableDefinition def = GetTable(typeof(T));
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, 1, where);
-                return readSingle<T>(cmd, def.joins);
+
+                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, 1, where);
+                return Platform.readSingle<T>(cmd, def.joins);
             }
 
         }
@@ -164,15 +163,14 @@ namespace Cocoon.ORM
         public FieldT GetScalar<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
         {
 
-            TableDefinition def = getTable(typeof(ModelT));
-            PropertyInfo prop = getExpressionProp(fieldToSelect);
+            TableDefinition def = GetTable(typeof(ModelT));
+            PropertyInfo prop = GetExpressionProp(fieldToSelect);
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, 1, where);
-                return readScalar<FieldT>(cmd);
+                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, 1, where);
+                return Platform.readScalar<FieldT>(cmd);
             }
 
         }
@@ -190,17 +188,16 @@ namespace Cocoon.ORM
         public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0, int timeout = -1)
         {
 
-            TableDefinition def = getTable(typeof(ModelT));
-            PropertyInfo prop = getExpressionProp(fieldToSelect);
+            TableDefinition def = GetTable(typeof(ModelT));
+            PropertyInfo prop = GetExpressionProp(fieldToSelect);
 
             List<FieldT> list = new List<FieldT>();
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, top, where);
-                readScalarList(cmd, list);
+                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, top, where);
+                Platform.readScalarList(cmd, list);
             }
 
 

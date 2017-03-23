@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -33,13 +33,13 @@ namespace Cocoon.ORM
         /// <returns>The number of records that were affected</returns>
         public int Delete<T>(Type model, Expression<Func<T, bool>> where, int timeout = -1)
         {
-            TableDefinition def = getTable(model);
+            TableDefinition def = GetTable(model);
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
-                string whereClause = generateWhereClause(cmd, def.objectName, where);
+
+                string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
                 cmd.CommandText = "delete from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
 
@@ -58,16 +58,15 @@ namespace Cocoon.ORM
         public int Delete(object objectToDelete, int timeout = -1)
         {
 
-            TableDefinition def = getTable(objectToDelete.GetType());
+            TableDefinition def = GetTable(objectToDelete.GetType());
 
-            using (SqlConnection conn = new SqlConnection(ConnectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                cmd.CommandTimeout = timeout < 0 ? CommandTimeout : timeout;
 
                 List<string> primaryKeys = new List<string>();
                 foreach (PropertyInfo key in def.primaryKeys)
-                    primaryKeys.Add("{key} = {value}".Inject(new { key = getObjectName(key), value = addWhereParam(cmd, key.GetValue(objectToDelete)) }));
+                    primaryKeys.Add("{key} = {value}".Inject(new { key = Platform.getObjectName(key), value = Platform.addWhereParam(cmd, key.GetValue(objectToDelete)) }));
 
                 cmd.CommandText = "delete from {model} where {where}".Inject(new { model = def.objectName, where = string.Join(" and ", primaryKeys) });
 
