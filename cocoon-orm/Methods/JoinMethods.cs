@@ -5,10 +5,10 @@ using System.Reflection;
 
 namespace Cocoon.ORM
 {
-    
+
     public partial class CocoonORM
     {
-        
+
         /// <summary>
         /// Defines a JOIN operation.
         /// </summary>
@@ -122,7 +122,7 @@ namespace Cocoon.ORM
             };
 
         }
-
+        
     }
 
     /// <summary>
