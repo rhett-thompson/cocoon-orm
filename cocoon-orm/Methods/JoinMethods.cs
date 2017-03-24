@@ -112,7 +112,7 @@ namespace Cocoon.ORM
             return new JoinDef()
             {
 
-                RightTable = typeof(RightTableModelT),
+                RightTable = rightType,
                 LeftKey = GetExpressionProp(foreignKey),
                 RightKey = rightPrimaryKey,
                 FieldToSelect = GetExpressionProp(fieldToSelect),
@@ -135,7 +135,7 @@ namespace Cocoon.ORM
         /// 
         /// </summary>
         public Type RightTable;
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -145,7 +145,7 @@ namespace Cocoon.ORM
         /// 
         /// </summary>
         public PropertyInfo RightKey;
-
+        
         /// <summary>
         /// 
         /// </summary>

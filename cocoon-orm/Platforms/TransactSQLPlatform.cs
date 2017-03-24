@@ -15,7 +15,7 @@ namespace Cocoon.ORM
     /// </summary>
     public class TransactSQLPlatform : SQLPlatform
     {
-        
+
         /// <summary>
         /// 
         /// </summary>
