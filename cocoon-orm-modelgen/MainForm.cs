@@ -160,7 +160,7 @@ namespace Cocoon.ORM.ModelGen
 
             try
             {
-
+                
                 db = new CocoonORM(ConnectionStringComboBox.Text);
 
                 //PingReply reply = db.Ping();

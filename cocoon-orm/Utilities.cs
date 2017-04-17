@@ -382,6 +382,18 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
+        /// Creates an SHA256 hash
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public static byte[] SHA256(Stream stream)
+        {
+            using (SHA256 hash = System.Security.Cryptography.SHA256.Create())
+                return hash.ComputeHash(stream);
+
+        }
+
+        /// <summary>
         /// Creates an SHA256 hash of a string
         /// </summary>
         /// <param name="value"></param>
@@ -389,7 +401,7 @@ namespace Cocoon.ORM
         public static string SHA256(string value)
         {
 
-            return string.Join("", SHA256(Encoding.UTF8.GetBytes(value)).Select(item => item.ToString("x2")));
+            return HexBytes(SHA256(Encoding.UTF8.GetBytes(value)));
 
         }
 
@@ -405,6 +417,17 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
+        /// Creates an MD5 hash
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public static byte[] MD5(Stream stream)
+        {
+            using (MD5 hash = System.Security.Cryptography.MD5.Create())
+                return hash.ComputeHash(stream);
+        }
+
+        /// <summary>
         /// Creates an MD5 hash of a string
         /// </summary>
         /// <param name="value"></param>
@@ -412,7 +435,19 @@ namespace Cocoon.ORM
         public static string MD5(string value)
         {
 
-            return string.Join("", MD5(Encoding.GetEncoding(1252).GetBytes(value)).Select(item => item.ToString("x2")));
+            return HexBytes(MD5(Encoding.GetEncoding(1252).GetBytes(value)));
+
+        }
+
+        /// <summary>
+        /// Returns HEX string of bytes
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static string HexBytes(byte[] bytes)
+        {
+
+            return string.Join("", bytes.Select(item => item.ToString("x2")));
 
         }
 
