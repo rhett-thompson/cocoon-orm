@@ -211,6 +211,51 @@ namespace Cocoon.ORM
             }
 
         }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="ModelT"></typeparam>
+        /// <typeparam name="AggT"></typeparam>
+        /// <param name="aggregateFunction"></param>
+        /// <param name="fieldToAggregate"></param>
+        /// <param name="where"></param>
+        /// <param name="top"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public AggT Agg<ModelT, AggT>(string aggregateFunction, Expression<Func<ModelT, object>> fieldToAggregate, Expression<Func<ModelT, bool>> where = null, int top = 0, int timeout = -1)
+        {
+
+            TableDefinition def = GetTable(typeof(ModelT));
+
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
+            {
+
+                //generate where clause
+                string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
+
+                //generate top clause
+                string topClause = "";
+                if (top > 0)
+                    topClause = string.Format("top {0}", top);
+
+                //generate sql
+                cmd.CommandText = @"select {top} {agg_function}({agg_column}) from {model} {where}".Inject(new {
+                    top = topClause,
+                    agg_function = aggregateFunction,
+                    agg_column = GetExpressionPropName(fieldToAggregate),
+                    model = def.objectName,
+                    where = whereClause
+                });
+
+                //execute sql
+                conn.Open();
+                return Platform.readScalar<AggT>(cmd);
+
+            }
+
+        }
 
     }
 }
