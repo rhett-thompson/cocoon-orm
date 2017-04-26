@@ -95,7 +95,7 @@ class Order
     [Join]
     public static JoinDef[] joins = new JoinDef[] {
 
-        CocoonORM.Join<Order, Customer, string>(customer => customer.FirstName, order => order.CustomerFirstName)
+        CocoonORM.Join<Order, Customer>(customer => customer.FirstName, order => order.CustomerFirstName)
         
     };
     
