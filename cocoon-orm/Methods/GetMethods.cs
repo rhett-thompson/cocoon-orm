@@ -10,7 +10,7 @@ namespace Cocoon.ORM
 {
     public partial class CocoonORM
     {
-        
+
         /// <summary>
         /// Returns a list of objects
         /// </summary>
@@ -18,12 +18,13 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
+        /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, int timeout = -1)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1)
         {
 
-            return GetList(typeof(T), where, top, customParams, timeout).Cast<T>();
+            return GetList(typeof(T), where, top, customParams, distinct, timeout).Cast<T>();
 
         }
 
@@ -35,9 +36,10 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
+        /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, int timeout = -1)
+        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1)
         {
 
             TableDefinition def = GetTable(model);
@@ -46,7 +48,7 @@ namespace Cocoon.ORM
             using (DbConnection conn = Platform.getConnection())
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, top, where);
+                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, top, distinct, where);
                 Platform.readList(cmd, model, list, def.joins);
             }
 
@@ -145,7 +147,7 @@ namespace Cocoon.ORM
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
 
-                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, 1, where);
+                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, 1, false, where);
                 return Platform.readSingle<T>(cmd, def.joins);
             }
 
@@ -169,7 +171,7 @@ namespace Cocoon.ORM
             using (DbConnection conn = Platform.getConnection())
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, 1, where);
+                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, 1, false, where);
                 return Platform.readScalar<FieldT>(cmd);
             }
 
@@ -183,9 +185,10 @@ namespace Cocoon.ORM
         /// <param name="fieldToSelect">Expression pick the field in the model to select</param>
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
+        /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of values for the selected field</returns>
-        public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0, int timeout = -1)
+        public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0, bool distinct = false, int timeout = -1)
         {
 
             TableDefinition def = GetTable(typeof(ModelT));
@@ -196,7 +199,7 @@ namespace Cocoon.ORM
             using (DbConnection conn = Platform.getConnection())
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, top, where);
+                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, top, distinct, where);
                 Platform.readScalarList(cmd, list);
             }
 
