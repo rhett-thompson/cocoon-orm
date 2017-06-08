@@ -92,7 +92,7 @@ namespace Cocoon.ORM.ModelGen
                     left join sys.index_columns on sys.index_columns.object_id = sys.columns.object_id and sys.index_columns.column_id = sys.columns.column_id
                     left join sys.indexes on sys.indexes.object_id = sys.columns.object_id and sys.indexes.index_id = sys.index_columns.index_id
                     left join sys.default_constraints on sys.default_constraints.object_id = sys.columns.default_object_id
-                    where sys.columns.object_id = @object_id order by is_primary_key desc, sys.columns.name", new { object_id = table.object_id });
+                    where sys.columns.object_id = @object_id", new { object_id = table.object_id });
 
                 List<string> properties = new List<string>();
                 foreach (SysColumn column in table.columns)
