@@ -229,7 +229,7 @@ namespace Cocoon.ORM
                 foreach (PropertyInfo pk in def.primaryKeys)
                 {
                     string primaryKeyName = getObjectName(pk);
-                    outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, dbTypeMap[pk.PropertyType]));
+                    outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, getDbType(pk.PropertyType)));
                     insertedPrimaryKeys.Add("inserted." + primaryKeyName);
                     wherePrimaryKeys.Add("ids.{primaryKey} = {model}.{primaryKey}".Inject(new { primaryKey = primaryKeyName, model = def.objectName }));
                 }
