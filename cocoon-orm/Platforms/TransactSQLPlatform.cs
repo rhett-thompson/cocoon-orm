@@ -295,7 +295,7 @@ namespace Cocoon.ORM
         public override T readScalar<T>(DbCommand cmd)
         {
             object v = cmd.ExecuteScalar();
-            return v == DBNull.Value || v == null ? default(T) : (T)v;
+            return v == DBNull.Value || v == null ? default(T) : (T)Utilities.ChangeType(v, typeof(T));
         }
 
         /// <summary>

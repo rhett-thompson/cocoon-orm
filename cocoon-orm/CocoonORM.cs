@@ -113,6 +113,7 @@ namespace Cocoon.ORM
             table.type = type;
 
             //get columns
+            bool addAllProperties = type.GetProperties().Count(p => Utilities.HasAttribute<Column>(p)) == 0;
             foreach (var prop in type.GetProperties())
             {
 
@@ -122,7 +123,7 @@ namespace Cocoon.ORM
                     continue;
                 }
 
-                if (Utilities.HasAttribute<Column>(prop))
+                if (Utilities.HasAttribute<Column>(prop) || addAllProperties)
                     table.columns.Add(prop);
 
                 if (Utilities.HasAttribute<PrimaryKey>(prop))

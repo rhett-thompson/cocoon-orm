@@ -39,7 +39,7 @@ namespace Cocoon.ORM
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1)
+        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
             TableDefinition def = GetTable(model);
@@ -48,7 +48,13 @@ namespace Cocoon.ORM
             using (DbConnection conn = Platform.getConnection())
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, top, distinct, where);
+
+                var columns = def.columns;
+
+                if (fieldsToSelect.Length > 0)
+                    columns = def.columns.Where(c => fieldsToSelect.Any(f => GetExpressionPropName(f) == c.Name)).ToList();
+
+                Platform.select(conn, cmd, def.objectName, columns, def.joins, def.customColumns, customParams, top, distinct, where);
                 Platform.readList(cmd, model, list, def.joins);
             }
 
@@ -137,8 +143,9 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <param name="fieldsToSelect"></param>
         /// <returns>An object of type T with the result</returns>
-        public T GetSingle<T>(Expression<Func<T, bool>> where, object customParams = null, int timeout = -1)
+        public T GetSingle<T>(Expression<Func<T, bool>> where, object customParams = null, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
             TableDefinition def = GetTable(typeof(T));
@@ -147,7 +154,12 @@ namespace Cocoon.ORM
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
 
-                Platform.select(conn, cmd, def.objectName, def.columns, def.joins, def.customColumns, customParams, 1, false, where);
+                var columns = def.columns;
+
+                if(fieldsToSelect.Length > 0)
+                    columns = def.columns.Where(c => fieldsToSelect.Any(f => GetExpressionPropName(f) == c.Name)).ToList();
+  
+                Platform.select(conn, cmd, def.objectName, columns, def.joins, def.customColumns, customParams, 1, false, where);
                 return Platform.readSingle<T>(cmd, def.joins);
             }
 
