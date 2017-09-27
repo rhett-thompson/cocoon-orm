@@ -112,7 +112,7 @@ CocoonORM db = new CocoonORM("Server={your server};Database={your database};Uid=
 ### Attributes are used to specify columns in models, and define the properties and relationships of columns
 | Attribute  | Description |
 | ------------- | ------------- |
-| Column  | Signifies that a property in this class is mirrored as a field in the database   |
+| Column  | Signifies that a property in this class is mirrored as a field in the database.  If not columns explicitly defined all properties are assumed to be columns.   |
 | Join  | This field contains a Join definition; must be a static JoinDef, or IEnumerable<JoinDef>.  |
 | PrimaryKey  | Signifies that this column/property is a primary key  |
 | IgnoreOnInsert  | Tells Cocoon to ignore this column when inserting objects/records; usually used for columns with default fields or identity columns that are automatically incremented etc.  |
