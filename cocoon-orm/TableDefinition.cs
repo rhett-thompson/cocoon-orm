@@ -11,9 +11,9 @@ namespace Cocoon.ORM
     public class TableDefinition
     {
 
-        internal List<MemberInfo> columns = new List<MemberInfo>();
-        internal List<MemberInfo> primaryKeys = new List<MemberInfo>();
-        internal List<MemberInfo> customColumns = new List<MemberInfo>();
+        internal List<PropertyInfo> columns = new List<PropertyInfo>();
+        internal List<PropertyInfo> primaryKeys = new List<PropertyInfo>();
+        internal List<PropertyInfo> customColumns = new List<PropertyInfo>();
         internal List<JoinDef> joins = new List<JoinDef>();
 
         internal string objectName;

@@ -87,7 +87,7 @@ namespace Cocoon.ORM
     }
 
     /// <summary>
-    /// Tells to ignore this column on selects
+    /// Tells Cocoon to ignore this column on selects
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnSelect : Attribute
@@ -101,5 +101,15 @@ namespace Cocoon.ORM
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
     public class Join : Attribute { }
-    
+
+    /// <summary>
+    /// Tells to ignore this field entirely
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
+    public class Ignore : Attribute
+    {
+
+
+    }
+
 }

@@ -24,9 +24,9 @@ namespace Cocoon.ORM
             if (objectToUpdate == null)
                 throw new NullReferenceException("objectToUpdate cannot be null.");
 
-            IEnumerable<PropertyInfo> props = objectToUpdate.GetType().GetProperties().Where(p => Utilities.HasAttribute<Column>(p));
-
-            return Platform.update(Platform.getObjectName(typeof(T)), props.Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
+            TableDefinition def = GetTable(objectToUpdate.GetType());
+            
+            return Platform.update(Platform.getObjectName(typeof(T)), def.columns.Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
 
         }
 
@@ -58,10 +58,7 @@ namespace Cocoon.ORM
         {
 
             PropertyInfo prop = GetExpressionProp(fieldToUpdate);
-
-            if (!Utilities.HasAttribute<Column>(prop))
-                throw new InvalidMemberException("Update field requires property to be decorated with [Column] attribute", prop);
-
+            
             return Platform.update(Platform.getObjectName(typeof(ModelT)), new List<Tuple<PropertyInfo, object>>() { new Tuple<PropertyInfo, object>(prop, value) }, timeout, where);
 
         }

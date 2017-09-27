@@ -80,7 +80,7 @@ namespace Cocoon.ORM
         /// <returns></returns>
         public override string addWhereParam(DbCommand cmd, object value)
         {
-            return value == null ? "null" : addParam(cmd, string.Format("where_{0}", getGuidString()), value).ParameterName;
+            return value == null ? "null" : addParam(cmd, $"where_{getGuidString()}", value).ParameterName;
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace Cocoon.ORM
             foreach (JoinDef join in joins)
             {
 
-                string alias = getObjectName(string.Format("join_table_{0}", getGuidString()));
+                string alias = getObjectName($"join_table_{getGuidString()}");
 
                 string joinPart = "join";
                 if (join.JoinType == JoinType.LEFT)
@@ -110,21 +110,8 @@ namespace Cocoon.ORM
                 else if (join.JoinType == JoinType.FULL_OUTER)
                     joinPart = "full outer join";
 
-                joinClauseList.Add("{joinPart} {otherModel} as {alias} on {model}.{key} = {alias}.{otherKey}".Inject(new
-                {
-
-                    joinPart = joinPart,
-                    model = tableObjectName,
-                    otherModel = getObjectName(join.RightTable),
-                    alias = alias,
-                    key = getObjectName(join.LeftKey),
-                    otherKey = getObjectName(join.RightKey)
-                }));
-
-                columnsToSelect.Add(string.Format("{0}.{1} as {2}",
-                    alias,
-                    getObjectName(join.FieldToSelect),
-                    getObjectName(join.FieldToRecieve)));
+                joinClauseList.Add($"{joinPart} {getObjectName(join.RightTable)} as {alias} on {tableObjectName}.{getObjectName(join.LeftKey)} = {alias}.{getObjectName(join.RightKey)}");
+                columnsToSelect.Add($"{alias}.{getObjectName(join.FieldToSelect)} as {getObjectName(join.FieldToRecieve)}");
 
             }
 
@@ -186,7 +173,7 @@ namespace Cocoon.ORM
         /// <returns></returns>
         public override string getObjectName(string name)
         {
-            return string.Format("[{0}]", name);
+            return $"[{name}]";
         }
 
         /// <summary>
@@ -213,7 +200,7 @@ namespace Cocoon.ORM
                     if (def.columns.Contains(prop) && !Utilities.HasAttribute<IgnoreOnInsert>(prop))
                     {
 
-                        columns.Add(string.Format("{0}.{1}", def.objectName, getObjectName(prop)));
+                        columns.Add($"{def.objectName}.{getObjectName(prop)}");
 
                         object value = prop.GetValue(objectToInsert);
 
@@ -229,21 +216,17 @@ namespace Cocoon.ORM
                 foreach (PropertyInfo pk in def.primaryKeys)
                 {
                     string primaryKeyName = getObjectName(pk);
-                    outputTableKeys.Add(string.Format("{0} {1}", primaryKeyName, getDbType(pk.PropertyType)));
+                    outputTableKeys.Add($"{primaryKeyName} {getDbType(pk.PropertyType)}");
                     insertedPrimaryKeys.Add("inserted." + primaryKeyName);
-                    wherePrimaryKeys.Add("ids.{primaryKey} = {model}.{primaryKey}".Inject(new { primaryKey = primaryKeyName, model = def.objectName }));
+                    wherePrimaryKeys.Add($"ids.{primaryKeyName} = {def.objectName}.{primaryKeyName}");
                 }
 
                 //generate query
-                cmd.CommandText = "{insertedTable};insert into {model} ({columns}) output {insertedPrimaryKeys} into @ids values ({values});select {model}.* from {model} join @ids ids on {wherePrimaryKeys}".Inject(new
-                {
-                    insertedTable = string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
-                    model = def.objectName,
-                    columns = string.Join(", ", columns),
-                    insertedPrimaryKeys = string.Join(", ", insertedPrimaryKeys),
-                    values = string.Join(", ", values),
-                    wherePrimaryKeys = string.Join(" and ", wherePrimaryKeys)
-                });
+                string insertedTable = $"declare @ids table({string.Join(", ", outputTableKeys)})";
+                cmd.CommandText = $@"{insertedTable};
+                    insert into {def.objectName} ({string.Join(", ", columns)}) 
+                    output {string.Join(", ", insertedPrimaryKeys)} into @ids values ({string.Join(", ", values)});
+                    select {def.objectName}.* from {def.objectName} join @ids ids on {string.Join(" and ", wherePrimaryKeys)}";
 
                 conn.Open();
 
@@ -344,11 +327,11 @@ namespace Cocoon.ORM
         /// <param name="top"></param>
         /// <param name="distinct"></param>
         /// <param name="where"></param>
-        public override void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<MemberInfo> columns, IEnumerable<JoinDef> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where)
+        public override void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<JoinDef> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where)
         {
 
             //get columns to select
-            List<string> columnsToSelect = columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", tableObjectName, getObjectName(c))).ToList();
+            List<string> columnsToSelect = columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => $"{tableObjectName}.{getObjectName(c)}").ToList();
             if (columnsToSelect.Count == 0)
                 throw new Exception("No columns to select");
 
@@ -366,7 +349,7 @@ namespace Cocoon.ORM
 
                     AggSQLColumn attr = customColumn.GetCustomAttribute<AggSQLColumn>();
 
-                    columnsToSelect.Add(string.Format("({0}) as {1}", attr.sql, getObjectName(customColumn)));
+                    columnsToSelect.Add($"({attr.sql}) as {getObjectName(customColumn)}");
 
                 }
 
@@ -381,18 +364,10 @@ namespace Cocoon.ORM
             //generate top clause
             string topClause = "";
             if (top > 0)
-                topClause = string.Format("top {0}", top);
+                topClause = $"top {top}";
 
             //generate sql
-            cmd.CommandText = "select {distinct} {top} {columns} from {model} {joins} {where}".Inject(new
-            {
-                distinct = distinct ? "distinct" : "",
-                top = topClause,
-                model = tableObjectName,
-                columns = string.Join(", ", columnsToSelect),
-                joins = joinClause,
-                where = whereClause
-            });
+            cmd.CommandText = $"select {(distinct ? "distinct" : "")} {topClause} {string.Join(", ", columnsToSelect)} from {tableObjectName} {joinClause} {whereClause}";
 
             //execute sql
             conn.Open();
@@ -429,7 +404,7 @@ namespace Cocoon.ORM
                     {
 
                         if (value is SQLValue)
-                            columnsToUpdate.Add(string.Format("{0}.{1} = ({2})", tableObjectName, getObjectName(prop), ((SQLValue)value).sql));
+                            columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = ({((SQLValue)value).sql})");
                         else
                         {
 
@@ -437,7 +412,7 @@ namespace Cocoon.ORM
                                 value = null;
 
                             DbParameter param = addParam(cmd, "update_field_" + getGuidString(), value);
-                            columnsToUpdate.Add(string.Format("{0}.{1} = {2}", tableObjectName, getObjectName(prop), param.ParameterName));
+                            columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
 
                         }
 
@@ -446,7 +421,7 @@ namespace Cocoon.ORM
                     if (Utilities.HasAttribute<PrimaryKey>(prop) && where == null)
                     {
                         DbParameter param = addParam(cmd, "where_" + getGuidString(), value);
-                        primaryKeys.Add(string.Format("{0}.{1} = {2}", tableObjectName, getObjectName(prop), param.ParameterName));
+                        primaryKeys.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
                     }
 
                 }
@@ -455,7 +430,7 @@ namespace Cocoon.ORM
                     whereClause = "where " + string.Join(" and ", primaryKeys);
 
                 //generate sql
-                cmd.CommandText = string.Format("update {0} set {1} {2}", tableObjectName, string.Join(", ", columnsToUpdate), whereClause);
+                cmd.CommandText = $"update {tableObjectName} set {string.Join(", ", columnsToUpdate)} {whereClause}";
 
                 //execute
                 conn.Open();

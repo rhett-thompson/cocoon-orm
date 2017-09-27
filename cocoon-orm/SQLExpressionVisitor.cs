@@ -63,7 +63,7 @@ namespace Cocoon.ORM
                 else
                     whereBuilder.Append(" <> ");
             else
-                throw new NotSupportedException(string.Format("Binary operator '{0}' not supported", node.NodeType));
+                throw new NotSupportedException($"Binary operator '{node.NodeType}' not supported");
             
             Visit(node.Right);
 
@@ -75,13 +75,12 @@ namespace Cocoon.ORM
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
-                whereBuilder.Append(string.Format("{0}.{1}", tableObjectName, orm.Platform.getObjectName(node.Member)));
+                whereBuilder.Append($"{tableObjectName}.{orm.Platform.getObjectName(node.Member)}");
             else
                 whereBuilder.Append(orm.Platform.addWhereParam(cmd, getExpressionValue(node)));
 
             return node;
-            //throw new NotSupportedException(string.Format("The member '{0}' is not supported", node.Member.Name));
-
+    
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -95,7 +94,6 @@ namespace Cocoon.ORM
                 addLikeParam(node, "%" + getExpressionValue(node.Arguments[0]) + "%");
             else
                 whereBuilder.Append(orm.Platform.addWhereParam(cmd, Expression.Lambda(node).Compile().DynamicInvoke()));
-            //throw new NotSupportedException(string.Format("Method '{0}' not supported", node.Method.Name));
 
             return node;
 
@@ -112,7 +110,7 @@ namespace Cocoon.ORM
             else if (node.NodeType == ExpressionType.Convert)
                 Visit(node.Operand);
             else
-                throw new NotSupportedException(string.Format("Unary operator '{0}' not supported", node.NodeType));
+                throw new NotSupportedException($"Unary operator '{node.NodeType}' not supported");
 
             return node;
 
@@ -135,10 +133,7 @@ namespace Cocoon.ORM
         {
             MemberExpression member = (MemberExpression)node.Object;
 
-            whereBuilder.Append(string.Format("{0}.{1} like {2}",
-                tableObjectName,
-                orm.Platform.getObjectName(member.Member),
-                orm.Platform.addWhereParam(cmd, like)));
+            whereBuilder.Append($"{tableObjectName}.{orm.Platform.getObjectName(member.Member)} like {orm.Platform.addWhereParam(cmd, like)}");
 
         }
 

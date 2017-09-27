@@ -41,7 +41,7 @@ namespace Cocoon.ORM
 
                 string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
-                cmd.CommandText = "delete from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
+                cmd.CommandText = $"delete from {def.objectName} {whereClause}";
 
                 conn.Open();
                 return cmd.ExecuteNonQuery();
@@ -66,9 +66,9 @@ namespace Cocoon.ORM
 
                 List<string> primaryKeys = new List<string>();
                 foreach (PropertyInfo key in def.primaryKeys)
-                    primaryKeys.Add("{key} = {value}".Inject(new { key = Platform.getObjectName(key), value = Platform.addWhereParam(cmd, key.GetValue(objectToDelete)) }));
+                    primaryKeys.Add($"{Platform.getObjectName(key)} = {Platform.addWhereParam(cmd, key.GetValue(objectToDelete))}");
 
-                cmd.CommandText = "delete from {model} where {where}".Inject(new { model = def.objectName, where = string.Join(" and ", primaryKeys) });
+                cmd.CommandText = $"delete from {def.objectName} where {string.Join(" and ", primaryKeys)}";
 
                 conn.Open();
                 return cmd.ExecuteNonQuery();

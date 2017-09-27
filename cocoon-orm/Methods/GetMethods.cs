@@ -20,11 +20,12 @@ namespace Cocoon.ORM
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <param name="fieldsToSelect"></param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
-            return GetList(typeof(T), where, top, customParams, distinct, timeout).Cast<T>();
+            return GetList(typeof(T), where, top, customParams, distinct, timeout, fieldsToSelect).Cast<T>();
 
         }
 
@@ -38,6 +39,7 @@ namespace Cocoon.ORM
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <param name="fieldsToSelect"></param>
         /// <returns>List of objects with the result</returns>
         public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
         {
@@ -96,7 +98,7 @@ namespace Cocoon.ORM
             {
 
                 //get columns to select
-                List<string> columnsToSelect = modelDef.columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => string.Format("{0}.{1}", modelDef.objectName, Platform.getObjectName(c))).ToList();
+                List<string> columnsToSelect = modelDef.columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => $"{modelDef.objectName}.{Platform.getObjectName(c)}").ToList();
                 if (columnsToSelect.Count == 0)
                     throw new Exception("No columns to select");
 
@@ -110,21 +112,12 @@ namespace Cocoon.ORM
                 //generate top clause
                 string topClause = "";
                 if (top > 0)
-                    topClause = string.Format("top {0}", top);
+                    topClause = $"top {top}";
 
                 //build sql
-                cmd.CommandText = "select {top} {columns} from {model} {joins} where {model}.{modelKey} in (select {inModel}.{inModelKey} from {inModel} {inModelWhere}) {modelWhere}".Inject(new
-                {
-                    top = topClause,
-                    model = modelDef.objectName,
-                    inModel = inModelDef.objectName,
-                    columns = string.Join(", ", columnsToSelect),
-                    joins = joinClause,
-                    modelKey = GetExpressionPropName(modelKey),
-                    inModelKey = GetExpressionPropName(inModelKey),
-                    inModelWhere = inModelWhereClause,
-                    modelWhere = modelWhereClause != null ? "and " + modelWhereClause : ""
-                });
+                string columns = string.Join(", ", columnsToSelect);
+                string modelWhere = modelWhereClause != null ? "and " + modelWhereClause : "";
+                cmd.CommandText = $"select {topClause} {string.Join(", ", columnsToSelect)} from {modelDef.objectName} {joinClause} where {modelDef.objectName}.{GetExpressionPropName(modelKey)} in (select {inModelDef.objectName}.{inModelKey} from {inModelDef.objectName} {inModelWhereClause}) {modelWhere}";
 
                 //execute sql
                 conn.Open();
@@ -183,7 +176,7 @@ namespace Cocoon.ORM
             using (DbConnection conn = Platform.getConnection())
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, 1, false, where);
+                Platform.select(conn, cmd, def.objectName, new List<PropertyInfo>() { prop }, null, null, null, 1, false, where);
                 return Platform.readScalar<FieldT>(cmd);
             }
 
@@ -211,7 +204,7 @@ namespace Cocoon.ORM
             using (DbConnection conn = Platform.getConnection())
             using (DbCommand cmd = Platform.getCommand(conn, timeout))
             {
-                Platform.select(conn, cmd, def.objectName, new List<MemberInfo>() { prop }, null, null, null, top, distinct, where);
+                Platform.select(conn, cmd, def.objectName, new List<PropertyInfo>() { prop }, null, null, null, top, distinct, where);
                 Platform.readScalarList(cmd, list);
             }
 

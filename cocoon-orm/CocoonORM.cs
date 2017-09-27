@@ -81,7 +81,7 @@ namespace Cocoon.ORM
         public string GetObject<ModelT>(Expression<Func<ModelT, object>> field)
         {
 
-            return string.Format("{0}.{1}", Platform.getObjectName(typeof(ModelT)), Platform.getObjectName(GetExpressionProp(field)));
+            return $"{Platform.getObjectName(typeof(ModelT))}.{Platform.getObjectName(GetExpressionProp(field))}";
 
         }
 
@@ -117,6 +117,9 @@ namespace Cocoon.ORM
             foreach (var prop in type.GetProperties())
             {
 
+                if (Utilities.HasAttribute<Ignore>(prop))
+                    continue;
+
                 if (Utilities.HasAttribute<AggSQLColumn>(prop))
                 {
                     table.customColumns.Add(prop);
@@ -148,7 +151,7 @@ namespace Cocoon.ORM
             }
 
             if (table.columns.Count == 0 && table.primaryKeys.Count == 0)
-                throw new Exception(string.Format("Model '{0}' has no columns defined.", type));
+                throw new Exception($"Model '{type}' has no columns defined.");
 
             tables.Add(type, table);
 
@@ -229,7 +232,7 @@ namespace Cocoon.ORM
     internal class InvalidMemberException : Exception
     {
 
-        public InvalidMemberException(string message, MemberInfo member) : base(string.Format("{0} => '{1}' in '{2}'", message, member, member.DeclaringType)) { }
+        public InvalidMemberException(string message, MemberInfo member) : base($"{message} => '{member}' in '{member.DeclaringType}'") { }
 
     }
 

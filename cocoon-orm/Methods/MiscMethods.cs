@@ -31,7 +31,7 @@ namespace Cocoon.ORM
                 string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
                 //generate sql
-                cmd.CommandText = "select count(*) from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
+                cmd.CommandText = $"select count(*) from {def.objectName} {whereClause}";
 
                 //execute sql
                 conn.Open();
@@ -61,7 +61,7 @@ namespace Cocoon.ORM
                 string whereClause = Platform.generateWhereClause(cmd, def.objectName, where);
 
                 //generate sql
-                cmd.CommandText = "select checksum_agg(binary_checksum(*)) from {model} {where}".Inject(new { model = def.objectName, where = whereClause });
+                cmd.CommandText = $"select checksum_agg(binary_checksum(*)) from {def.objectName} {whereClause}";
 
                 //execute sql
                 conn.Open();
@@ -110,7 +110,7 @@ namespace Cocoon.ORM
                     if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
                     {
 
-                        string column = string.Format("{0}.{1}", def.objectName, Platform.getObjectName(prop));
+                        string column = $"{def.objectName}.{Platform.getObjectName(prop)}";
                         columns.Add(column);
 
                         PropertyInfo overrideProp = overrideValueProps.SingleOrDefault(p => p.Name == prop.Name);
@@ -128,22 +128,14 @@ namespace Cocoon.ORM
                 foreach (PropertyInfo pk in def.primaryKeys)
                 {
                     string primaryKeyName = Platform.getObjectName(pk);
-                    outputTableKeys.Add("{key} {type}".Inject(new { key = primaryKeyName, type = Platform.getDbType(pk.PropertyType) }));
+                    outputTableKeys.Add($"{primaryKeyName} {Platform.getDbType(pk.PropertyType) }");
                     insertedPrimaryKeys.Add("inserted." + primaryKeyName);
-                    wherePrimaryKeys.Add("ids.{primaryKey} = {model}.{primaryKey}".Inject(new { primaryKey = primaryKeyName, model = def.objectName }));
+                    wherePrimaryKeys.Add($"ids.{primaryKeyName} = {def.objectName}.{primaryKeyName}");
                 }
 
                 //build sql
-                cmd.CommandText = "{insertedTable};insert into {model} ({columns}) output {insertedPrimaryKeys} into @ids select {values} from {model} {where};select {model}.* from {model} join @ids ids on {wherePrimaryKeys}".Inject(new
-                {
-                    insertedTable = string.Format("declare @ids table({0})", string.Join(", ", outputTableKeys)),
-                    model = def.objectName,
-                    columns = string.Join(", ", columns),
-                    insertedPrimaryKeys = string.Join(", ", insertedPrimaryKeys),
-                    values = string.Join(", ", values),
-                    wherePrimaryKeys = string.Join(" and ", wherePrimaryKeys),
-                    where = whereClause
-                });
+                string insertedTable = $"declare @ids table({string.Join(", ", outputTableKeys)})";
+                cmd.CommandText = $"{insertedTable};insert into {def.objectName} ({string.Join(", ", columns)}) output {string.Join(", ", insertedPrimaryKeys)} into @ids select {string.Join(", ", values)} from {def.objectName} {whereClause};select {def.objectName}.* from {def.objectName} join @ids ids on {string.Join(" and ", wherePrimaryKeys)}";
 
                 conn.Open();
 
@@ -180,29 +172,23 @@ namespace Cocoon.ORM
                 List<string> columns = new List<string>();
                 foreach (MemberInfo member in def.columns)
                     if (((PropertyInfo)member).PropertyType == typeof(DateTime) || ((PropertyInfo)member).PropertyType == typeof(DateTime?))
-                        columns.Add("format({column}, 'MM/dd/yyyy H:mm:ss')".InjectSingleValue("column", Platform.getObjectName(member)));
+                        columns.Add($"format({Platform.getObjectName(member)}, 'MM/dd/yyyy H:mm:ss')");
                     else
                         columns.Add(Platform.getObjectName(member));
 
                 //generate top clause
                 string topClause = "";
                 if (top > 0)
-                    topClause = string.Format("top {0}", top);
+                    topClause = $"top {top}";
 
                 //generate sql
-                cmd.CommandText = @"
+                cmd.CommandText = $@"
                     declare @hashes table (md5 varchar(32))
                     declare @list varchar(max)
-                    insert into @hashes select {top} convert(varchar(32), hashbytes('MD5', convert(varchar(1000), concat({columns}))), 2) as md5 from {model} {where}
+                    insert into @hashes select {topClause} convert(varchar(32), hashbytes('MD5', convert(varchar(1000), concat({string.Join(", ',', ", columns)}))), 2) as md5 from {def.objectName} {whereClause}
                     select @list = coalesce(@list + ',', '') + md5 from @hashes
                     select convert(varchar(32), hashbytes('MD5', @list), 2)
-                ".Inject(new
-                {
-                    top = topClause,
-                    columns = string.Join(", ',', ", columns),
-                    model = def.objectName,
-                    where = whereClause
-                });
+                ";
 
                 //execute sql
                 conn.Open();
@@ -238,16 +224,10 @@ namespace Cocoon.ORM
                 //generate top clause
                 string topClause = "";
                 if (top > 0)
-                    topClause = string.Format("top {0}", top);
+                    topClause = $"top {top}";
 
                 //generate sql
-                cmd.CommandText = @"select {top} {agg_function}({agg_column}) from {model} {where}".Inject(new {
-                    top = topClause,
-                    agg_function = aggregateFunction,
-                    agg_column = GetExpressionPropName(fieldToAggregate),
-                    model = def.objectName,
-                    where = whereClause
-                });
+                cmd.CommandText = $"select {topClause} {aggregateFunction}({GetExpressionPropName(fieldToAggregate)}) from {def.objectName} {whereClause}";
 
                 //execute sql
                 conn.Open();

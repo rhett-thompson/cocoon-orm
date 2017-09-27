@@ -122,7 +122,7 @@ namespace Cocoon.ORM.ModelGen
 
                 }
 
-                classes.Add(string.Format("public class {0}\r\n{{\r\n\r\n{1}\r\n\r\n}}", table.name, string.Join("\r\n\r\n", properties)));
+                classes.Add($"public class {table.name}\r\n{{\r\n\r\n{string.Join("\r\n\r\n", properties)}\r\n\r\n}}");
 
             }
 
