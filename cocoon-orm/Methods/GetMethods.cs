@@ -117,7 +117,7 @@ namespace Cocoon.ORM
                 //build sql
                 string columns = string.Join(", ", columnsToSelect);
                 string modelWhere = modelWhereClause != null ? "and " + modelWhereClause : "";
-                cmd.CommandText = $"select {topClause} {string.Join(", ", columnsToSelect)} from {modelDef.objectName} {joinClause} where {modelDef.objectName}.{GetExpressionPropName(modelKey)} in (select {inModelDef.objectName}.{inModelKey} from {inModelDef.objectName} {inModelWhereClause}) {modelWhere}";
+                cmd.CommandText = $"select {topClause} {string.Join(", ", columnsToSelect)} from {modelDef.objectName} {joinClause} where {modelDef.objectName}.{GetExpressionPropName(modelKey)} in (select {inModelDef.objectName}.{GetExpressionPropName(inModelKey)} from {inModelDef.objectName} {inModelWhereClause}) {modelWhere}";
 
                 //execute sql
                 conn.Open();

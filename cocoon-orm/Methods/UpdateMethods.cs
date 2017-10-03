@@ -98,10 +98,7 @@ namespace Cocoon.ORM
         {
 
             PropertyInfo prop = CocoonORM.GetExpressionProp(fieldToUpdate);
-
-            if (!Utilities.HasAttribute<Column>(prop))
-                throw new InvalidMemberException("Update field requires property to be decorated with [Column] attribute", prop);
-
+            
             fields.Add(new Tuple<PropertyInfo, object>(prop, value));
 
         }
