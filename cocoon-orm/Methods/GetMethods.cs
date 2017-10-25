@@ -98,7 +98,7 @@ namespace Cocoon.ORM
             {
 
                 //get columns to select
-                List<string> columnsToSelect = modelDef.columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => $"{modelDef.objectName}.{Platform.getObjectName(c)}").ToList();
+                List<string> columnsToSelect = modelDef.columns.Where(c => !ORMUtilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => $"{modelDef.objectName}.{Platform.getObjectName(c)}").ToList();
                 if (columnsToSelect.Count == 0)
                     throw new Exception("No columns to select");
 

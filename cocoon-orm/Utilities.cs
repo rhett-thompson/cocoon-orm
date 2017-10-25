@@ -16,7 +16,8 @@ namespace Cocoon.ORM
     /// <summary>
     /// 
     /// </summary>
-    public class Utilities
+    public class ORMUtilities
+
     {
 
         internal const string base36Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -556,6 +557,31 @@ namespace Cocoon.ORM
 
             return Encoding.UTF8.GetString(GZipDecompress(Convert.FromBase64String(compressedText)));
             
+        }
+
+        /// <summary>
+        /// Copies all matching property values from one object to another
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        public static void CopyPropertiesTo(object source, object dest)
+        {
+
+            var sourceProps = source.GetType().GetProperties().Where(x => x.CanRead).ToList();
+            var destProps = dest.GetType().GetProperties()
+                    .Where(x => x.CanWrite)
+                    .ToList();
+
+            foreach (var sourceProp in sourceProps)
+            {
+                if (destProps.Any(x => x.Name == sourceProp.Name))
+                {
+                    var p = destProps.First(x => x.Name == sourceProp.Name);
+                    p.SetValue(dest, sourceProp.GetValue(source, null), null);
+                }
+
+            }
+
         }
 
     }

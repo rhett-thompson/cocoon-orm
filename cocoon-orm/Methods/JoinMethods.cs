@@ -60,8 +60,8 @@ namespace Cocoon.ORM
             Type leftType = typeof(ForeignTableModelT);
             Type rightType = typeof(PrimaryTableModelT);
 
-            PropertyInfo leftPrimaryKey = leftType.GetProperties().Where(p => Utilities.HasAttribute<PrimaryKey>(p)).FirstOrDefault();
-            PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => Utilities.HasAttribute<PrimaryKey>(p)).FirstOrDefault();
+            PropertyInfo leftPrimaryKey = leftType.GetProperties().Where(p => ORMUtilities.HasAttribute<PrimaryKey>(p)).FirstOrDefault();
+            PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => ORMUtilities.HasAttribute<PrimaryKey>(p)).FirstOrDefault();
 
             if (leftPrimaryKey == null)
                 throw new InvalidMemberException("Left table missing primary key attribute", leftPrimaryKey);
@@ -104,7 +104,7 @@ namespace Cocoon.ORM
             Type leftType = typeof(ForeignTableModelT);
             Type rightType = typeof(PrimaryTableModelT);
 
-            PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => Utilities.HasAttribute<PrimaryKey>(p)).FirstOrDefault();
+            PropertyInfo rightPrimaryKey = rightType.GetProperties().Where(p => ORMUtilities.HasAttribute<PrimaryKey>(p)).FirstOrDefault();
 
             if (rightPrimaryKey == null)
                 throw new InvalidMemberException("Right table missing primary key attribute.", rightPrimaryKey);

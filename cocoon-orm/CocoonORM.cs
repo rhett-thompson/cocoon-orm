@@ -113,29 +113,29 @@ namespace Cocoon.ORM
             table.type = type;
 
             //get columns
-            bool addAllProperties = type.GetProperties().Count(p => Utilities.HasAttribute<Column>(p)) == 0;
+            bool addAllProperties = type.GetProperties().Count(p => ORMUtilities.HasAttribute<Column>(p)) == 0;
             foreach (var prop in type.GetProperties())
             {
 
-                if (Utilities.HasAttribute<Ignore>(prop))
+                if (ORMUtilities.HasAttribute<Ignore>(prop))
                     continue;
 
-                if (Utilities.HasAttribute<AggSQLColumn>(prop))
+                if (ORMUtilities.HasAttribute<AggSQLColumn>(prop))
                 {
                     table.customColumns.Add(prop);
                     continue;
                 }
 
-                if (Utilities.HasAttribute<Column>(prop) || addAllProperties)
+                if (ORMUtilities.HasAttribute<Column>(prop) || addAllProperties)
                     table.columns.Add(prop);
 
-                if (Utilities.HasAttribute<PrimaryKey>(prop))
+                if (ORMUtilities.HasAttribute<PrimaryKey>(prop))
                     table.primaryKeys.Add(prop);
 
             }
 
             //get joins
-            foreach (FieldInfo field in type.GetFields().Where(w => Utilities.HasAttribute<Join>(w)))
+            foreach (FieldInfo field in type.GetFields().Where(w => ORMUtilities.HasAttribute<Join>(w)))
             {
 
                 if (!field.IsStatic)
@@ -158,7 +158,7 @@ namespace Cocoon.ORM
             return table;
 
         }
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -202,7 +202,7 @@ namespace Cocoon.ORM
         {
 
             string name = member.Name;
-            if (Utilities.HasAttribute<OverrideName>(member))
+            if (ORMUtilities.HasAttribute<OverrideName>(member))
                 name = member.GetCustomAttribute<OverrideName>().name;
 
             return name;

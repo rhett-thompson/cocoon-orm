@@ -197,7 +197,7 @@ namespace Cocoon.ORM
                 List<string> columns = new List<string>();
                 List<string> values = new List<string>();
                 foreach (PropertyInfo prop in objectToInsert.GetType().GetProperties())
-                    if (def.columns.Contains(prop) && !Utilities.HasAttribute<IgnoreOnInsert>(prop))
+                    if (def.columns.Contains(prop) && !ORMUtilities.HasAttribute<IgnoreOnInsert>(prop))
                     {
 
                         columns.Add($"{def.objectName}.{getObjectName(prop)}");
@@ -265,7 +265,7 @@ namespace Cocoon.ORM
         public override object readObject(Type type, DbDataReader reader, IEnumerable<JoinDef> joins)
         {
             object obj = Activator.CreateInstance(type);
-            Utilities.SetFromReader(obj, reader, joins);
+            ORMUtilities.SetFromReader(obj, reader, joins);
             return obj;
         }
 
@@ -278,7 +278,7 @@ namespace Cocoon.ORM
         public override T readScalar<T>(DbCommand cmd)
         {
             object v = cmd.ExecuteScalar();
-            return v == DBNull.Value || v == null ? default(T) : (T)Utilities.ChangeType(v, typeof(T));
+            return v == DBNull.Value || v == null ? default(T) : (T)ORMUtilities.ChangeType(v, typeof(T));
         }
 
         /// <summary>
@@ -331,7 +331,7 @@ namespace Cocoon.ORM
         {
 
             //get columns to select
-            List<string> columnsToSelect = columns.Where(c => !Utilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => $"{tableObjectName}.{getObjectName(c)}").ToList();
+            List<string> columnsToSelect = columns.Where(c => !ORMUtilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => $"{tableObjectName}.{getObjectName(c)}").ToList();
             if (columnsToSelect.Count == 0)
                 throw new Exception("No columns to select");
 
@@ -400,7 +400,7 @@ namespace Cocoon.ORM
                     PropertyInfo prop = field.Item1;
                     object value = field.Item2;
 
-                    if (!Utilities.HasAttribute<IgnoreOnUpdate>(prop))
+                    if (!ORMUtilities.HasAttribute<IgnoreOnUpdate>(prop))
                     {
 
                         if (value is SQLValue)
@@ -418,7 +418,7 @@ namespace Cocoon.ORM
 
                     }
 
-                    if (Utilities.HasAttribute<PrimaryKey>(prop) && where == null)
+                    if (ORMUtilities.HasAttribute<PrimaryKey>(prop) && where == null)
                     {
                         DbParameter param = addParam(cmd, "where_" + getGuidString(), value);
                         primaryKeys.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");

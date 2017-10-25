@@ -107,7 +107,7 @@ namespace Cocoon.ORM
                 List<string> values = new List<string>();
                 PropertyInfo[] overrideValueProps = overrideValues != null ? overrideValues.GetType().GetProperties() : new PropertyInfo[0];
                 foreach (PropertyInfo prop in def.columns)
-                    if (!Utilities.HasAttribute<IgnoreOnInsert>(prop))
+                    if (!ORMUtilities.HasAttribute<IgnoreOnInsert>(prop))
                     {
 
                         string column = $"{def.objectName}.{Platform.getObjectName(prop)}";
