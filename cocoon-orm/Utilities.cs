@@ -405,7 +405,7 @@ namespace Cocoon.ORM
             return HexBytes(SHA256(Encoding.UTF8.GetBytes(value)));
 
         }
-
+        
         /// <summary>
         /// Creates an MD5 hash
         /// </summary>

@@ -8,9 +8,9 @@ namespace Cocoon.ORM
 {
     public partial class CocoonORM
     {
-        
+
         /// <summary>
-        /// Executes a SQL statement for a list of rows
+        /// Executes a SQL statement for a list
         /// </summary>
         /// <typeparam name="T">Table model</typeparam>
         /// <param name="sql">SQL statement string</param>
@@ -20,7 +20,6 @@ namespace Cocoon.ORM
         public IEnumerable<T> ExecuteSQLList<T>(string sql, object parameters = null, int timeout = -1)
         {
 
-            bool isScalar = !typeof(T).IsClass;
             List<object> list = new List<object>();
 
             using (DbConnection conn = Platform.getConnection())
@@ -33,10 +32,38 @@ namespace Cocoon.ORM
                 cmd.CommandText = sql;
                 conn.Open();
 
-                if (isScalar)
-                    Platform.readScalarList(cmd, list);
-                else
-                    Platform.readList(cmd, typeof(T), list, null);
+                Platform.readList(cmd, typeof(T), list, null);
+
+            }
+
+            return list.Cast<T>();
+
+        }
+
+        /// <summary>
+        /// Executes a SQL statement for a list
+        /// </summary>
+        /// <typeparam name="T">Table model</typeparam>
+        /// <param name="sql">SQL statement string</param>
+        /// <param name="parameters">Object containing the parameters of the query. Members of this object that match @Parameter variables in the SQL will be parameterized.</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>A list of type T with the result</returns>
+        public IEnumerable<T> ExecuteSQLScalarList<T>(string sql, object parameters = null, int timeout = -1)
+        {
+
+            List<object> list = new List<object>();
+
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
+            {
+
+                Platform.addParamObject(cmd, parameters);
+                Platform.addParam(cmd, "table", Platform.getObjectName(typeof(T)));
+
+                cmd.CommandText = sql;
+                conn.Open();
+
+                Platform.readScalarList(cmd, list);
 
             }
 
@@ -127,6 +154,6 @@ namespace Cocoon.ORM
             }
 
         }
-        
+
     }
 }
