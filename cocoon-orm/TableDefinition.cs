@@ -14,7 +14,7 @@ namespace Cocoon.ORM
         internal List<PropertyInfo> columns = new List<PropertyInfo>();
         internal List<PropertyInfo> primaryKeys = new List<PropertyInfo>();
         internal List<PropertyInfo> customColumns = new List<PropertyInfo>();
-        internal List<JoinDef> joins = new List<JoinDef>();
+        internal List<Join> joins = new List<Join>();
 
         internal string objectName;
         internal Type type;

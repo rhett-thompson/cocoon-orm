@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Reflection;
 
 namespace Cocoon.ORM
 {
@@ -27,7 +28,6 @@ namespace Cocoon.ORM
             {
 
                 Platform.addParamObject(cmd, parameters);
-                Platform.addParam(cmd, "table", Platform.getObjectName(typeof(T)));
 
                 cmd.CommandText = sql;
                 conn.Open();
@@ -58,7 +58,6 @@ namespace Cocoon.ORM
             {
 
                 Platform.addParamObject(cmd, parameters);
-                Platform.addParam(cmd, "table", Platform.getObjectName(typeof(T)));
 
                 cmd.CommandText = sql;
                 conn.Open();
@@ -70,7 +69,7 @@ namespace Cocoon.ORM
             return list.Cast<T>();
 
         }
-
+        
         /// <summary>
         /// Executes a SQL statement for a single row
         /// </summary>
@@ -89,7 +88,6 @@ namespace Cocoon.ORM
             {
 
                 Platform.addParamObject(cmd, parameters);
-                Platform.addParam(cmd, "table", Platform.getObjectName(typeof(T)));
 
                 cmd.CommandText = sql;
                 conn.Open();

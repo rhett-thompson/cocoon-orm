@@ -67,7 +67,7 @@ namespace Cocoon.ORM
     }
 
     /// <summary>
-    /// Tells Cocoon to ignore this column during updates
+    /// Ignore this column during updates
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnUpdate : Attribute
@@ -77,7 +77,7 @@ namespace Cocoon.ORM
     }
 
     /// <summary>
-    /// Tells Cocoon to ignore this column during inserts
+    /// Ignore this column during inserts
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnInsert : Attribute
@@ -87,7 +87,7 @@ namespace Cocoon.ORM
     }
 
     /// <summary>
-    /// Tells Cocoon to ignore this column on selects
+    /// Ignore this column on selects
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class IgnoreOnSelect : Attribute
@@ -95,15 +95,9 @@ namespace Cocoon.ORM
 
 
     }
-
+    
     /// <summary>
-    /// 
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Field)]
-    public class Join : Attribute { }
-
-    /// <summary>
-    /// Tells to ignore this field entirely
+    /// Ignore this field entirely
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public class Ignore : Attribute

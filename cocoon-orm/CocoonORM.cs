@@ -78,7 +78,7 @@ namespace Cocoon.ORM
         /// <typeparam name="ModelT"></typeparam>
         /// <param name="field"></param>
         /// <returns></returns>
-        public string GetObject<ModelT>(Expression<Func<ModelT, object>> field)
+        public string Field<ModelT>(Expression<Func<ModelT, object>> field)
         {
 
             return $"{Platform.getObjectName(typeof(ModelT))}.{Platform.getObjectName(GetExpressionProp(field))}";
@@ -90,13 +90,13 @@ namespace Cocoon.ORM
         /// </summary>
         /// <typeparam name="ModelT"></typeparam>
         /// <returns></returns>
-        public string GetObject<ModelT>()
+        public string Table<ModelT>()
         {
-            
+
             return Platform.getObjectName(typeof(ModelT));
 
         }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -113,12 +113,10 @@ namespace Cocoon.ORM
             table.type = type;
 
             //get columns
-            bool addAllProperties = type.GetProperties().Count(p => ORMUtilities.HasAttribute<Column>(p)) == 0;
-            foreach (var prop in type.GetProperties())
+            var props = type.GetProperties().Where(p => !ORMUtilities.HasAttribute<Ignore>(p));
+            bool addAllProperties = props.Count(p => ORMUtilities.HasAttribute<Column>(p)) == 0;
+            foreach (var prop in props)
             {
-
-                if (ORMUtilities.HasAttribute<Ignore>(prop))
-                    continue;
 
                 if (ORMUtilities.HasAttribute<AggSQLColumn>(prop))
                 {
@@ -135,18 +133,18 @@ namespace Cocoon.ORM
             }
 
             //get joins
-            foreach (FieldInfo field in type.GetFields().Where(w => ORMUtilities.HasAttribute<Join>(w)))
+            foreach (FieldInfo field in type.GetFields().Where(w => w.FieldType == typeof(Join) || w.FieldType.GetInterfaces().Contains(typeof(IEnumerable<Join>))))
             {
 
                 if (!field.IsStatic)
-                    throw new InvalidMemberException("Join attribute must decorate static fields only", field);
+                    throw new InvalidMemberException("Join definitions must be declared static", field);
 
-                if (field.FieldType.GetInterfaces().Contains(typeof(IEnumerable<JoinDef>)))
-                    table.joins.AddRange((IEnumerable<JoinDef>)field.GetValue(null));
-                else if (field.FieldType == typeof(JoinDef))
-                    table.joins.Add((JoinDef)field.GetValue(null));
+                if (field.FieldType.GetInterfaces().Contains(typeof(IEnumerable<Join>)))
+                    table.joins.AddRange((IEnumerable<Join>)field.GetValue(null));
+                else if (field.FieldType == typeof(Join))
+                    table.joins.Add((Join)field.GetValue(null));
                 else
-                    throw new InvalidMemberException("Join attribute must decorate JoinDef field", field);
+                    throw new InvalidMemberException("Invalid join field", field);
 
             }
 
@@ -158,7 +156,7 @@ namespace Cocoon.ORM
             return table;
 
         }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -208,7 +206,7 @@ namespace Cocoon.ORM
             return name;
 
         }
-        
+
     }
 
     /// <summary>
@@ -228,7 +226,7 @@ namespace Cocoon.ORM
             this.sql = sql;
         }
     }
-    
+
     internal class InvalidMemberException : Exception
     {
 

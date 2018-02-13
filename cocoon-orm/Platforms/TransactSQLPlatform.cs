@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -90,14 +91,14 @@ namespace Cocoon.ORM
         /// <param name="columnsToSelect"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public override string generateJoinClause(string tableObjectName, List<string> columnsToSelect, IEnumerable<JoinDef> joins)
+        public override string generateJoinClause(string tableObjectName, List<string> columnsToSelect, IEnumerable<Join> joins)
         {
 
             if (joins == null || joins.Count() == 0)
                 return null;
 
             List<string> joinClauseList = new List<string>();
-            foreach (JoinDef join in joins)
+            foreach (Join join in joins)
             {
 
                 string alias = getObjectName($"join_table_{getGuidString()}");
@@ -246,7 +247,7 @@ namespace Cocoon.ORM
         /// <param name="type"></param>
         /// <param name="list"></param>
         /// <param name="joins"></param>
-        public override void readList(DbCommand cmd, Type type, List<object> list, IEnumerable<JoinDef> joins)
+        public override void readList(DbCommand cmd, Type type, List<object> list, IEnumerable<Join> joins)
         {
 
             using (DbDataReader reader = cmd.ExecuteReader())
@@ -262,11 +263,26 @@ namespace Cocoon.ORM
         /// <param name="reader"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public override object readObject(Type type, DbDataReader reader, IEnumerable<JoinDef> joins)
+        public override object readObject(Type type, DbDataReader reader, IEnumerable<Join> joins)
         {
-            object obj = Activator.CreateInstance(type);
-            ORMUtilities.SetFromReader(obj, reader, joins);
-            return obj;
+
+            if (type == typeof(object))
+            {
+                ExpandoObject objectToSet = new ExpandoObject();
+                IDictionary<string, object> dict = objectToSet as IDictionary<string, object>;
+
+                foreach (string column in Enumerable.Range(0, reader.FieldCount).Select(reader.GetName))
+                    dict.Add(column, reader[column]);
+
+                return objectToSet;
+            }
+            else
+            {
+                object obj = Activator.CreateInstance(type);
+                ORMUtilities.SetFromReader(obj, reader, joins);
+                return obj;
+            }
+            
         }
 
         /// <summary>
@@ -302,7 +318,7 @@ namespace Cocoon.ORM
         /// <param name="cmd"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public override T readSingle<T>(DbCommand cmd, IEnumerable<JoinDef> joins)
+        public override T readSingle<T>(DbCommand cmd, IEnumerable<Join> joins)
         {
             using (DbDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
                 if (reader.HasRows)
@@ -327,7 +343,7 @@ namespace Cocoon.ORM
         /// <param name="top"></param>
         /// <param name="distinct"></param>
         /// <param name="where"></param>
-        public override void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<JoinDef> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where)
+        public override void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<Join> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where)
         {
 
             //get columns to select

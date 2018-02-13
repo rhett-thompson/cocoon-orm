@@ -65,7 +65,7 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
-        /// 
+        /// Returns list of objects where values exist in another table
         /// </summary>
         /// <typeparam name="ModelT"></typeparam>
         /// <typeparam name="InModelT"></typeparam>
@@ -130,6 +130,89 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
+        /// Returns a list of objects where a key exists in a range of values
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="values"></param>
+        /// <param name="where"></param>
+        /// <param name="top"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public IEnumerable<T> GetListIn<T>(
+            Expression<Func<T, object>> key,
+            IEnumerable<object> values,
+            Expression<Func<T, bool>> where = null,
+            int top = 0,
+            int timeout = -1)
+        {
+
+            Type model = typeof(T);
+            TableDefinition modelDef = GetTable(model);
+            List<object> list = new List<object>();
+
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
+            {
+
+                //get columns to select
+                List<string> columnsToSelect = modelDef.columns.Where(c => !ORMUtilities.HasAttribute<IgnoreOnSelect>(c)).Select(c => $"{modelDef.objectName}.{Platform.getObjectName(c)}").ToList();
+                if (columnsToSelect.Count == 0)
+                    throw new Exception("No columns to select");
+
+                //generate join clause
+                string joinClause = Platform.generateJoinClause(modelDef.objectName, columnsToSelect, modelDef.joins);
+
+                //generate where clauses
+                string modelWhereClause = Platform.generateWhereClause(cmd, modelDef.objectName, where, false);
+
+                //generate top clause
+                string topClause = "";
+                if (top > 0)
+                    topClause = $"top {top}";
+
+                //add values
+                string valuesPrams = string.Join(",", values.Select(x => Platform.addWhereParam(cmd, x)));
+
+                //build sql
+                string columns = string.Join(", ", columnsToSelect);
+                string modelWhere = modelWhereClause != null ? "and " + modelWhereClause : "";
+                cmd.CommandText = $"select {topClause} {string.Join(", ", columnsToSelect)} from {modelDef.objectName} {joinClause} where {modelDef.objectName}.{GetExpressionPropName(key)} in ({valuesPrams}) {modelWhere}";
+
+                //execute sql
+                conn.Open();
+                Platform.readList(cmd, model, list, modelDef.joins);
+
+            }
+
+            return list.Cast<T>();
+
+        }
+
+        /// <summary>
+        /// Returns a list of objects where a key exists in a range of values
+        /// </summary>
+        /// <typeparam name="ModelT"></typeparam>
+        /// <typeparam name="ValuesT"></typeparam>
+        /// <param name="key"></param>
+        /// <param name="values"></param>
+        /// <param name="where"></param>
+        /// <param name="top"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public IEnumerable<ModelT> GetListIn<ModelT, ValuesT>(
+            Expression<Func<ModelT, object>> key,
+            IEnumerable<ValuesT> values,
+            Expression<Func<ModelT, bool>> where = null,
+            int top = 0,
+            int timeout = -1)
+        {
+
+            return GetListIn(key, values.Cast<object>(), where, top, timeout);
+
+        }
+
+        /// <summary>
         /// Returns a single row
         /// </summary>
         /// <typeparam name="T">Table model</typeparam>
@@ -149,9 +232,9 @@ namespace Cocoon.ORM
 
                 var columns = def.columns;
 
-                if(fieldsToSelect.Length > 0)
+                if (fieldsToSelect.Length > 0)
                     columns = def.columns.Where(c => fieldsToSelect.Any(f => GetExpressionPropName(f) == c.Name)).ToList();
-  
+
                 Platform.select(conn, cmd, def.objectName, columns, def.joins, def.customColumns, customParams, 1, false, where);
                 return Platform.readSingle<T>(cmd, def.joins);
             }
@@ -212,6 +295,6 @@ namespace Cocoon.ORM
             return list;
 
         }
-        
+
     }
 }

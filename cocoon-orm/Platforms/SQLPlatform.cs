@@ -62,7 +62,7 @@ namespace Cocoon.ORM
         /// <param name="type"></param>
         /// <param name="list"></param>
         /// <param name="joins"></param>
-        public abstract void readList(DbCommand cmd, Type type, List<object> list, IEnumerable<JoinDef> joins);
+        public abstract void readList(DbCommand cmd, Type type, List<object> list, IEnumerable<Join> joins);
 
         /// <summary>
         /// 
@@ -71,7 +71,7 @@ namespace Cocoon.ORM
         /// <param name="cmd"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public abstract T readSingle<T>(DbCommand cmd, IEnumerable<JoinDef> joins);
+        public abstract T readSingle<T>(DbCommand cmd, IEnumerable<Join> joins);
 
         /// <summary>
         /// 
@@ -80,7 +80,7 @@ namespace Cocoon.ORM
         /// <param name="reader"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public abstract object readObject(Type type, DbDataReader reader, IEnumerable<JoinDef> joins);
+        public abstract object readObject(Type type, DbDataReader reader, IEnumerable<Join> joins);
 
         /// <summary>
         /// 
@@ -111,7 +111,7 @@ namespace Cocoon.ORM
         /// <param name="top"></param>
         /// <param name="distinct"></param>
         /// <param name="where"></param>
-        public abstract void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<JoinDef> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where);
+        public abstract void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<Join> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where);
 
         /// <summary>
         /// 
@@ -188,7 +188,7 @@ namespace Cocoon.ORM
         /// <param name="columnsToSelect"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public abstract string generateJoinClause(string tableObjectName, List<string> columnsToSelect, IEnumerable<JoinDef> joins);
+        public abstract string generateJoinClause(string tableObjectName, List<string> columnsToSelect, IEnumerable<Join> joins);
 
         /// <summary>
         /// 

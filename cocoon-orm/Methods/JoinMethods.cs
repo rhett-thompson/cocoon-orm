@@ -20,7 +20,7 @@ namespace Cocoon.ORM
         /// <param name="fieldToRecieve"></param>
         /// <param name="joinType"></param>
         /// <returns></returns>
-        public static JoinDef Join<ForeignTableModelT, PrimaryTableModelT>(
+        public static Join Join<ForeignTableModelT, PrimaryTableModelT>(
             Expression<Func<ForeignTableModelT, object>> foreignKey,
             Expression<Func<PrimaryTableModelT, object>> primaryKey,
             Expression<Func<PrimaryTableModelT, object>> fieldToSelect,
@@ -28,7 +28,7 @@ namespace Cocoon.ORM
             JoinType joinType = JoinType.LEFT)
         {
 
-            return new JoinDef()
+            return new Join()
             {
 
                 RightTable = typeof(PrimaryTableModelT),
@@ -51,7 +51,7 @@ namespace Cocoon.ORM
         /// <param name="fieldToRecieve"></param>
         /// <param name="joinType"></param>
         /// <returns></returns>
-        public static JoinDef Join<ForeignTableModelT, PrimaryTableModelT>(
+        public static Join Join<ForeignTableModelT, PrimaryTableModelT>(
             Expression<Func<PrimaryTableModelT, object>> fieldToSelect,
             Expression<Func<ForeignTableModelT, object>> fieldToRecieve,
             JoinType joinType = JoinType.LEFT)
@@ -69,7 +69,7 @@ namespace Cocoon.ORM
             if (rightPrimaryKey == null)
                 throw new InvalidMemberException("Right table missing primary key attribute", rightPrimaryKey);
 
-            return new JoinDef()
+            return new Join()
             {
 
                 RightTable = typeof(PrimaryTableModelT),
@@ -93,7 +93,7 @@ namespace Cocoon.ORM
         /// <param name="fieldToRecieve"></param>
         /// <param name="joinType"></param>
         /// <returns></returns>
-        public static JoinDef Join<ForeignTableModelT, PrimaryTableModelT>(
+        public static Join Join<ForeignTableModelT, PrimaryTableModelT>(
             Expression<Func<ForeignTableModelT, object>> foreignKey,
             Expression<Func<PrimaryTableModelT, object>> fieldToSelect,
             Expression<Func<ForeignTableModelT, object>> fieldToRecieve,
@@ -109,7 +109,7 @@ namespace Cocoon.ORM
             if (rightPrimaryKey == null)
                 throw new InvalidMemberException("Right table missing primary key attribute.", rightPrimaryKey);
 
-            return new JoinDef()
+            return new Join()
             {
 
                 RightTable = rightType,
@@ -128,7 +128,7 @@ namespace Cocoon.ORM
     /// <summary>
     /// 
     /// </summary>
-    public class JoinDef
+    public class Join
     {
 
         /// <summary>

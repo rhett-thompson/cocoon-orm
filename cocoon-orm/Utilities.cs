@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Dynamic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -340,7 +341,7 @@ namespace Cocoon.ORM
         /// <param name="reader"></param>
         /// <param name="joins"></param>
         /// <returns></returns>
-        public static object SetFromReader(object objectToSet, IDataReader reader, IEnumerable<JoinDef> joins)
+        public static object SetFromReader(object objectToSet, IDataReader reader, IEnumerable<Join> joins)
         {
 
             Type type = objectToSet.GetType();
@@ -405,7 +406,7 @@ namespace Cocoon.ORM
             return HexBytes(SHA256(Encoding.UTF8.GetBytes(value)));
 
         }
-        
+
         /// <summary>
         /// Creates an MD5 hash
         /// </summary>
@@ -556,7 +557,7 @@ namespace Cocoon.ORM
         {
 
             return Encoding.UTF8.GetString(GZipDecompress(Convert.FromBase64String(compressedText)));
-            
+
         }
 
         /// <summary>

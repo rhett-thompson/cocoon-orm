@@ -77,7 +77,7 @@ namespace Cocoon.ORM
             return Platform.update(Platform.getObjectName(typeof(ModelT)), fieldsToUpdate, timeout, where);
 
         }
-
+        
     }
 
     /// <summary>
@@ -94,12 +94,14 @@ namespace Cocoon.ORM
         /// </summary>
         /// <param name="fieldToUpdate"></param>
         /// <param name="value"></param>
-        public void Add(Expression<Func<ModelT, object>> fieldToUpdate, object value)
+        public UpdateFields<ModelT> Add(Expression<Func<ModelT, object>> fieldToUpdate, object value)
         {
 
             PropertyInfo prop = CocoonORM.GetExpressionProp(fieldToUpdate);
             
             fields.Add(new Tuple<PropertyInfo, object>(prop, value));
+
+            return this;
 
         }
 
