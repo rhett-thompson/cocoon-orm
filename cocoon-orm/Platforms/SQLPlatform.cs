@@ -72,7 +72,7 @@ namespace Cocoon.ORM
         /// <param name="joins"></param>
         /// <returns></returns>
         public abstract T readSingle<T>(DbCommand cmd, IEnumerable<Join> joins);
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -152,7 +152,7 @@ namespace Cocoon.ORM
         /// 
         /// </summary>
         /// <returns></returns>
-        public abstract string getGuidString();
+        public abstract string getGuidString(Guid guid);
 
         /// <summary>
         /// 

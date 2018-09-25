@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,6 +9,15 @@ namespace Cocoon.ORM
 {
     public partial class CocoonORM
     {
+
+        private class CacheItem
+        {
+            public DateTime Date { get; set; }
+            public IEnumerable<object> List { get; set; }
+        }
+
+        private Dictionary<string, CacheItem> listCache = new Dictionary<string, CacheItem>();
+
 
         /// <summary>
         /// Returns a list of objects
@@ -20,31 +28,36 @@ namespace Cocoon.ORM
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <param name="cacheSettings"></param>
         /// <param name="fieldsToSelect"></param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
-            return GetList(typeof(T), where, top, customParams, distinct, timeout, fieldsToSelect).Cast<T>();
+            return GetList<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
 
         }
 
         /// <summary>
         /// Returns a list of objects
         /// </summary>
-        /// <typeparam name="T">Table model to return and to use in the where clause</typeparam>
-        /// <param name="model">Table model type</param>
+        /// <typeparam name="ModelT">Table model to query and use in the where clause</typeparam>
+        /// <typeparam name="SubModelT">Table model to return</typeparam>
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="top">Maximum number of rows to return</param>
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <param name="cacheSettings"></param>
         /// <param name="fieldsToSelect"></param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<object> GetList<T>(Type model, Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
+        public IEnumerable<SubModelT> GetList<ModelT, SubModelT>(Expression<Func<ModelT, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
-            TableDefinition def = GetTable(model);
+            if (cacheSettings != null && listCache.ContainsKey(cacheSettings.ID) && DateTime.Now.Subtract(listCache[cacheSettings.ID].Date) < cacheSettings.Timeout)
+                return listCache[cacheSettings.ID].List.Cast<SubModelT>();
+
+            TableDefinition def = GetTable(typeof(ModelT));
             List<object> list = new List<object>();
 
             using (DbConnection conn = Platform.getConnection())
@@ -57,10 +70,14 @@ namespace Cocoon.ORM
                     columns = def.columns.Where(c => fieldsToSelect.Any(f => GetExpressionPropName(f) == c.Name)).ToList();
 
                 Platform.select(conn, cmd, def.objectName, columns, def.joins, def.customColumns, customParams, top, distinct, where);
-                Platform.readList(cmd, model, list, def.joins);
+                Platform.readList(cmd, typeof(SubModelT), list, def.joins);
+
             }
 
-            return list;
+            if (cacheSettings != null)
+                listCache[cacheSettings.ID] = new CacheItem() { Date = DateTime.Now, List = list };
+
+            return list.Cast<SubModelT>();
 
         }
 
@@ -147,6 +164,9 @@ namespace Cocoon.ORM
             int timeout = -1)
         {
 
+            if (values == null || values.Count() == 0)
+                return new List<T>();
+
             Type model = typeof(T);
             TableDefinition modelDef = GetTable(model);
             List<object> list = new List<object>();
@@ -177,6 +197,7 @@ namespace Cocoon.ORM
                 //build sql
                 string columns = string.Join(", ", columnsToSelect);
                 string modelWhere = modelWhereClause != null ? "and " + modelWhereClause : "";
+
                 cmd.CommandText = $"select {topClause} {string.Join(", ", columnsToSelect)} from {modelDef.objectName} {joinClause} where {modelDef.objectName}.{GetExpressionPropName(key)} in ({valuesPrams}) {modelWhere}";
 
                 //execute sql

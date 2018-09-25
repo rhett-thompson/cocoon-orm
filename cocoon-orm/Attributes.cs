@@ -38,7 +38,7 @@ namespace Cocoon.ORM
     /// Defines an aggregator column
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
-    public class AggSQLColumn : Attribute
+    public class CustomColumn : Attribute
     {
 
         internal string sql;
@@ -47,7 +47,7 @@ namespace Cocoon.ORM
         /// For example: "select count(*) from ForeignTable where ForeignTable.Key = ThisTable.ForeignKey"
         /// </summary>
         /// <param name="SQL"></param>
-        public AggSQLColumn(string SQL)
+        public CustomColumn(string SQL)
         {
 
             sql = SQL;

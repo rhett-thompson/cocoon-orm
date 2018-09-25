@@ -10,6 +10,37 @@ namespace Cocoon.ORM
     {
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="ForeignTableModelT"></typeparam>
+        /// <typeparam name="PrimaryTableModelT"></typeparam>
+        /// <param name="foreignKey"></param>
+        /// <param name="primaryKey"></param>
+        /// <param name="objectToReceive"></param>
+        /// <param name="joinType"></param>
+        /// <returns></returns>
+        public static Join JoinObject<ForeignTableModelT, PrimaryTableModelT>(
+            Expression<Func<ForeignTableModelT, object>> foreignKey,
+            Expression<Func<PrimaryTableModelT, object>> primaryKey,
+            Expression<Func<ForeignTableModelT, object>> objectToReceive,
+            JoinType joinType = JoinType.LEFT)
+        {
+
+            return new Join()
+            {
+
+                RightTable = typeof(PrimaryTableModelT),
+                LeftKey = GetExpressionProp(foreignKey),
+                RightKey = GetExpressionProp(primaryKey),
+                FieldToReceive = GetExpressionProp(objectToReceive),
+                FieldToReceiveIsObject = true,
+                JoinType = joinType,
+
+            };
+
+        }
+
+        /// <summary>
         /// Defines a JOIN operation.
         /// </summary>
         /// <typeparam name="ForeignTableModelT"></typeparam>
@@ -35,7 +66,7 @@ namespace Cocoon.ORM
                 LeftKey = GetExpressionProp(foreignKey),
                 RightKey = GetExpressionProp(primaryKey),
                 FieldToSelect = GetExpressionProp(fieldToSelect),
-                FieldToRecieve = GetExpressionProp(fieldToRecieve),
+                FieldToReceive = GetExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
@@ -76,7 +107,7 @@ namespace Cocoon.ORM
                 LeftKey = leftPrimaryKey,
                 RightKey = rightPrimaryKey,
                 FieldToSelect = GetExpressionProp(fieldToSelect),
-                FieldToRecieve = GetExpressionProp(fieldToRecieve),
+                FieldToReceive = GetExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
@@ -116,13 +147,13 @@ namespace Cocoon.ORM
                 LeftKey = GetExpressionProp(foreignKey),
                 RightKey = rightPrimaryKey,
                 FieldToSelect = GetExpressionProp(fieldToSelect),
-                FieldToRecieve = GetExpressionProp(fieldToRecieve),
+                FieldToReceive = GetExpressionProp(fieldToRecieve),
                 JoinType = joinType
 
             };
 
         }
-        
+
     }
 
     /// <summary>
@@ -134,8 +165,13 @@ namespace Cocoon.ORM
         /// <summary>
         /// 
         /// </summary>
+        public Guid Id =  Guid.NewGuid();
+
+        /// <summary>
+        /// 
+        /// </summary>
         public Type RightTable;
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -145,7 +181,7 @@ namespace Cocoon.ORM
         /// 
         /// </summary>
         public PropertyInfo RightKey;
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -154,7 +190,12 @@ namespace Cocoon.ORM
         /// <summary>
         /// 
         /// </summary>
-        public MemberInfo FieldToRecieve;
+        public MemberInfo FieldToReceive;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool FieldToReceiveIsObject;
 
         /// <summary>
         /// 

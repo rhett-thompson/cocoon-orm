@@ -353,7 +353,7 @@ namespace Cocoon.ORM
 
                 string propName;
 
-                if (joins != null && joins.Any(j => j.FieldToRecieve == prop))
+                if (joins != null && joins.Any(j => !j.FieldToReceiveIsObject && j.FieldToReceive == prop))
                     propName = prop.Name;
                 else
                     propName = CocoonORM.GetName(prop);
@@ -366,6 +366,22 @@ namespace Cocoon.ORM
 
 
             }
+
+            if (joins != null)
+                foreach (var join in joins.Where(x => x.FieldToReceiveIsObject))
+                {
+
+                    PropertyInfo fieldToReceiveProp = (PropertyInfo)join.FieldToReceive;
+                    object receiveObject = Activator.CreateInstance(fieldToReceiveProp.PropertyType);
+                    foreach (PropertyInfo prop in fieldToReceiveProp.PropertyType.GetProperties().Where(p => p.CanWrite))
+                    {
+                        object value = ChangeType(reader[$"receive_{CocoonORM.GetName(prop)}_{join.Id.ToString("n")}"], prop.PropertyType);
+                        prop.SetValue(receiveObject, value);
+                    }
+
+                    fieldToReceiveProp.SetValue(objectToSet, receiveObject);
+
+                }
 
             return objectToSet;
 
