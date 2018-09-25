@@ -115,7 +115,7 @@ namespace Cocoon.ORM
 
                         PropertyInfo overrideProp = overrideValueProps.SingleOrDefault(p => p.Name == prop.Name);
                         if (overrideProp != null)
-                            values.Add(Platform.addParam(cmd, "override_value_" + Platform.getGuidString(), overrideProp.GetValue(overrideValues)).ParameterName);
+                            values.Add(Platform.addParam(cmd, "override_value_" + Platform.getGuidString(Guid.NewGuid()), overrideProp.GetValue(overrideValues)).ParameterName);
                         else
                             values.Add(column);
 

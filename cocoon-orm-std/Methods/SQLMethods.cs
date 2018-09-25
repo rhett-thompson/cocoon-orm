@@ -102,6 +102,36 @@ namespace Cocoon.ORM
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="parameters"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public object ExecuteSQLObject(string sql, object parameters = null, int timeout = -1)
+        {
+            using (DbConnection conn = Platform.getConnection())
+            using (DbCommand cmd = Platform.getCommand(conn, timeout))
+            {
+
+                Platform.addParamObject(cmd, parameters);
+
+                cmd.CommandText = sql;
+                conn.Open();
+
+                using (DbDataReader reader = cmd.ExecuteReader(CommandBehavior.SingleRow))
+                    if (reader.HasRows)
+                    {
+                        reader.Read();
+                        return Platform.readObject(typeof(object), reader, null);
+                    }
+
+                return default(object);
+                
+            }
+        }
+
+        /// <summary>
         /// Executes a SQL statement with no sesult
         /// </summary>
         /// <param name="sql">SQL statement string</param>

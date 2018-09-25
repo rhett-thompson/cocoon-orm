@@ -81,7 +81,7 @@ namespace Cocoon.ORM
         /// <returns></returns>
         public override string addWhereParam(DbCommand cmd, object value)
         {
-            return value == null ? "null" : addParam(cmd, $"where_{getGuidString()}", value).ParameterName;
+            return value == null ? "null" : addParam(cmd, $"where_{getGuidString(Guid.NewGuid())}", value).ParameterName;
         }
 
         /// <summary>
@@ -100,8 +100,8 @@ namespace Cocoon.ORM
             List<string> joinClauseList = new List<string>();
             foreach (Join join in joins)
             {
-
-                string alias = getObjectName($"join_table_{getGuidString()}");
+                
+                string alias = getObjectName($"join_table_{getGuidString(join.Id)}");
 
                 string joinPart = "join";
                 if (join.JoinType == JoinType.LEFT)
@@ -112,7 +112,15 @@ namespace Cocoon.ORM
                     joinPart = "full outer join";
 
                 joinClauseList.Add($"{joinPart} {getObjectName(join.RightTable)} as {alias} on {tableObjectName}.{getObjectName(join.LeftKey)} = {alias}.{getObjectName(join.RightKey)}");
-                columnsToSelect.Add($"{alias}.{getObjectName(join.FieldToSelect)} as {getObjectName(join.FieldToRecieve)}");
+
+                if(join.FieldToReceiveIsObject)
+                {
+                    var receiveObject = db.GetTable(((PropertyInfo)join.FieldToReceive).PropertyType);
+                    var columns = receiveObject.columns.Select(x=> $"{alias}.{getObjectName(x)} as {getObjectName($"receive_{x.Name}_{getGuidString(join.Id)}")}");
+                    columnsToSelect.AddRange(columns);
+                }
+                else
+                    columnsToSelect.Add($"{alias}.{getObjectName(join.FieldToSelect)} as {getObjectName(join.FieldToReceive)}");
 
             }
 
@@ -152,9 +160,9 @@ namespace Cocoon.ORM
         /// 
         /// </summary>
         /// <returns></returns>
-        public override string getGuidString()
+        public override string getGuidString(Guid guid)
         {
-            return Guid.NewGuid().ToString("n");
+            return guid.ToString("n");
         }
 
         /// <summary>
@@ -205,29 +213,36 @@ namespace Cocoon.ORM
 
                         object value = prop.GetValue(objectToInsert);
 
-                        DbParameter param = addParam(cmd, "insert_value_" + getGuidString(), value);
+                        DbParameter param = addParam(cmd, "insert_value_" + getGuidString(Guid.NewGuid()), value);
                         values.Add(param.ParameterName);
 
                     }
 
-                //get primary keys
-                List<string> outputTableKeys = new List<string>();
-                List<string> insertedPrimaryKeys = new List<string>();
-                List<string> wherePrimaryKeys = new List<string>();
-                foreach (PropertyInfo pk in def.primaryKeys)
+                if (def.primaryKeys.Count > 0)
                 {
-                    string primaryKeyName = getObjectName(pk);
-                    outputTableKeys.Add($"{primaryKeyName} {getDbType(pk.PropertyType)}");
-                    insertedPrimaryKeys.Add("inserted." + primaryKeyName);
-                    wherePrimaryKeys.Add($"ids.{primaryKeyName} = {def.objectName}.{primaryKeyName}");
-                }
 
-                //generate query
-                string insertedTable = $"declare @ids table({string.Join(", ", outputTableKeys)})";
-                cmd.CommandText = $@"{insertedTable};
+                    //get primary keys
+                    List<string> outputTableKeys = new List<string>();
+                    List<string> insertedPrimaryKeys = new List<string>();
+                    List<string> wherePrimaryKeys = new List<string>();
+                    foreach (PropertyInfo pk in def.primaryKeys)
+                    {
+                        string primaryKeyName = getObjectName(pk);
+                        outputTableKeys.Add($"{primaryKeyName} {getDbType(pk.PropertyType)}");
+                        insertedPrimaryKeys.Add("inserted." + primaryKeyName);
+                        wherePrimaryKeys.Add($"ids.{primaryKeyName} = {def.objectName}.{primaryKeyName}");
+                    }
+
+                    //generate query
+                    string insertedTable = $"declare @ids table({string.Join(", ", outputTableKeys)})";
+                    cmd.CommandText = $@"{insertedTable};
                     insert into {def.objectName} ({string.Join(", ", columns)}) 
                     output {string.Join(", ", insertedPrimaryKeys)} into @ids values ({string.Join(", ", values)});
                     select {def.objectName}.* from {def.objectName} join @ids ids on {string.Join(" and ", wherePrimaryKeys)}";
+
+                }
+                else
+                    cmd.CommandText = $@"insert into {def.objectName} ({string.Join(", ", columns)}) values ({string.Join(", ", values)})";
 
                 conn.Open();
 
@@ -329,7 +344,7 @@ namespace Cocoon.ORM
 
             return default(T);
         }
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -363,7 +378,7 @@ namespace Cocoon.ORM
                 foreach (MemberInfo customColumn in customColumns)
                 {
 
-                    AggSQLColumn attr = customColumn.GetCustomAttribute<AggSQLColumn>();
+                    CustomColumn attr = customColumn.GetCustomAttribute<CustomColumn>();
 
                     columnsToSelect.Add($"({attr.sql}) as {getObjectName(customColumn)}");
 
@@ -427,7 +442,7 @@ namespace Cocoon.ORM
                             if (value is string && string.IsNullOrEmpty((string)value))
                                 value = null;
 
-                            DbParameter param = addParam(cmd, "update_field_" + getGuidString(), value);
+                            DbParameter param = addParam(cmd, "update_field_" + getGuidString(Guid.NewGuid()), value);
                             columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
 
                         }
@@ -436,7 +451,7 @@ namespace Cocoon.ORM
 
                     if (ORMUtilities.HasAttribute<PrimaryKey>(prop) && where == null)
                     {
-                        DbParameter param = addParam(cmd, "where_" + getGuidString(), value);
+                        DbParameter param = addParam(cmd, "where_" + getGuidString(Guid.NewGuid()), value);
                         primaryKeys.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
                     }
 

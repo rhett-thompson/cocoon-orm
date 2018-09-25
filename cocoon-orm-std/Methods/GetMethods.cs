@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,7 +9,16 @@ namespace Cocoon.ORM
 {
     public partial class CocoonORM
     {
-        
+
+        private class CacheItem
+        {
+            public DateTime Date { get; set; }
+            public IEnumerable<object> List { get; set; }
+        }
+
+        private Dictionary<string, CacheItem> listCache = new Dictionary<string, CacheItem>();
+
+
         /// <summary>
         /// Returns a list of objects
         /// </summary>
@@ -20,12 +28,13 @@ namespace Cocoon.ORM
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <param name="cacheSettings"></param>
         /// <param name="fieldsToSelect"></param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
+        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
-            return GetList<T, T>(where, top, customParams, distinct, timeout, fieldsToSelect);
+            return GetList<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
 
         }
 
@@ -39,10 +48,14 @@ namespace Cocoon.ORM
         /// <param name="customParams">Custom parameter object to use with custom columns</param>
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <param name="cacheSettings"></param>
         /// <param name="fieldsToSelect"></param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<SubModelT> GetList<ModelT, SubModelT>(Expression<Func<ModelT, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, params Expression<Func<ModelT, object>>[] fieldsToSelect)
+        public IEnumerable<SubModelT> GetList<ModelT, SubModelT>(Expression<Func<ModelT, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
+
+            if (cacheSettings != null && listCache.ContainsKey(cacheSettings.ID) && DateTime.Now.Subtract(listCache[cacheSettings.ID].Date) < cacheSettings.Timeout)
+                return listCache[cacheSettings.ID].List.Cast<SubModelT>();
 
             TableDefinition def = GetTable(typeof(ModelT));
             List<object> list = new List<object>();
@@ -58,7 +71,11 @@ namespace Cocoon.ORM
 
                 Platform.select(conn, cmd, def.objectName, columns, def.joins, def.customColumns, customParams, top, distinct, where);
                 Platform.readList(cmd, typeof(SubModelT), list, def.joins);
+
             }
+
+            if (cacheSettings != null)
+                listCache[cacheSettings.ID] = new CacheItem() { Date = DateTime.Now, List = list };
 
             return list.Cast<SubModelT>();
 
@@ -180,6 +197,7 @@ namespace Cocoon.ORM
                 //build sql
                 string columns = string.Join(", ", columnsToSelect);
                 string modelWhere = modelWhereClause != null ? "and " + modelWhereClause : "";
+
                 cmd.CommandText = $"select {topClause} {string.Join(", ", columnsToSelect)} from {modelDef.objectName} {joinClause} where {modelDef.objectName}.{GetExpressionPropName(key)} in ({valuesPrams}) {modelWhere}";
 
                 //execute sql
@@ -298,6 +316,6 @@ namespace Cocoon.ORM
             return list;
 
         }
-        
+
     }
 }

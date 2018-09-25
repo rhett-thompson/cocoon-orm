@@ -3,10 +3,20 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Cocoon.ORM</RootNamespace>
+    <AssemblyName>cocoon-orm</AssemblyName>
+    <Version>2.3.0</Version>
+    <Authors>Rhett Thompson</Authors>
+    <Product>Cocoon ORM</Product>
+    <Description>Cocoon ORM is a simple .NET object-relational mapper alternative to Entity Framework or NHibernate. Cocoon ORM supports SQL Server 2008/2012/20014/+, and SQL Azure.</Description>
+    <PackageIconUrl>https://raw.githubusercontent.com/Guidelinetech/cocoon-orm/master/cocoon.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/Guidelinetech/cocoon-orm</RepositoryUrl>
+    <PackageTags>ORM Entity Framework NHibernate SQLServer Database Object relational mapper DAL</PackageTags>
+    <PackageLicenseUrl>https://github.com/Guidelinetech/cocoon-orm/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Guidelinetech/cocoon-orm</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Data.SqlClient" Version="4.4.2" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.5.1" />
   </ItemGroup>
 
 </Project>

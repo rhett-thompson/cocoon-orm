@@ -112,26 +112,6 @@ namespace Cocoon.ORM
             table.objectName = Platform.getObjectName(type);
             table.type = type;
 
-            //get columns
-            var props = type.GetProperties().Where(p => !ORMUtilities.HasAttribute<Ignore>(p));
-            bool addAllProperties = props.Count(p => ORMUtilities.HasAttribute<Column>(p)) == 0;
-            foreach (var prop in props)
-            {
-
-                if (ORMUtilities.HasAttribute<AggSQLColumn>(prop))
-                {
-                    table.customColumns.Add(prop);
-                    continue;
-                }
-
-                if (ORMUtilities.HasAttribute<Column>(prop) || addAllProperties)
-                    table.columns.Add(prop);
-
-                if (ORMUtilities.HasAttribute<PrimaryKey>(prop))
-                    table.primaryKeys.Add(prop);
-
-            }
-
             //get joins
             foreach (FieldInfo field in type.GetFields().Where(w => w.FieldType == typeof(Join) || w.FieldType.GetInterfaces().Contains(typeof(IEnumerable<Join>))))
             {
@@ -147,6 +127,31 @@ namespace Cocoon.ORM
                     throw new InvalidMemberException("Invalid join field", field);
 
             }
+
+            //get columns
+            var props = type.GetProperties().Where(p => !ORMUtilities.HasAttribute<Ignore>(p));
+            bool addAllProperties = props.Count(p => ORMUtilities.HasAttribute<Column>(p)) == 0;
+            foreach (var prop in props)
+            {
+
+                if (table.joins.Any(x => x.FieldToReceive == prop))
+                    continue;
+
+                if (ORMUtilities.HasAttribute<CustomColumn>(prop))
+                {
+                    table.customColumns.Add(prop);
+                    continue;
+                }
+
+                if (ORMUtilities.HasAttribute<Column>(prop) || addAllProperties)
+                    table.columns.Add(prop);
+
+                if (ORMUtilities.HasAttribute<PrimaryKey>(prop))
+                    table.primaryKeys.Add(prop);
+
+            }
+
+            
 
             if (table.columns.Count == 0 && table.primaryKeys.Count == 0)
                 throw new Exception($"Model '{type}' has no columns defined.");
@@ -231,6 +236,23 @@ namespace Cocoon.ORM
     {
 
         public InvalidMemberException(string message, MemberInfo member) : base($"{message} => '{member}' in '{member.DeclaringType}'") { }
+
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class ListCacheSettings
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ID { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
 
     }
 
