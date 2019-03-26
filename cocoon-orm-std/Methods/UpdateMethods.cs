@@ -25,8 +25,8 @@ namespace Cocoon.ORM
                 throw new NullReferenceException("objectToUpdate cannot be null.");
 
             TableDefinition def = GetTable(objectToUpdate.GetType());
-            
-            return Platform.update(Platform.getObjectName(objectToUpdate.GetType()), def.columns.Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
+
+            return Platform.update(Platform.getObjectName(objectToUpdate.GetType()), def.columns.Where(x => !ORMUtilities.HasAttribute<IgnoreOnUpdate>(x)).Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
 
         }
 
@@ -58,7 +58,7 @@ namespace Cocoon.ORM
         {
 
             PropertyInfo prop = GetExpressionProp(fieldToUpdate);
-            
+
             return Platform.update(Platform.getObjectName(typeof(T)), new List<Tuple<PropertyInfo, object>>() { new Tuple<PropertyInfo, object>(prop, value) }, timeout, where);
 
         }
@@ -77,7 +77,7 @@ namespace Cocoon.ORM
             return Platform.update(Platform.getObjectName(typeof(T)), fieldsToUpdate, timeout, where);
 
         }
-        
+
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ namespace Cocoon.ORM
         {
 
             PropertyInfo prop = CocoonORM.GetExpressionProp(fieldToUpdate);
-            
+
             fields.Add(new Tuple<PropertyInfo, object>(prop, value));
 
             return this;

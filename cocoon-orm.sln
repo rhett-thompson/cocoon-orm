@@ -3,18 +3,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm", ".\cocoon-orm\cocoon-orm.csproj", "{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm", "cocoon-orm\cocoon-orm.csproj", "{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm-modelgen", ".\cocoon-orm-modelgen\cocoon-orm-modelgen.csproj", "{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm-modelgen", "cocoon-orm-modelgen\cocoon-orm-modelgen.csproj", "{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7} = {9DDFABC3-BE34-4A52-8EB9-7CCF4D9AD0E7}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm2", ".\cocoon-orm2\cocoon-orm2.csproj", "{680B1372-67A4-4926-AE74-473CAE3A6C7F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit-test", "unit-test\unit-test.csproj", "{DA7FFEE3-BBEA-4D2A-B3AE-916738DF5F38}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unit-test", ".\unit-test\unit-test.csproj", "{DA7FFEE3-BBEA-4D2A-B3AE-916738DF5F38}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cocoon-orm-std", "cocoon-orm-std\cocoon-orm-std.csproj", "{9B49FE55-1D54-41DE-9AE7-C8DCAC11D67D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cocoon-orm-std", ".\cocoon-orm-std\cocoon-orm-std.csproj", "{9B49FE55-1D54-41DE-9AE7-C8DCAC11D67D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cocoon-orm-3", "cocoon-orm-3\cocoon-orm-3.csproj", "{7BE8A49C-95B0-4F81-A160-D3DFEF20A9DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,10 +30,6 @@ Global
 		{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6340ADBB-75D2-475B-BECB-1C88D7BE58D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{680B1372-67A4-4926-AE74-473CAE3A6C7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{680B1372-67A4-4926-AE74-473CAE3A6C7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{680B1372-67A4-4926-AE74-473CAE3A6C7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{680B1372-67A4-4926-AE74-473CAE3A6C7F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DA7FFEE3-BBEA-4D2A-B3AE-916738DF5F38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DA7FFEE3-BBEA-4D2A-B3AE-916738DF5F38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA7FFEE3-BBEA-4D2A-B3AE-916738DF5F38}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -42,6 +38,10 @@ Global
 		{9B49FE55-1D54-41DE-9AE7-C8DCAC11D67D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9B49FE55-1D54-41DE-9AE7-C8DCAC11D67D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9B49FE55-1D54-41DE-9AE7-C8DCAC11D67D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BE8A49C-95B0-4F81-A160-D3DFEF20A9DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BE8A49C-95B0-4F81-A160-D3DFEF20A9DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BE8A49C-95B0-4F81-A160-D3DFEF20A9DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BE8A49C-95B0-4F81-A160-D3DFEF20A9DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

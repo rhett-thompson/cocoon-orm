@@ -100,7 +100,7 @@ namespace Cocoon.ORM
             List<string> joinClauseList = new List<string>();
             foreach (Join join in joins)
             {
-                
+
                 string alias = getObjectName($"join_table_{getGuidString(join.Id)}");
 
                 string joinPart = "join";
@@ -113,10 +113,10 @@ namespace Cocoon.ORM
 
                 joinClauseList.Add($"{joinPart} {getObjectName(join.RightTable)} as {alias} on {tableObjectName}.{getObjectName(join.LeftKey)} = {alias}.{getObjectName(join.RightKey)}");
 
-                if(join.FieldToReceiveIsObject)
+                if (join.FieldToReceiveIsObject)
                 {
                     var receiveObject = db.GetTable(((PropertyInfo)join.FieldToReceive).PropertyType);
-                    var columns = receiveObject.columns.Select(x=> $"{alias}.{getObjectName(x)} as {getObjectName($"receive_{x.Name}_{getGuidString(join.Id)}")}");
+                    var columns = receiveObject.columns.Select(x => $"{alias}.{getObjectName(x)} as {getObjectName($"receive_{x.Name}_{getGuidString(join.Id)}")}");
                     columnsToSelect.AddRange(columns);
                 }
                 else
@@ -297,7 +297,7 @@ namespace Cocoon.ORM
                 ORMUtilities.SetFromReader(obj, reader, joins);
                 return obj;
             }
-            
+
         }
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace Cocoon.ORM
 
             return default(T);
         }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -431,21 +431,16 @@ namespace Cocoon.ORM
                     PropertyInfo prop = field.Item1;
                     object value = field.Item2;
 
-                    if (!ORMUtilities.HasAttribute<IgnoreOnUpdate>(prop))
+                    if (value is SQLValue)
+                        columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = ({((SQLValue)value).sql})");
+                    else
                     {
 
-                        if (value is SQLValue)
-                            columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = ({((SQLValue)value).sql})");
-                        else
-                        {
+                        if (value is string && string.IsNullOrEmpty((string)value))
+                            value = null;
 
-                            if (value is string && string.IsNullOrEmpty((string)value))
-                                value = null;
-
-                            DbParameter param = addParam(cmd, "update_field_" + getGuidString(Guid.NewGuid()), value);
-                            columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
-
-                        }
+                        DbParameter param = addParam(cmd, "update_field_" + getGuidString(Guid.NewGuid()), value);
+                        columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
 
                     }
 
