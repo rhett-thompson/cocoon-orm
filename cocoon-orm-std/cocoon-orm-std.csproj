@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Cocoon.ORM</RootNamespace>
     <AssemblyName>cocoon-orm</AssemblyName>
-    <Version>2.3.0</Version>
+    <Version>2.4.0</Version>
     <Authors>Rhett Thompson</Authors>
     <Product>Cocoon ORM</Product>
     <Description>Cocoon ORM is a simple .NET object-relational mapper alternative to Entity Framework or NHibernate. Cocoon ORM supports SQL Server 2008/2012/20014/+, and SQL Azure.</Description>
@@ -13,6 +13,11 @@
     <PackageTags>ORM Entity Framework NHibernate SQLServer Database Object relational mapper DAL</PackageTags>
     <PackageLicenseUrl>https://github.com/Guidelinetech/cocoon-orm/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Guidelinetech/cocoon-orm</PackageProjectUrl>
+    <PackageId>cocoon-orm</PackageId>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <PackageReleaseNotes>Update methods that specify fields ignore IgnoreOnUpdate attribute.</PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <Company>Rhett Thompson</Company>
   </PropertyGroup>
 
   <ItemGroup>

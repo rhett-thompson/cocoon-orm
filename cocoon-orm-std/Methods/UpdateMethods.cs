@@ -26,7 +26,7 @@ namespace Cocoon.ORM
 
             TableDefinition def = GetTable(objectToUpdate.GetType());
 
-            return Platform.update(Platform.getObjectName(objectToUpdate.GetType()), def.columns.Where(x => !ORMUtilities.HasAttribute<IgnoreOnUpdate>(x)).Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
+            return Platform.update(Platform.getObjectName(objectToUpdate.GetType()), def.columns.Select(p => new Tuple<PropertyInfo, object>(p, p.GetValue(objectToUpdate))), timeout, where);
 
         }
 

@@ -431,16 +431,21 @@ namespace Cocoon.ORM
                     PropertyInfo prop = field.Item1;
                     object value = field.Item2;
 
-                    if (value is SQLValue)
-                        columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = ({((SQLValue)value).sql})");
-                    else
+                    if (!ORMUtilities.HasAttribute<IgnoreOnUpdate>(prop))
                     {
 
-                        if (value is string && string.IsNullOrEmpty((string)value))
-                            value = null;
+                        if (value is SQLValue)
+                            columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = ({((SQLValue)value).sql})");
+                        else
+                        {
 
-                        DbParameter param = addParam(cmd, "update_field_" + getGuidString(Guid.NewGuid()), value);
-                        columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
+                            if (value is string && string.IsNullOrEmpty((string)value))
+                                value = null;
+
+                            DbParameter param = addParam(cmd, "update_field_" + getGuidString(Guid.NewGuid()), value);
+                            columnsToUpdate.Add($"{tableObjectName}.{getObjectName(prop)} = {param.ParameterName}");
+
+                        }
 
                     }
 
