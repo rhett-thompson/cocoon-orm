@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Cocoon.ORM</RootNamespace>
     <AssemblyName>cocoon-orm</AssemblyName>
-    <Version>2.8.0</Version>
+    <Version>2.9.0</Version>
     <Authors>Rhett Thompson</Authors>
     <Product>Cocoon ORM</Product>
     <Description>Cocoon ORM is a simple .NET object-relational mapper alternative to Entity Framework or NHibernate. Cocoon ORM supports SQL Server, and SQL Azure.</Description>

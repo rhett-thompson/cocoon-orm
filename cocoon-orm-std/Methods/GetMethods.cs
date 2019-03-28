@@ -40,7 +40,7 @@ namespace Cocoon.ORM
             params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
-            return GetList<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
+            return GetListBase<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
 
         }
 
@@ -66,7 +66,7 @@ namespace Cocoon.ORM
             params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
-            return GetList<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
+            return GetListBase<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
 
         }
 
@@ -93,11 +93,11 @@ namespace Cocoon.ORM
             params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
-            return GetList<ModelT, SubModelT>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
+            return GetListBase<ModelT, SubModelT>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
 
         }
 
-        private IEnumerable<SubModelT> GetList<ModelT, SubModelT>(
+        private IEnumerable<SubModelT> GetListBase<ModelT, SubModelT>(
             object where = null,
             int top = 0,
             object customParams = null,
