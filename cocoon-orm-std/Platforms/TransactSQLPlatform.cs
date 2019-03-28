@@ -358,7 +358,7 @@ namespace Cocoon.ORM
         /// <param name="top"></param>
         /// <param name="distinct"></param>
         /// <param name="where"></param>
-        public override void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<Join> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where)
+        public override void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<Join> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, object where)
         {
 
             //get columns to select
@@ -390,7 +390,11 @@ namespace Cocoon.ORM
             string joinClause = generateJoinClause(tableObjectName, columnsToSelect, joins);
 
             //generate where clause
-            string whereClause = generateWhereClause(cmd, tableObjectName, where);
+            string whereClause = null;
+            if (where != null && where is Expression)
+                whereClause = generateWhereClause(cmd, tableObjectName, (Expression)where);
+            else if (where != null && where is string)
+                whereClause = $"where {(string)where}";
 
             //generate top clause
             string topClause = "";

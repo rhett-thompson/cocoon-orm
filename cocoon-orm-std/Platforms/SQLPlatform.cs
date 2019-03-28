@@ -111,7 +111,7 @@ namespace Cocoon.ORM
         /// <param name="top"></param>
         /// <param name="distinct"></param>
         /// <param name="where"></param>
-        public abstract void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<Join> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, Expression where);
+        public abstract void select(DbConnection conn, DbCommand cmd, string tableObjectName, List<PropertyInfo> columns, IEnumerable<Join> joins, IEnumerable<MemberInfo> customColumns, object customParams, int top, bool distinct, object where);
 
         /// <summary>
         /// 
