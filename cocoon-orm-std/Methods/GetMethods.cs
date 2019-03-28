@@ -17,7 +17,7 @@ namespace Cocoon.ORM
         }
 
         private Dictionary<string, CacheItem> listCache = new Dictionary<string, CacheItem>();
-        
+
         /// <summary>
         /// Returns a list of objects
         /// </summary>
@@ -30,7 +30,14 @@ namespace Cocoon.ORM
         /// <param name="cacheSettings"></param>
         /// <param name="fieldsToSelect"></param>
         /// <returns>A list of type T with the result</returns>
-        public IEnumerable<T> GetList<T>(Expression<Func<T, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<T, object>>[] fieldsToSelect)
+        public IEnumerable<T> GetList<T>(
+            Expression<Func<T, bool>> where = null,
+            int top = 0,
+            object customParams = null,
+            bool distinct = false,
+            int timeout = -1,
+            ListCacheSettings cacheSettings = null,
+            params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
             return GetList<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
@@ -49,13 +56,20 @@ namespace Cocoon.ORM
         /// <param name="cacheSettings"></param>
         /// <param name="fieldsToSelect"></param>
         /// <returns></returns>
-        public IEnumerable<T> GetList<T>(string where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<T, object>>[] fieldsToSelect)
+        public IEnumerable<T> GetListWhereString<T>(
+            string where = null,
+            int top = 0,
+            object customParams = null,
+            bool distinct = false,
+            int timeout = -1,
+            ListCacheSettings cacheSettings = null,
+            params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
             return GetList<T, T>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
 
         }
-        
+
         /// <summary>
         /// Returns a list of objects
         /// </summary>
@@ -69,14 +83,28 @@ namespace Cocoon.ORM
         /// <param name="cacheSettings"></param>
         /// <param name="fieldsToSelect"></param>
         /// <returns>List of objects with the result</returns>
-        public IEnumerable<SubModelT> GetList<ModelT, SubModelT>(Expression<Func<ModelT, bool>> where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<ModelT, object>>[] fieldsToSelect)
+        public IEnumerable<SubModelT> GetList<ModelT, SubModelT>(
+            Expression<Func<ModelT, bool>> where = null,
+            int top = 0,
+            object customParams = null,
+            bool distinct = false,
+            int timeout = -1,
+            ListCacheSettings cacheSettings = null,
+            params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
             return GetList<ModelT, SubModelT>(where, top, customParams, distinct, timeout, cacheSettings, fieldsToSelect);
 
         }
 
-        private IEnumerable<SubModelT> GetList<ModelT, SubModelT>(object where = null, int top = 0, object customParams = null, bool distinct = false, int timeout = -1, ListCacheSettings cacheSettings = null, params Expression<Func<ModelT, object>>[] fieldsToSelect)
+        private IEnumerable<SubModelT> GetList<ModelT, SubModelT>(
+            object where = null,
+            int top = 0,
+            object customParams = null,
+            bool distinct = false,
+            int timeout = -1,
+            ListCacheSettings cacheSettings = null,
+            params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
             if (cacheSettings != null && listCache.ContainsKey(cacheSettings.ID) && DateTime.Now.Subtract(listCache[cacheSettings.ID].Date) < cacheSettings.Timeout)
@@ -267,7 +295,11 @@ namespace Cocoon.ORM
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <param name="fieldsToSelect"></param>
         /// <returns>An object of type T with the result</returns>
-        public T GetSingle<T>(Expression<Func<T, bool>> where, object customParams = null, int timeout = -1, params Expression<Func<T, object>>[] fieldsToSelect)
+        public T GetSingle<T>(
+            Expression<Func<T, bool>> where,
+            object customParams = null,
+            int timeout = -1,
+            params Expression<Func<T, object>>[] fieldsToSelect)
         {
 
             TableDefinition def = GetTable(typeof(T));
@@ -296,7 +328,10 @@ namespace Cocoon.ORM
         /// <param name="where">Where expression to use for the query</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>The value of the selected field</returns>
-        public FieldT GetScalar<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int timeout = -1)
+        public FieldT GetScalar<ModelT, FieldT>(
+            Expression<Func<ModelT, object>> fieldToSelect,
+            Expression<Func<ModelT, bool>> where = null,
+            int timeout = -1)
         {
 
             TableDefinition def = GetTable(typeof(ModelT));
@@ -322,7 +357,12 @@ namespace Cocoon.ORM
         /// <param name="distinct">Select only distinct rows</param>
         /// <param name="timeout">Timeout in milliseconds of query</param>
         /// <returns>List of values for the selected field</returns>
-        public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(Expression<Func<ModelT, object>> fieldToSelect, Expression<Func<ModelT, bool>> where = null, int top = 0, bool distinct = false, int timeout = -1)
+        public IEnumerable<FieldT> GetScalarList<ModelT, FieldT>(
+            Expression<Func<ModelT, object>> fieldToSelect,
+            Expression<Func<ModelT, bool>> where = null,
+            int top = 0,
+            bool distinct = false,
+            int timeout = -1)
         {
 
             TableDefinition def = GetTable(typeof(ModelT));
