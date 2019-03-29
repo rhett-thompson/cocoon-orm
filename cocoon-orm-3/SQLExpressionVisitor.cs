@@ -4,17 +4,18 @@ using System.Text;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
 
-namespace Cocoon
+namespace Cocoon3
 {
     internal class SQLExpressionTranslator : ExpressionVisitor
     {
 
         private StringBuilder whereBuilder;
         private SqlCommand cmd;
+        private string qualifier;
 
-        public SQLExpressionTranslator()
+        public SQLExpressionTranslator(string qualifier)
         {
-
+            this.qualifier = qualifier;
         }
 
         public string GenerateSQLExpression(SqlCommand cmd, Expression node)
@@ -72,7 +73,7 @@ namespace Cocoon
         {
 
             if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
-                whereBuilder.Append($"{Utilities.GetObjectName(node.Member)}");
+                whereBuilder.Append($"{qualifier}.{Utilities.GetObjectName(node.Member)}");
             else
                 whereBuilder.Append(addWhereParameter(getExpressionValue(node)));
 
@@ -130,7 +131,7 @@ namespace Cocoon
         {
             MemberExpression member = (MemberExpression)node.Object;
 
-           whereBuilder.Append($"{Utilities.GetObjectName(member.Member)} like {addWhereParameter(like)}");
+           whereBuilder.Append($"{qualifier}.{Utilities.GetObjectName(member.Member)} like {addWhereParameter(like)}");
 
         }
 
