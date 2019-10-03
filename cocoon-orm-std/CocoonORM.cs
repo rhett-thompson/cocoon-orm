@@ -151,7 +151,7 @@ namespace Cocoon.ORM
 
             }
 
-            
+
 
             if (table.columns.Count == 0 && table.primaryKeys.Count == 0)
                 throw new Exception($"Model '{type}' has no columns defined.");

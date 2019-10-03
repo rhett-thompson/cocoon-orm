@@ -97,11 +97,13 @@ namespace Cocoon.ORM
             if (joins == null || joins.Count() == 0)
                 return null;
 
+            var uniqueJoins = joins.Select(x => (x.JoinType, x.LeftKey, x.RightKey, x.RightTable)).Distinct();
+
             List<string> joinClauseList = new List<string>();
-            foreach (Join join in joins)
+            foreach (var join in uniqueJoins)
             {
 
-                string alias = getObjectName($"join_table_{getGuidString(join.Id)}");
+                string alias = getObjectName($"join_table_{getGuidString(Guid.NewGuid())}");
 
                 string joinPart = "join";
                 if (join.JoinType == JoinType.LEFT)
@@ -113,14 +115,8 @@ namespace Cocoon.ORM
 
                 joinClauseList.Add($"{joinPart} {getObjectName(join.RightTable)} as {alias} on {tableObjectName}.{getObjectName(join.LeftKey)} = {alias}.{getObjectName(join.RightKey)}");
 
-                if (join.FieldToReceiveIsObject)
-                {
-                    var receiveObject = db.GetTable(((PropertyInfo)join.FieldToReceive).PropertyType);
-                    var columns = receiveObject.columns.Select(x => $"{alias}.{getObjectName(x)} as {getObjectName($"receive_{x.Name}_{getGuidString(join.Id)}")}");
-                    columnsToSelect.AddRange(columns);
-                }
-                else
-                    columnsToSelect.Add($"{alias}.{getObjectName(join.FieldToSelect)} as {getObjectName(join.FieldToReceive)}");
+                foreach (var columnJoin in joins.Where(x => x.JoinType == join.JoinType && x.LeftKey == join.LeftKey && x.RightKey == join.RightKey && x.RightTable == join.RightTable))
+                    columnsToSelect.Add($"{alias}.{getObjectName(columnJoin.FieldToSelect)} as {getObjectName(columnJoin.FieldToReceive)}");
 
             }
 

@@ -13,32 +13,19 @@ namespace Cocoon3
 
     internal enum QueryType
     {
-        Select,
+        SelectNormal,
+        SelectCascade,
         Update,
-        Insert
+        Insert,
+        Delete
     }
 
     public enum JoinType
     {
 
-        /// <summary>
-        /// Left join
-        /// </summary>
         Left,
-
-        /// <summary>
-        /// Inner join
-        /// </summary>
         Inner,
-
-        /// <summary>
-        /// Right join
-        /// </summary>
         Right,
-
-        /// <summary>
-        /// Full outer join
-        /// </summary>
         FullOuter
 
     }
@@ -47,72 +34,169 @@ namespace Cocoon3
     {
 
         public QueryType type;
-        public string id;
         public Type modelType;
         public Type resultType;
         public Type parentType;
-        public PropertyInfo parentKey;
-        public PropertyInfo childForeignKey;
+
         public LambdaExpression where;
-        public LambdaExpression[] fields;
+
         public Action<List<object>> onResult;
 
+        public IEnumerable<LambdaExpression> selectFields;
         public int selectTop;
         public bool selectDistinct;
         public List<Join> selectJoins;
+        public PropertyInfo parentKey;
+        public PropertyInfo childForeignKey;
+
+        public IEnumerable<(LambdaExpression, object)> fieldsAndValues;
 
         public string GenerateSQL(SqlCommand cmd)
         {
 
-            string resultTable = Utilities.GetObjectName(modelType);
-            string whereClause = where != null ? $" where {Utilities.Where(cmd, where, resultTable)}" : "";
-
-            List<string> selectFields;
-            if (fields.Count() == 0)
+            if (type == QueryType.SelectNormal)
             {
 
-                var modelProps = modelType.GetProperties()
-                    .Where(x => !Utilities.HasAttribute<Ignore>(x))
-                    .Where(x => !selectJoins.Any(i => i.fieldToReceive == x));
+                string resultTable = Utilities.GetObjectName(resultType);
 
-                selectFields = new List<string>((modelProps.Select(x => $"{resultTable}.{Utilities.GetObjectName(x)}")));
+                string whereClause = where != null ? $"where {Utilities.Where(cmd, where, resultTable)}" : null;
 
-            }
-            else
-                selectFields = new List<string>(fields.Select(x => $"{resultTable}.{Utilities.GetObjectName(Utilities.GetExpressionProperty(x))}"));
-
-            string topClause = "";
-            if (selectTop > 0)
-                topClause = $"top {selectTop}";
-
-            string joinClause = null;
-            if (selectJoins.Count() > 0)
-            {
-
-                List<string> joinClauseList = new List<string>();
-
-                foreach (Join join in selectJoins)
+                List<string> selectFields;
+                if (this.selectFields.Count() == 0)
                 {
 
-                    string joinPart = "join";
-                    if (join.type == JoinType.Left)
-                        joinPart = "left join";
-                    else if (join.type == JoinType.Right)
-                        joinPart = "right join";
-                    else if (join.type == JoinType.FullOuter)
-                        joinPart = "full outer join";
+                    var modelProps = modelType.GetProperties()
+                        .Where(x => !Utilities.HasAttribute<Ignore>(x))
+                        .Where(x => !selectJoins.Any(i => i.fieldToReceive == x));
 
-                    string alias = Utilities.GetObjectName($"join_{selectJoins.IndexOf(join)}");
-                    joinClauseList.Add($"{joinPart} {Utilities.GetObjectName(join.rightTable)} as {alias} on {resultTable}.{Utilities.GetObjectName(join.leftKey)} = {alias}.{Utilities.GetObjectName(join.rightKey)}");
-                    selectFields.Add($"{alias}.{Utilities.GetObjectName(join.fieldToSelect)} as {Utilities.GetObjectName(join.fieldToReceive)}");
+                    selectFields = new List<string>((modelProps.Select(x => $"{resultTable}.{Utilities.GetObjectName(x)}")));
+
+                }
+                else
+                    selectFields = new List<string>(this.selectFields.Select(x => $"{resultTable}.{Utilities.GetObjectName(Utilities.GetExpressionProperty(x))}"));
+
+                string topClause = null;
+                if (selectTop > 0)
+                    topClause = $"top {selectTop}";
+
+                string joinClause = null;
+                if (selectJoins.Count() > 0)
+                {
+
+                    List<string> joinClauseList = new List<string>();
+
+                    foreach (Join join in selectJoins)
+                    {
+
+                        string type = "join";
+                        if (join.type == JoinType.Left)
+                            type = "left join";
+                        else if (join.type == JoinType.Right)
+                            type = "right join";
+                        else if (join.type == JoinType.FullOuter)
+                            type = "full outer join";
+
+                        string joinId = Utilities.GetObjectName(join.id);
+
+                        joinClauseList.Add($"{type} {Utilities.GetObjectName(join.rightTable)} as {joinId} on {joinId}.{Utilities.GetObjectName(join.leftKey)} = {resultTable}.{Utilities.GetObjectName(join.rightKey)}");
+                        selectFields.Add($"{joinId}.{Utilities.GetObjectName(join.fieldToSelect)} as {Utilities.GetObjectName(join.fieldToReceive)}");
+
+                    }
+
+                    joinClause = $"{string.Join(" ", joinClauseList)}";
 
                 }
 
-                joinClause = string.Join("\r\n", joinClauseList);
+                string distinct = selectDistinct ? "distinct" : null;
+
+                var parts = new[] {
+                    "select",
+                    distinct,
+                    topClause,
+                    string.Join(",", selectFields),
+                    $"from {resultTable}",
+                    joinClause,
+                    whereClause
+                }.Where(x => x != null);
+
+                return string.Join(" ", parts);
 
             }
+            else if (type == QueryType.SelectCascade)
+            {
 
-            return $"select {(selectDistinct ? "distinct" : "")} {topClause} {string.Join(",", selectFields)} from {resultTable}{joinClause}{whereClause};";
+                //IEnumerable<string> resultTableVarFields = resultColumns.Select(x => $"{Utilities.GetObjectName(x)} {Utilities.TypeMap[x.PropertyType]}");
+                //stepTableVars.Add($"declare {id} table({Utilities.Commaize(resultTableVarFields)});");
+
+                return "";
+            }
+            else if (type == QueryType.Update)
+            {
+
+                string modelTable = Utilities.GetObjectName(modelType);
+                string whereClause = where != null ? $"where {Utilities.Where(cmd, where, modelTable)}" : null;
+
+                List<string> updateFieldsList = new List<string>();
+                foreach (var field in fieldsAndValues)
+                {
+
+                    var param = cmd.Parameters.AddWithValue(Utilities.GetGuidString(), field.Item2);
+                    updateFieldsList.Add($"{modelTable}.{Utilities.GetObjectName(Utilities.GetExpressionProperty(field.Item1))} = @{param.ParameterName}");
+
+                }
+
+                var parts = new[] {
+                    "update",
+                    modelTable,
+                    "set",
+                    $"{string.Join(",", updateFieldsList)}",
+                    whereClause
+                };
+
+                return string.Join(" ", parts);
+
+            }
+            else if (type == QueryType.Delete)
+            {
+                string modelTable = Utilities.GetObjectName(modelType);
+                string whereClause = where != null ? $"where {Utilities.Where(cmd, where, modelTable)}" : null;
+
+                var parts = new[] {
+                    "delete from",
+                    modelTable,
+                    whereClause
+                };
+
+                return string.Join(" ", parts);
+
+            }
+            else if (type == QueryType.Insert)
+            {
+
+                string modelTable = Utilities.GetObjectName(modelType);
+
+                List<string> insertValues = new List<string>();
+                foreach (var field in fieldsAndValues)
+                {
+
+                    var param = cmd.Parameters.AddWithValue(Utilities.GetGuidString(), field.Item2);
+                    insertValues.Add($"@{param.ParameterName}");
+
+                }
+
+                var parts = new[] {
+                    "insert into",
+                    modelTable,
+                    $"({string.Join(",", fieldsAndValues.Select(x => Utilities.GetObjectName(Utilities.GetExpressionProperty(x.Item1))))})",
+                    "values",
+                    $"({string.Join(",", insertValues)})"
+                };
+
+                return string.Join(" ", parts);
+
+            }
+            else
+                throw new Exception("Invalid query type");
 
         }
 
@@ -120,7 +204,7 @@ namespace Cocoon3
 
     public class Join
     {
-        internal Guid id = Guid.NewGuid();
+        internal string id = Utilities.GetGuidString();
         internal Type rightTable;
         internal Type leftTable;
         internal PropertyInfo leftKey;
@@ -181,29 +265,15 @@ namespace Cocoon3
             params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
-            var joinList = new List<Join>();
-            if (joins != null)
-                joinList.AddRange(joins);
-
-            foreach (var field in typeof(ResultT).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-
-                if (joinList == null)
-                    joinList = new List<Join>();
-
-                if (field.FieldType == typeof(Join[]))
-                    joinList.AddRange((Join[])field.GetValue(null));
-                else if (field.FieldType == typeof(Join))
-                    joinList.Add((Join)field.GetValue(null));
-            }
+            var joinList = Utilities.GetJoins(typeof(ResultT), joins);
 
             var query = new Query
             {
-                type = QueryType.Select,
+                type = QueryType.SelectNormal,
                 where = where,
                 resultType = typeof(ResultT),
                 modelType = typeof(ModelT),
-                fields = fieldsToSelect,
+                selectFields = fieldsToSelect,
                 selectTop = top,
                 selectDistinct = distinct,
                 selectJoins = joinList
@@ -233,9 +303,84 @@ namespace Cocoon3
 
             }
 
+        }
 
+        public async Task<int> Update<ModelT>(Expression<Func<ModelT, bool>> where = null, params (Expression<Func<ModelT, object>>, object)[] fieldsToUpdate)
+        {
+
+            var query = new Query
+            {
+                type = QueryType.Update,
+                where = where,
+                modelType = typeof(ModelT),
+                fieldsAndValues = fieldsToUpdate.Select(x => ((LambdaExpression)x.Item1, x.Item2))
+            };
+
+            using (var connection = new SqlConnection(connectionString))
+            using (var cmd = connection.CreateCommand())
+            {
+
+                cmd.CommandText = query.GenerateSQL(cmd);
+
+                await connection.OpenAsync();
+                return await cmd.ExecuteNonQueryAsync();
+
+            }
 
         }
+
+        public async Task<int> Delete<ModelT>(Expression<Func<ModelT, bool>> where = null)
+        {
+
+            var query = new Query
+            {
+                type = QueryType.Delete,
+                where = where,
+                modelType = typeof(ModelT)
+            };
+
+            using (var connection = new SqlConnection(connectionString))
+            using (var cmd = connection.CreateCommand())
+            {
+
+                cmd.CommandText = query.GenerateSQL(cmd);
+
+                await connection.OpenAsync();
+                return await cmd.ExecuteNonQueryAsync();
+
+            }
+
+        }
+
+        public async Task<ModelT> Insert<ModelT>(params (Expression<Func<ModelT, object>>, object)[] fieldsToInsert)
+        {
+
+            var query = new Query
+            {
+                type = QueryType.Insert,
+                modelType = typeof(ModelT),
+                fieldsAndValues = fieldsToInsert.Select(x => ((LambdaExpression)x.Item1, x.Item2))
+            };
+
+            using (var connection = new SqlConnection(connectionString))
+            using (var cmd = connection.CreateCommand())
+            {
+
+                cmd.CommandText = query.GenerateSQL(cmd);
+
+                await connection.OpenAsync();
+                await cmd.ExecuteNonQueryAsync();
+
+            }
+
+            return default(ModelT);
+
+        }
+
+        //public async Task<ModelT> Insert<ModelT>(ModelT objectToInsert)
+        //{
+        //    return Insert<ModelT>();
+        //}
 
         //public List<IEnumerable<object>> List()
         //{
@@ -354,46 +499,6 @@ namespace Cocoon3
         //    return default(ResultT);
         //}
 
-        internal static readonly Dictionary<Type, string> TypeMap = new Dictionary<Type, string>
-            {
-                {typeof(Int64), "bigint"},
-                {typeof(UInt64), "bigint"},
-
-                {typeof(Byte[]), "varbinary"},
-                {typeof(Boolean), "bit"},
-                {typeof(String), "nvarchar(max)"},
-                {typeof(Char), "nchar"},
-                {typeof(DateTime), "datetime"},
-                {typeof(DateTimeOffset), "datetimeoffset"},
-                {typeof(Decimal), "decimal"},
-                {typeof(Double), "float"},
-                {typeof(Int32), "int"},
-                {typeof(UInt32), "int"},
-                {typeof(TimeSpan), "time"},
-                {typeof(Guid), "uniqueidentifier"},
-                {typeof(Int16), "smallint"},
-                {typeof(UInt16), "smallint"},
-                {typeof(Single), "real"},
-
-                {typeof(Int64?), "bigint"},
-                {typeof(UInt64?), "bigint"},
-                {typeof(Byte?[]), "varbinary"},
-                {typeof(Boolean?), "bit"},
-                {typeof(Char?), "nchar"},
-                {typeof(DateTime?), "date"},
-                {typeof(DateTimeOffset?), "datetimeoffset"},
-                {typeof(Decimal?), "decimal"},
-                {typeof(Double?), "float"},
-                {typeof(Int32?), "int"},
-                {typeof(UInt32?), "int"},
-                {typeof(TimeSpan?), "time"},
-                {typeof(Guid?), "uniqueidentifier"},
-                {typeof(Int16?), "smallint"},
-                {typeof(UInt16?), "smallint"},
-                {typeof(Single?), "real"}
-
-            };
-
     }
 
     public class QueryBatch
@@ -408,18 +513,18 @@ namespace Cocoon3
         }
 
         public void Select<ModelT>(
-            Action<IEnumerable<ModelT>> onResult,
+            List<ModelT> result,
             Expression<Func<ModelT, bool>> where = null,
             bool distinct = false,
             int top = 0,
             Join[] joins = null,
             params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
-            Select<ModelT, ModelT>(onResult, where, distinct, top, joins, fieldsToSelect);
+            Select<ModelT, ModelT>(result, where, distinct, top, joins, fieldsToSelect);
         }
 
         public void Select<ModelT, ResultT>(
-            Action<IEnumerable<ResultT>> onResult,
+            List<ModelT> result,
             Expression<Func<ModelT, bool>> where = null,
             bool distinct = false,
             int top = 0,
@@ -427,33 +532,17 @@ namespace Cocoon3
             params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
-            if (onResult == null)
-                throw new Exception("OnResult action required");
+            Action<List<object>> onResultWrapper = (list) => { result.AddRange(list.Cast<ModelT>()); };
 
-            Action<List<object>> onResultWrapper = (list) => { onResult(list.Cast<ResultT>()); };
-
-            var joinList = new List<Join>();
-
-            foreach (var field in typeof(ResultT).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-
-                if (joinList == null)
-                    joinList = new List<Join>();
-
-                if (field.FieldType == typeof(Join[]))
-                    joinList.AddRange((Join[])field.GetValue(null));
-                else if (field.FieldType == typeof(Join))
-                    joinList.Add((Join)field.GetValue(null));
-            }
+            var joinList = Utilities.GetJoins(typeof(ResultT), joins);
 
             queries.Add(new Query
             {
-                type = QueryType.Select,
+                type = QueryType.SelectNormal,
                 where = where,
-                id = $"@{Utilities.GetName(typeof(ModelT))}_{queries.Count}",
                 modelType = typeof(ModelT),
                 resultType = typeof(ResultT),
-                fields = fieldsToSelect,
+                selectFields = fieldsToSelect,
                 onResult = onResultWrapper,
                 selectTop = top,
                 selectDistinct = distinct,
@@ -497,31 +586,18 @@ namespace Cocoon3
 
             Action<List<object>> fillAction = (list) => { onResult(list.Cast<ResultT>()); };
 
-            var joinList = new List<Join>();
-
-            foreach (var field in typeof(ResultT).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-
-                if (joinList == null)
-                    joinList = new List<Join>();
-
-                if (field.FieldType == typeof(Join[]))
-                    joinList.AddRange((Join[])field.GetValue(null));
-                else if (field.FieldType == typeof(Join))
-                    joinList.Add((Join)field.GetValue(null));
-            }
+            var joinList = Utilities.GetJoins(typeof(ResultT), joins);
 
             queries.Add(new Query
             {
-                type = QueryType.Select,
+                type = QueryType.SelectCascade,
                 parentKey = Utilities.GetExpressionProperty(parentKey),
                 childForeignKey = Utilities.GetExpressionProperty(childForeignKey),
                 where = where,
-                id = $"@{Utilities.GetName(typeof(ChildT))}_{queries.Count}",
                 modelType = typeof(ChildT),
                 resultType = typeof(ResultT),
                 parentType = typeof(ParentT),
-                fields = fieldsToSelect,
+                selectFields = fieldsToSelect,
                 onResult = fillAction,
                 selectTop = top,
                 selectDistinct = distinct,
@@ -540,7 +616,7 @@ namespace Cocoon3
             using (var cmd = connection.CreateCommand())
             {
 
-                cmd.CommandText = string.Join("\r\n", queries.Select(x => x.GenerateSQL(cmd)));
+                cmd.CommandText = string.Join("\r\n\r\n", queries.Select(x => x.GenerateSQL(cmd)));
 
                 await connection.OpenAsync();
 
@@ -723,6 +799,64 @@ namespace Cocoon3
             return new SQLExpressionTranslator(qualifier).GenerateSQLExpression(cmd, where);
 
         }
+
+        public static List<Join> GetJoins(Type resultType, Join[] joins)
+        {
+
+            var joinList = new List<Join>();
+            if (joins != null)
+                joinList.AddRange(joins);
+
+            foreach (var field in resultType.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                if (field.FieldType == typeof(Join[]))
+                    joinList.AddRange((Join[])field.GetValue(null));
+                else if (field.FieldType == typeof(Join))
+                    joinList.Add((Join)field.GetValue(null));
+
+            return joinList;
+
+        }
+
+        internal static readonly Dictionary<Type, string> TypeMap = new Dictionary<Type, string>
+            {
+                {typeof(Int64), "bigint"},
+                {typeof(UInt64), "bigint"},
+
+                {typeof(Byte[]), "varbinary"},
+                {typeof(Boolean), "bit"},
+                {typeof(String), "nvarchar(max)"},
+                {typeof(Char), "nchar"},
+                {typeof(DateTime), "datetime"},
+                {typeof(DateTimeOffset), "datetimeoffset"},
+                {typeof(Decimal), "decimal"},
+                {typeof(Double), "float"},
+                {typeof(Int32), "int"},
+                {typeof(UInt32), "int"},
+                {typeof(TimeSpan), "time"},
+                {typeof(Guid), "uniqueidentifier"},
+                {typeof(Int16), "smallint"},
+                {typeof(UInt16), "smallint"},
+                {typeof(Single), "real"},
+
+                {typeof(Int64?), "bigint"},
+                {typeof(UInt64?), "bigint"},
+                {typeof(Byte?[]), "varbinary"},
+                {typeof(Boolean?), "bit"},
+                {typeof(Char?), "nchar"},
+                {typeof(DateTime?), "date"},
+                {typeof(DateTimeOffset?), "datetimeoffset"},
+                {typeof(Decimal?), "decimal"},
+                {typeof(Double?), "float"},
+                {typeof(Int32?), "int"},
+                {typeof(UInt32?), "int"},
+                {typeof(TimeSpan?), "time"},
+                {typeof(Guid?), "uniqueidentifier"},
+                {typeof(Int16?), "smallint"},
+                {typeof(UInt16?), "smallint"},
+                {typeof(Single?), "real"}
+
+            };
+
 
     }
 

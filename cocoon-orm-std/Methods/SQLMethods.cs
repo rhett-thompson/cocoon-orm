@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Linq;
-using System.Reflection;
 
 namespace Cocoon.ORM
 {
@@ -69,7 +67,7 @@ namespace Cocoon.ORM
             return list.Cast<T>();
 
         }
-        
+
         /// <summary>
         /// Executes a SQL statement for a single row
         /// </summary>
@@ -127,7 +125,7 @@ namespace Cocoon.ORM
                     }
 
                 return default(object);
-                
+
             }
         }
 

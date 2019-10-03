@@ -8,7 +8,7 @@ namespace Cocoon.ORM
 {
     public partial class CocoonORM
     {
-        
+
         /// <summary>
         /// Deletes records from a table
         /// </summary>
@@ -76,6 +76,6 @@ namespace Cocoon.ORM
             }
 
         }
-        
+
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -18,7 +17,7 @@ namespace Cocoon.ORM
         /// 
         /// </summary>
         public CocoonORM db { get; set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -72,7 +71,7 @@ namespace Cocoon.ORM
         /// <param name="joins"></param>
         /// <returns></returns>
         public abstract T readSingle<T>(DbCommand cmd, IEnumerable<Join> joins);
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -196,7 +195,7 @@ namespace Cocoon.ORM
         /// <param name="type"></param>
         /// <returns></returns>
         public abstract string getDbType(Type type);
-        
+
     }
-    
+
 }

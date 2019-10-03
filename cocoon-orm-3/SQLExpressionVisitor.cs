@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Linq.Expressions;
-using System.Text;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
+using System.Linq.Expressions;
+using System.Text;
 
 namespace Cocoon3
 {
@@ -20,7 +20,7 @@ namespace Cocoon3
 
         public string GenerateSQLExpression(SqlCommand cmd, Expression node)
         {
-            
+
             this.cmd = cmd;
 
             whereBuilder = new StringBuilder();
@@ -61,7 +61,7 @@ namespace Cocoon3
                     whereBuilder.Append(" <> ");
             else
                 throw new NotSupportedException($"Binary operator '{node.NodeType}' not supported");
-            
+
             Visit(node.Right);
 
             whereBuilder.Append(")");
@@ -78,7 +78,7 @@ namespace Cocoon3
                 whereBuilder.Append(addWhereParameter(getExpressionValue(node)));
 
             return node;
-    
+
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -121,7 +121,7 @@ namespace Cocoon3
             return node;
 
         }
-        
+
         private static bool isConstantNull(Expression exp)
         {
             return exp.NodeType == ExpressionType.Constant && ((ConstantExpression)exp).Value == null;
@@ -131,7 +131,7 @@ namespace Cocoon3
         {
             MemberExpression member = (MemberExpression)node.Object;
 
-           whereBuilder.Append($"{qualifier}.{Utilities.GetObjectName(member.Member)} like {addWhereParameter(like)}");
+            whereBuilder.Append($"{qualifier}.{Utilities.GetObjectName(member.Member)} like {addWhereParameter(like)}");
 
         }
 
@@ -159,7 +159,7 @@ namespace Cocoon3
 
         private string addWhereParameter(object value)
         {
-            
+
             return value == null ? "null" : addParameter($"where_{cmd.Parameters.Count}", value).ParameterName;
         }
 
