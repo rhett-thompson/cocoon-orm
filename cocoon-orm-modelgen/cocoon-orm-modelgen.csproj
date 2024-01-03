@@ -85,12 +85,6 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\cocoon-orm\cocoon-orm.csproj">
-      <Project>{9ddfabc3-be34-4a52-8eb9-7ccf4d9ad0e7}</Project>
-      <Name>cocoon-orm</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

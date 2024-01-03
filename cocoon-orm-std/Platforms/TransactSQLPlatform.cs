@@ -251,6 +251,11 @@ namespace Cocoon.ORM
 
         }
 
+        public override T insertBulk<T>(Type model, object[] objectsToInsert, int timeout)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// 
         /// </summary>

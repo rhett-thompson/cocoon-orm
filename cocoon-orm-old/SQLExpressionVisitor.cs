@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.Common;
+using System.Data.SqlClient;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -63,7 +64,7 @@ namespace Cocoon.ORM
                     whereBuilder.Append(" <> ");
             else
                 throw new NotSupportedException($"Binary operator '{node.NodeType}' not supported");
-
+            
             Visit(node.Right);
 
             whereBuilder.Append(")");
@@ -79,7 +80,7 @@ namespace Cocoon.ORM
                 whereBuilder.Append(orm.Platform.addWhereParam(cmd, getExpressionValue(node)));
 
             return node;
-
+    
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -122,7 +123,7 @@ namespace Cocoon.ORM
             return node;
 
         }
-
+        
         private static bool isConstantNull(Expression exp)
         {
             return exp.NodeType == ExpressionType.Constant && ((ConstantExpression)exp).Value == null;

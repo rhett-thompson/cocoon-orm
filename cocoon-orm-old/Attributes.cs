@@ -24,7 +24,7 @@ namespace Cocoon.ORM
         }
 
     }
-
+    
     /// <summary>
     /// Defines a column in a table model
     /// </summary>
@@ -95,7 +95,7 @@ namespace Cocoon.ORM
 
 
     }
-
+    
     /// <summary>
     /// Ignore this field entirely
     /// </summary>

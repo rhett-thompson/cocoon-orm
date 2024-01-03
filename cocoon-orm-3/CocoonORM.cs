@@ -40,8 +40,6 @@ namespace Cocoon3
 
         public LambdaExpression where;
 
-        public Action<List<object>> onResult;
-
         public IEnumerable<LambdaExpression> selectFields;
         public int selectTop;
         public bool selectDistinct;
@@ -245,7 +243,7 @@ namespace Cocoon3
             };
         }
 
-        public async Task<IEnumerable<ModelT>> Select<ModelT>(
+        public IEnumerable<ModelT> Select<ModelT>(
             Expression<Func<ModelT, bool>> where = null,
             bool distinct = false,
             int top = 0,
@@ -253,11 +251,11 @@ namespace Cocoon3
             params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
-            return await Select<ModelT, ModelT>(where, distinct, top, joins, fieldsToSelect);
+            return Select<ModelT, ModelT>(where, distinct, top, joins, fieldsToSelect);
 
         }
 
-        public async Task<IEnumerable<ResultT>> Select<ModelT, ResultT>(
+        public IEnumerable<ResultT> Select<ModelT, ResultT>(
             Expression<Func<ModelT, bool>> where = null,
             bool distinct = false,
             int top = 0,
@@ -285,11 +283,11 @@ namespace Cocoon3
 
                 cmd.CommandText = query.GenerateSQL(cmd);
 
-                await connection.OpenAsync();
+                connection.Open();
 
                 var list = new List<object>();
 
-                using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
+                using (SqlDataReader reader = cmd.ExecuteReader())
                     while (reader.Read())
                     {
 
@@ -305,7 +303,7 @@ namespace Cocoon3
 
         }
 
-        public async Task<int> Update<ModelT>(Expression<Func<ModelT, bool>> where = null, params (Expression<Func<ModelT, object>>, object)[] fieldsToUpdate)
+        public int Update<ModelT>(Expression<Func<ModelT, bool>> where = null, params (Expression<Func<ModelT, object>>, object)[] fieldsToUpdate)
         {
 
             var query = new Query
@@ -322,14 +320,14 @@ namespace Cocoon3
 
                 cmd.CommandText = query.GenerateSQL(cmd);
 
-                await connection.OpenAsync();
-                return await cmd.ExecuteNonQueryAsync();
+                connection.Open();
+                return cmd.ExecuteNonQuery();
 
             }
 
         }
 
-        public async Task<int> Delete<ModelT>(Expression<Func<ModelT, bool>> where = null)
+        public int Delete<ModelT>(Expression<Func<ModelT, bool>> where = null)
         {
 
             var query = new Query
@@ -345,14 +343,14 @@ namespace Cocoon3
 
                 cmd.CommandText = query.GenerateSQL(cmd);
 
-                await connection.OpenAsync();
-                return await cmd.ExecuteNonQueryAsync();
+                connection.Open();
+                return cmd.ExecuteNonQuery();
 
             }
 
         }
 
-        public async Task<ModelT> Insert<ModelT>(params (Expression<Func<ModelT, object>>, object)[] fieldsToInsert)
+        public ModelT Insert<ModelT>(params (Expression<Func<ModelT, object>>, object)[] fieldsToInsert)
         {
 
             var query = new Query
@@ -368,136 +366,14 @@ namespace Cocoon3
 
                 cmd.CommandText = query.GenerateSQL(cmd);
 
-                await connection.OpenAsync();
-                await cmd.ExecuteNonQueryAsync();
+                connection.Open();
+                cmd.ExecuteNonQuery();
 
             }
 
             return default(ModelT);
 
         }
-
-        //public async Task<ModelT> Insert<ModelT>(ModelT objectToInsert)
-        //{
-        //    return Insert<ModelT>();
-        //}
-
-        //public List<IEnumerable<object>> List()
-        //{
-
-        //    using (var connection = new SqlConnection("Server=tcp:teleportfile.database.windows.net,1433;Initial Catalog=teleportfile;Persist Security Info=False;User ID=teleportfile;Password=LordDagon1990;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"))
-        //    using (var cmd = connection.CreateCommand())
-        //    {
-
-        //        if (steps.Count() == 1)
-        //        {
-
-        //            var step = steps[0];
-        //            string resultTable = Utilities.GetObjectName(step.resultType);
-        //            string where = step.where != null ? $" where {Utilities.Where(cmd, step.where)}" : "";
-        //            string selectFields = step.fields.Count() == 0 ? "*" : Utilities.Commaize(step.fields.Select(x => Utilities.GetObjectName(Utilities.GetExpressionProperty(x))));
-
-        //            cmd.CommandText = $"select {selectFields} from {resultTable}{where};";
-
-        //        }
-        //        else if (steps.All(x => x.parentType == null))
-        //        {
-
-        //            List<string> stepSQL = new List<string>();
-
-        //            foreach (var step in steps)
-        //            {
-
-        //                string resultTable = Utilities.GetObjectName(step.resultType);
-        //                string where = step.where != null ? $" where {Utilities.Where(cmd, step.where)}" : "";
-        //                string selectFields = step.fields.Count() == 0 ? "*" : Utilities.Commaize(step.fields.Select(x => Utilities.GetObjectName(Utilities.GetExpressionProperty(x))));
-
-        //                stepSQL.Add($"select {selectFields} from {resultTable}{where};");
-
-        //            }
-
-        //            cmd.CommandText = string.Join("\r\n", stepSQL);
-
-        //        }
-        //        else
-        //        {
-
-        //            List<string> stepTableVars = new List<string>();
-        //            List<string> stepInserts = new List<string>();
-        //            List<string> stepSelects = new List<string>();
-
-        //            foreach (var step in steps)
-        //            {
-
-        //                var resultTable = Utilities.GetObjectName(step.resultType);
-        //                var resultColumns = step.fields.Count() == 0 ? Utilities.GetColumns(step.resultType) : step.fields.Select(x => Utilities.GetExpressionProperty(x));
-
-        //                //generate table var declarations
-        //                IEnumerable<string> resultTableVarFields = resultColumns.Select(x => $"{Utilities.GetObjectName(x)} {TypeMap[x.PropertyType]}");
-        //                stepTableVars.Add($"declare {step.id} table({Utilities.Commaize(resultTableVarFields)});");
-
-        //                //generate table var inserts
-        //                string where = step.where != null ? $" where {Utilities.Where(cmd, step.where)} " : "";
-
-        //                if (step.parentType != null)
-        //                {
-        //                    var parent = steps.Take(steps.IndexOf(step)).Last(x => x.resultType == step.parentType);
-        //                    stepInserts.Add($"insert into {step.id} select {Utilities.Commaize(resultColumns.Select(x => Utilities.GetObjectName(x)))} from {resultTable} where {Utilities.GetObjectName(step.childForeignKey)} in (select {Utilities.GetObjectName(step.parentKey)} from {parent.id});");
-        //                }
-        //                else
-        //                    stepInserts.Add($"insert into {step.id} select {Utilities.Commaize(resultColumns.Select(x => Utilities.GetObjectName(x)))} from {resultTable}{where.TrimEnd()};");
-
-        //                //generate table var selects
-        //                stepSelects.Add($"select * from {step.id};");
-
-        //            }
-
-        //            cmd.CommandText = $"{string.Join("\r\n", stepTableVars)}\r\n\r\n{string.Join("\r\n", stepInserts)}\r\n\r\n{string.Join("\r\n", stepSelects)}";
-
-        //        }
-
-        //        var result = new List<IEnumerable<object>>();
-
-        //        connection.Open();
-
-        //        using (SqlDataReader reader = cmd.ExecuteReader())
-        //            foreach (var step in steps)
-        //            {
-        //                var list = new List<object>();
-
-        //                while (reader.Read())
-        //                {
-        //                    object obj = Activator.CreateInstance(step.resultType);
-        //                    Utilities.SetObjectFromReader(obj, reader);
-        //                    list.Add(obj);
-        //                }
-
-        //                result.Add(list);
-
-        //                reader.NextResult();
-
-        //            }
-
-        //        return result;
-
-        //    }
-
-        //}
-
-        //public int Delete()
-        //{
-        //    return 0;
-        //}
-
-        //public int Update()
-        //{
-        //    return 0;
-        //}
-
-        //public ResultT Insert(ResultT model)
-        //{
-        //    return default(ResultT);
-        //}
 
     }
 
@@ -532,8 +408,6 @@ namespace Cocoon3
             params Expression<Func<ModelT, object>>[] fieldsToSelect)
         {
 
-            Action<List<object>> onResultWrapper = (list) => { result.AddRange(list.Cast<ModelT>()); };
-
             var joinList = Utilities.GetJoins(typeof(ResultT), joins);
 
             queries.Add(new Query
@@ -543,7 +417,6 @@ namespace Cocoon3
                 modelType = typeof(ModelT),
                 resultType = typeof(ResultT),
                 selectFields = fieldsToSelect,
-                onResult = onResultWrapper,
                 selectTop = top,
                 selectDistinct = distinct,
                 selectJoins = joinList
@@ -584,8 +457,6 @@ namespace Cocoon3
             if (queries.Count() == 0 || !queries.Any(x => x.resultType == typeof(ParentT)))
                 throw new Exception("No parent subset declared.");
 
-            Action<List<object>> fillAction = (list) => { onResult(list.Cast<ResultT>()); };
-
             var joinList = Utilities.GetJoins(typeof(ResultT), joins);
 
             queries.Add(new Query
@@ -598,7 +469,6 @@ namespace Cocoon3
                 resultType = typeof(ResultT),
                 parentType = typeof(ParentT),
                 selectFields = fieldsToSelect,
-                onResult = fillAction,
                 selectTop = top,
                 selectDistinct = distinct,
                 selectJoins = joinList
@@ -606,7 +476,7 @@ namespace Cocoon3
 
         }
 
-        public async void Execute()
+        public void Execute()
         {
 
             if (queries.Count() == 0)
@@ -618,31 +488,24 @@ namespace Cocoon3
 
                 cmd.CommandText = string.Join("\r\n\r\n", queries.Select(x => x.GenerateSQL(cmd)));
 
-                await connection.OpenAsync();
+                connection.Open();
 
-                //var list = new List<object>();
+                foreach (var query in queries)
+                {
 
-                //using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
-                //    while (reader.Read())
-                //    {
+                    var list = new List<object>();
 
-                //        object obj = Activator.CreateInstance(query.resultType);
-                //        Utilities.SetObjectFromReader(obj, reader);
-                //        list.Add(obj);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                        {
 
-                //    }
+                            object obj = Activator.CreateInstance(query.resultType);
+                            Utilities.SetObjectFromReader(obj, reader);
+                            list.Add(obj);
 
-            }
+                        }
 
-            foreach (var query in queries)
-            {
-
-                //var r = new List<object>();
-                //r.Add(Activator.CreateInstance(query.resultType));
-                //r.Add(Activator.CreateInstance(query.resultType));
-                //r.Add(Activator.CreateInstance(query.resultType));
-
-                //query.fillAction(r);
+                }
 
             }
 

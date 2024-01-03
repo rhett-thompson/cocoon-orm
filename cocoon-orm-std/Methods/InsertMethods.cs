@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Cocoon.ORM
 {
@@ -30,6 +31,28 @@ namespace Cocoon.ORM
         {
 
             return Platform.insert<T>(typeof(T), objectToInsert, timeout);
+
+        }
+
+        public T InsertBulk<T>(object[] objectsToInsert, int timeout = -1)
+        {
+
+            return Platform.insertBulk<T>(typeof(T), objectsToInsert, timeout);
+
+        }
+
+        /// <summary>
+        /// Inserts a single object
+        /// </summary>
+        /// <typeparam name="T">Table model to use in the where clause and return</typeparam>
+        /// <param name="objectToInsert">Object to insert into the table The table model is inferred from the Type of this object.</param>
+        /// <param name="model">Type of model</param>
+        /// <param name="timeout">Timeout in milliseconds of query</param>
+        /// <returns>The newly inserted object of type T</returns>
+        public T Insert<T>(T objectToInsert, Type model, int timeout = -1)
+        {
+
+            return Platform.insert<T>(model, objectToInsert, timeout);
 
         }
 

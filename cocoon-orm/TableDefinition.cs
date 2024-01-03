@@ -11,13 +11,13 @@ namespace Cocoon.ORM
     public class TableDefinition
     {
 
-        internal List<PropertyInfo> columns = new List<PropertyInfo>();
-        internal List<PropertyInfo> primaryKeys = new List<PropertyInfo>();
-        internal List<PropertyInfo> customColumns = new List<PropertyInfo>();
-        internal List<Join> joins = new List<Join>();
+        public List<PropertyInfo> columns = new List<PropertyInfo>();
+        public List<PropertyInfo> primaryKeys = new List<PropertyInfo>();
+        public List<PropertyInfo> customColumns = new List<PropertyInfo>();
+        public List<Join> joins = new List<Join>();
 
-        internal string objectName;
-        internal Type type;
+        public string objectName;
+        public Type type;
 
     }
 }

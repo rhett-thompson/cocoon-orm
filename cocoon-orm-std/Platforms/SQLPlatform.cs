@@ -136,6 +136,16 @@ namespace Cocoon.ORM
         /// <summary>
         /// 
         /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="model"></param>
+        /// <param name="objectToInsert"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public abstract T insertBulk<T>(Type model, object[] objectsToInsert, int timeout);
+
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="member"></param>
         /// <returns></returns>
         public abstract string getObjectName(MemberInfo member);
