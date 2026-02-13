@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113 d17.12
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11505.172 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cocoon-orm-std", "cocoon-orm-std\cocoon-orm-std.csproj", "{9B49FE55-1D54-41DE-9AE7-C8DCAC11D67D}"
 EndProject
